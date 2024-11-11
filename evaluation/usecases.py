@@ -317,7 +317,7 @@ class AssessmentUseCase:
                                                                              user_id=user_id)
         if not assessment_details:
             raise ValidationError("Assessment not found")
-
+    
         return assessment_details
 
     def fetch_assessment_data_and_assert_validity(assessment_id, user_id):

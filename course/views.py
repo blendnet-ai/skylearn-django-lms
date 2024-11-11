@@ -28,6 +28,7 @@ from course.models import (
     UploadVideo,
 )
 from result.models import TakenCourse
+from evaluation.usecases import AssessmentUseCase
 
 
 # ########################################################
@@ -122,6 +123,9 @@ def course_single(request, slug):
     files = Upload.objects.filter(course__slug=slug)
     videos = UploadVideo.objects.filter(course__slug=slug)
     lecturers = CourseAllocation.objects.filter(courses__pk=course.id)
+    
+    # fetch all assessments for the user in the course
+    assessments = AssessmentUseCase.fetch_display_data(request.user)
     return render(
         request,
         "course/course_single.html",
@@ -130,9 +134,10 @@ def course_single(request, slug):
             "course": course,
             "files": files,
             "videos": videos,
-            "lecturers": lecturers,
+            "lecturers": lecturers, 
             "media_url": settings.MEDIA_URL,
-        },
+            "assessments": assessments
+            },
     )
 
 
