@@ -1,0 +1,6 @@
+name: 'dsa_chat_gpt_2'
+type: 'AzureOpenAILLMConfig'
+endpoint: 'https://bts-openai-switzerland-north.openai.azure.com/'
+deployment_name: 'gpt4-32k'
+api_key: 'f34a7de1dbf447718cbb14dd43c700fa'
+version: '2024-02-15-preview'

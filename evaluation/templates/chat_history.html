@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat History for Assessment {{ assessment_id }}</title>
+    <style>
+        .container {
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow-y: scroll;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-message {
+            max-width: 75%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 20px;
+            position: relative;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            border-radius: 20px 20px 0 20px;
+        }
+        .bot-message {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            align-self: flex-start;
+            border-radius: 20px 20px 20px 0;
+        }
+        .chat-info {
+            font-size: 0.8em;
+            color: #999;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .system-message {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+        }
+        .code-block {
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        .tool-calls {
+            background-color: #e8e8e8;
+            border: 1px solid #bbb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .tool-calls pre {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat History for Assessment {{ assessment_id }}</h1>
+        <div class="chat-container">
+            {% for chat in chat_data %}
+                <div class="chat-message {% if chat.role == 'user' %}user{% else %}bot{% endif %}-message">
+                    <p>{{ chat.content }}</p>
+                    {% if chat.context_vars.code %}
+                        <button class="code-toggle" aria-label="View code">
+                            See code
+                        </button>
+                        <div class="code-block">
+                            <pre><code>{{ chat.context_vars.code }}</code></pre>
+                        </div>
+                    {% endif %}
+                    
+                    {% if chat.tool_calls %}
+                        <div class="tool-calls">
+                            <strong>Tool Calls:</strong>
+                            {% for tool_call in chat.tool_calls %}
+                                <pre><code>{{ tool_call }}</code></pre>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <p class="chat-info">Message from {{ chat.role }}</p>
+                </div>
+            {% empty %}
+                <div class="chat-message system-message">
+                    <p>No chat history found for this assessment.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // Add event listener to code toggle buttons
+        document.querySelectorAll('.code-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                const codeBlock = button.nextElementSibling;
+                codeBlock.style.display = codeBlock.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
