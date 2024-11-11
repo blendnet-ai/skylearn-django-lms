@@ -46,8 +46,7 @@ LOCAL_MEM_CACHE = {
     }
 }
 
-# DEBUG = to_bool(os.environ.get('DJANGO_DEBUG', 'FALSE'))
-DEBUG = True
+DEBUG = config("DEBUG", default=False, cast=bool)
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE
@@ -360,7 +359,7 @@ LOGOUT_REDIRECT_URL = "/"
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # LOGGING
 # ------------------------------------------------------------------------------
@@ -378,7 +377,7 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         }
@@ -387,7 +386,7 @@ LOGGING = {
 }
 
 # WhiteNoise configuration
-
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
 LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
