@@ -46,7 +46,7 @@ LOCAL_MEM_CACHE = {
     }
 }
 
-DEBUG = to_bool(os.environ.get('DJANGO_DEBUG', 'FALSE'))
+DEBUG = config("DEBUG", default=False, cast=bool)
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE
@@ -81,6 +81,7 @@ SESSION_CACHE_ALIAS = "default"
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
 
 STORAGE_ACCOUNT_NAME = os.environ.get("STORAGE_ACCOUNT_NAME", "stspeechaistage")
 STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
@@ -327,7 +328,7 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Media files config
 MEDIA_URL = "/media/"
@@ -358,6 +359,8 @@ LOGOUT_REDIRECT_URL = "/"
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 
+
+
 # LOGGING
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#logging
@@ -374,7 +377,7 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         }
@@ -383,7 +386,7 @@ LOGGING = {
 }
 
 # WhiteNoise configuration
-
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
 LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
