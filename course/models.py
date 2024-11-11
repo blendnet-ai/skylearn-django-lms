@@ -69,6 +69,7 @@ class Course(models.Model):
     year = models.IntegerField(choices=settings.YEARS, default=1)
     semester = models.CharField(choices=settings.SEMESTER_CHOICES, max_length=200)
     is_elective = models.BooleanField(default=False)
+    assessment_generation_ids = models.JSONField(blank=True, default=list)
 
     objects = CourseManager()
 
