@@ -126,6 +126,17 @@ def course_single(request, slug):
     
     # fetch all assessments for the user in the course
     assessments = AssessmentUseCase.fetch_display_data(request.user)
+
+    assessment_generation_ids = list(course.assessment_generation_ids)
+    
+    if len(assessment_generation_ids) > 0:
+        # filter the assessments to only those that are in the course
+        assessments = [assessment for assessment in assessments if assessment["assessment_generation_id"] in assessment_generation_ids]
+    else :
+        assessments = []
+
+    print("Assessments", assessments)
+    
     return render(
         request,
         "course/course_single.html",

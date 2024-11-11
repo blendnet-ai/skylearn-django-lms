@@ -72,7 +72,6 @@
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td>
-                                <!-- <a href="{% url 'assessment' assessment.assessment_generation_id %}" -->
                                 <a href="{% url 'program_detail' course.program.id %}"
                                     title="{{ assessment.test.heading }}" class="d-flex align-items-center">
                                     {{ assessment.test.heading|title }}

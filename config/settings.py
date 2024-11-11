@@ -46,7 +46,8 @@ LOCAL_MEM_CACHE = {
     }
 }
 
-DEBUG = to_bool(os.environ.get('DJANGO_DEBUG', 'FALSE'))
+# DEBUG = to_bool(os.environ.get('DJANGO_DEBUG', 'FALSE'))
+DEBUG = True
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE
