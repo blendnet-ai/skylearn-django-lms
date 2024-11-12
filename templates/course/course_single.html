@@ -72,12 +72,13 @@
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td>
-                                <a href="{% url 'program_detail' course.program.id %}"
+                                <a href="{% url 'assessment_single' course_slug=assessment.test.slug id=assessment.assessment_generation_id %}"
                                     title="{{ assessment.test.heading }}" class="d-flex align-items-center">
                                     {{ assessment.test.heading|title }}
                                 </a>
                             </td>
-                            <td>2024-09-01</td>
+                            
+                            <td>2024-11-11</td>
                             <th class="w-50">
                                 <code>
                                     {{ assessment.welcome.instructions|safe }}
@@ -100,24 +101,12 @@
                             {% endif %}
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <td>
+                        <tr class="">
+                            <td colspan="4" class="text-center">
                                 <span class="text-danger">
-                                    {% trans 'No video Uploaded.' %}
-                                    {% if request.user.is_superuser or request.user.is_lecturer %}
-                                    <a href="{% url 'upload_video' course.slug %}" class="text-primary">
-                                        <i class="primary" style="font-size: 22px;">
-                                            {% trans 'Upload now.' %}
-                                        </i>
-                                        {% endif %}
-                                    </a>
+                                    {% trans 'No assessment uploaded.' %}
                                 </span>
                             </td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
                         </tr>
                         {% endfor %}
                     </tbody>

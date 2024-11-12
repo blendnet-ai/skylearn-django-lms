@@ -32,6 +32,36 @@ from evaluation.usecases import AssessmentUseCase
 
 
 # ########################################################
+# Assessment Views
+# ########################################################
+
+
+@login_required
+def assessment_single(request, course_slug, id):
+
+    # fetch all assessments for the user in the course
+    assessments = AssessmentUseCase.fetch_display_data(request.user)
+
+    # filter the assessment whose id is the same as the one in the url
+    retrieved_assessment = [
+        assessment
+        for assessment in assessments
+        if assessment["assessment_generation_id"] == id
+    ]
+
+    return render(
+        request,
+        "course/assessment_single.html",
+        {
+            "title": "Assessment",
+            "course_slug": course_slug,
+            "assessment_id": id,
+            "assessment": retrieved_assessment[0] if retrieved_assessment else None,
+        },
+    )
+
+
+# ########################################################
 # Program Views
 # ########################################################
 
@@ -123,20 +153,22 @@ def course_single(request, slug):
     files = Upload.objects.filter(course__slug=slug)
     videos = UploadVideo.objects.filter(course__slug=slug)
     lecturers = CourseAllocation.objects.filter(courses__pk=course.id)
-    
+
     # fetch all assessments for the user in the course
     assessments = AssessmentUseCase.fetch_display_data(request.user)
 
     assessment_generation_ids = list(course.assessment_generation_ids)
-    
+
     if len(assessment_generation_ids) > 0:
         # filter the assessments to only those that are in the course
-        assessments = [assessment for assessment in assessments if assessment["assessment_generation_id"] in assessment_generation_ids]
-    else :
+        assessments = [
+            assessment
+            for assessment in assessments
+            if assessment["assessment_generation_id"] in assessment_generation_ids
+        ]
+    else:
         assessments = []
 
-    print("Assessments", assessments)
-    
     return render(
         request,
         "course/course_single.html",
@@ -145,10 +177,10 @@ def course_single(request, slug):
             "course": course,
             "files": files,
             "videos": videos,
-            "lecturers": lecturers, 
+            "lecturers": lecturers,
             "media_url": settings.MEDIA_URL,
-            "assessments": assessments
-            },
+            "assessments": assessments,
+        },
     )
 
 
