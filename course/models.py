@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.models import ActivityLog, Semester
 from core.utils import unique_slug_generator
+from meetings.models import MeetingSeries
 
 
 class ProgramManager(models.Manager):
@@ -83,6 +84,31 @@ class Course(models.Model):
 
         current_semester = Semester.objects.filter(is_current_semester=True).first()
         return self.semester == current_semester.semester if current_semester else False
+
+
+class Batch(models.Model):
+    title = models.CharField(max_length=200)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    lecturer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class LiveClassSeriesBatchAllocation(models.Model):
+    """Model to handle course allocations for live classes"""
+
+    live_class_series = models.ForeignKey(
+        MeetingSeries, on_delete=models.CASCADE, related_name="course_enrollments"
+    )
+    batch = models.ForeignKey(
+        "course.Batch", on_delete=models.CASCADE, related_name="enrolled_batches"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["live_class_series", "batch"]
+
+    def __str__(self):
+        return f"{self.live_class_series} - {self.course.title}"
 
 
 @receiver(pre_save, sender=Course)
