@@ -16,8 +16,12 @@ urlpatterns = [
             [
                 path("practice/", include("practice.urls")),
                 path("data/", include("data_repo.urls")),
-                path('ai_learning/', include('ai_learning.urls')),  # Include ai_learning app's URLs
-                path('evaluation/', include('evaluation.urls')),  # Include evaluation app's URLs
+                path(
+                    "ai_learning/", include("ai_learning.urls")
+                ),  # Include ai_learning app's URLs
+                path(
+                    "evaluation/", include("evaluation.urls")
+                ),  # Include evaluation app's URLs
             ]
         ),
     ),
@@ -36,7 +40,7 @@ urlpatterns += i18n_patterns(
     path("result/", include("result.urls")),
     path("search/", include("search.urls")),
     path("quiz/", include("quiz.urls")),
-    path("payments/", include("payments.urls"))
+    path("payments/", include("payments.urls")),
 )
 
 

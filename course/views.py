@@ -155,7 +155,7 @@ def course_single(request, slug):
     lecturers = CourseAllocation.objects.filter(courses__pk=course.id)
 
     # fetch all assessments for the user in the course
-    assessments = AssessmentUseCase.fetch_display_data(request.user)
+    assessments = AssessmentUseCase.fetch_display_data(request.user.id)
 
     assessment_generation_ids = list(course.assessment_generation_ids)
 

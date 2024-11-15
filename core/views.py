@@ -6,6 +6,26 @@ from accounts.decorators import admin_required, lecturer_required
 from accounts.models import User, Student
 from .forms import SessionForm, SemesterForm, NewsAndEventsForm
 from .models import NewsAndEvents, ActivityLog, Session, Semester
+from urllib.parse import urlencode
+
+
+# ########################################################
+# Saksham
+# ########################################################
+@login_required
+def sakshm_embed_view(request, path):
+    query_params = request.GET.dict()
+
+    query_string = "?" + urlencode(query_params)
+    print("query_string", query_string)
+
+    return render(
+        request,
+        "core/saksham_wrapper.html",
+        {
+            "path": "http://localhost:3000/" + path + query_string,
+        },
+    )
 
 
 # ########################################################

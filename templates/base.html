@@ -30,12 +30,12 @@
     {% endblock %}
 
     {% block maincontent %}
-    <div id="main">
+    <div id="main" style="height: 100vh;">
         {% block topbar %}
             {% include 'navbar.html' %}
         {% endblock %}
 
-        <div class="container-fluid" id="main-content">
+        <div class="container-fluid h-100" id="main-content">
             {% block content %}{% endblock content %}
         </div>
 

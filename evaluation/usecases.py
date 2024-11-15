@@ -163,19 +163,25 @@ class AssessmentUseCase:
         for assessment in available_assessments:
             assessment_generation_id = assessment.assessment_generation_id
 
-            if (
-                assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1
-                and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED
-            ):
-                continue
+            # if (
+            #     assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1
+            #     and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED
+            # ):
+            #     continue
 
             display_data = assessment.display_data
             name = assessment.assessment_display_name
+            max_attempts = assessment.number_of_attempts
+            number_of_attempts = AssessmentAttemptRepository.number_of_attempts_expired(
+                assessment_generation_config_id=assessment_generation_id,
+                user_id=user_id,
+            )
             resp_obj = {
                 "assessment_generation_id": assessment_generation_id,
                 "test": {
                     "heading": f"{name} test",
-                    "slug": f"{name.lower().replace(' ','-')}-test",
+                    "path": f"assessment",
+                    "query_params": f"?id={assessment_generation_id}",
                 },
                 "welcome": {
                     "heading": f"Welcome to {name} test",
@@ -188,7 +194,11 @@ class AssessmentUseCase:
                     "img_url": display_data.get("eval_img_url"),
                 },
                 "name": assessment.assessment_name,
+                "max_attempts": max_attempts,
+                "user_attempts": number_of_attempts,
+                "user_id": user_id,
             }
+
             resp_data.append(resp_obj)
         return resp_data
 

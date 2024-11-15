@@ -14,10 +14,17 @@ from .views import (
     semester_update_view,
     semester_delete_view,
     dashboard_view,
+    sakshm_embed_view,
 )
 
 
 urlpatterns = [
+    # saksham urls
+    path(
+        "sakshm/<path>",
+        sakshm_embed_view,
+        name="sakshm_embed",
+    ),
     # Accounts url
     path("", home_view, name="home"),
     path("add_item/", post_add, name="add_item"),

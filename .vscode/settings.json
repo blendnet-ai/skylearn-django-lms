@@ -3,12 +3,12 @@
   "[html]": {
     "editor.formatOnSave": false
   },
-  "liveSassCompile.settings.includeItems": ["/**/static/scss/style.scss"],
+  "liveSassCompile.settings.includeItems": ["/**/staticfiles/scss/style.scss"],
   "liveSassCompile.settings.formats": [
     {
       "format": "compressed",
       "extensionName": ".min.css",
-      "savePath": "/static/css",
+      "savePath": "/staticfiles/css",
       "savePathReplacementPairs": null
     }
   ],

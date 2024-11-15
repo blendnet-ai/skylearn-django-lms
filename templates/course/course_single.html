@@ -60,11 +60,8 @@
                         <tr>
                             <th>#</th>
                             <th>{% trans 'Assessment Title' %}</th>
-                            <th>{% trans 'Uploaded Date' %}</th>
+                            <th>{% trans 'Remaining Attempts' %}</th>
                             <th>{% trans 'Instructions' %}</th>
-                            {% if request.user.is_superuser or request.user.is_lecturer %}
-                            <th>{% trans 'Actions' %}</th>
-                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -72,33 +69,30 @@
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td>
-                                <a href="{% url 'assessment_single' course_slug=assessment.test.slug id=assessment.assessment_generation_id %}"
+                                {% if assessment.user_attempts < assessment.max_attempts %} <a
+                                    href="{% url 'sakshm_embed' path=assessment.test.path %}{{ assessment.test.query_params }}"
                                     title="{{ assessment.test.heading }}" class="d-flex align-items-center">
                                     {{ assessment.test.heading|title }}
-                                </a>
+                                    </a>
+                                    {% else %}
+                                    <a class="d-flex align-items-center bg-warning-subtle user-select-none disabled"
+                                        title="{% trans 'No attempts remaining' %}">
+                                        {{ assessment.test.heading|title }}
+                                    </a>
+                                    {% endif %}
                             </td>
-                            
-                            <td>2024-11-11</td>
+
+                            <td>
+                                {{ assessment.user_attempts }} / {{ assessment.max_attempts }}
+                            </td>
                             <th class="w-50">
-                                <code>
-                                    {{ assessment.welcome.instructions|safe }}
-                                </code>
+                                <ul>
+                                    {% for instruction in assessment.welcome.instructions.list %}
+                                    <li>{{ instruction }}</li>
+                                    {% endfor %}
+                                </ul>
                             </th>
 
-                            {% if request.user.is_superuser or request.user.is_lecturer %}
-                            <td>
-                                <div class="update-delete">
-                                    <a href="{% url 'upload_video_edit' slug=course.slug video_slug=video.slug %}"
-                                        class="update" title="{% trans 'Edit' %}">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </a>
-                                    <a href="{% url 'upload_video_delete' slug=course.slug video_slug=video.slug %}"
-                                        class="delete" title="{% trans 'Delete' %}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
-                                </div>
-                            </td>
-                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr class="">
