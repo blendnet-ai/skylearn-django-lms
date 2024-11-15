@@ -268,8 +268,8 @@ class FetchAssessmentState(APIView):
 
 class FetchScorecard(APIView):
 
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [HardcodedAuthentication]
 
     def get(self, request, format=None):
         user_id = request.user.id

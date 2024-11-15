@@ -707,17 +707,23 @@ class AssessmentUseCase:
                     ),
                 }
             )
-
         history = AssessmentAttemptRepository.fetch_user_assessment_history(user_id)
         for item in history:
             type = item.get("type")
             eval_data = item.get("eval_data")
-
             percentage = None
             short_description = None
+            assessment_name = item.get(
+                "assessment_generation_config_id__assessment_display_name"
+            )
             if eval_data:
                 percentage = eval_data.get("percentage")
                 short_description = eval_data.get("short_description")
+                total_correct = eval_data.get("additional_data").get("correct") or 0
+                total_incorrect = eval_data.get("additional_data").get("incorrect") or 0
+                total_not_attempted = (
+                    eval_data.get("additional_data").get("not_attempted") or 0
+                )
 
             resp_data.append(
                 {
@@ -727,6 +733,11 @@ class AssessmentUseCase:
                     "status": item.get("status"),
                     "percentage": percentage,
                     "short_description": short_description,
+                    "total_correct": total_correct,
+                    "total_incorrect": total_incorrect,
+                    "total_not_attempted": total_not_attempted,
+                    "total": total_correct + total_incorrect + total_not_attempted,
+                    "assessment_name": assessment_name,
                 }
             )
         return {"filter_options": filter_options, "attempted_list": resp_data}

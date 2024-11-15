@@ -28,6 +28,7 @@ from accounts.models import Student
 from accounts.decorators import lecturer_required, student_required
 from .models import TakenCourse, Result
 
+from evaluation.usecases import AssessmentUseCase
 
 CM = 2.54
 
@@ -259,16 +260,12 @@ def grade_result(request):
 @login_required
 @student_required
 def assessment_result(request):
-    student = Student.objects.get(student__pk=request.user.id)
-    courses = TakenCourse.objects.filter(
-        student__student__pk=request.user.id, course__level=student.level
+    attempts = AssessmentUseCase.fetch_history_data(request.user.id).get(
+        "attempted_list"
     )
-    result = Result.objects.filter(student__student__pk=request.user.id)
 
     context = {
-        "courses": courses,
-        "result": result,
-        "student": student,
+        "attempts": attempts,
     }
 
     return render(request, "result/assessment_results.html", context)
