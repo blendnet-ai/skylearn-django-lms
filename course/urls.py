@@ -2,12 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # assessment urls
-    path(
-        "course/<slug:course_slug>/assessment/<int:id>/",
-        views.assessment_single,
-        name="assessment_single",
-    ),
     # Program urls
     path("", views.ProgramFilterView.as_view(), name="programs"),
     path("<int:pk>/detail/", views.program_detail, name="program_detail"),

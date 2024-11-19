@@ -3,16 +3,21 @@
   "[html]": {
     "editor.formatOnSave": false
   },
-  "liveSassCompile.settings.includeItems": ["/**/staticfiles/scss/style.scss"],
+  "liveSassCompile.settings.includeItems": ["/**/static/scss/style.scss"],
   "liveSassCompile.settings.formats": [
+    {
+      "format": "expanded",
+      "extensionName": ".css",
+      "savePath": "/static/css"
+    },
     {
       "format": "compressed",
       "extensionName": ".min.css",
-      "savePath": "/staticfiles/css",
-      "savePathReplacementPairs": null
+      "savePath": "/static/css"
     }
   ],
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
-  }
+  },
+  "liveSassCompile.settings.generateMap": true
 }

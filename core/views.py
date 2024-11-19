@@ -33,12 +33,13 @@ def sakshm_embed_view(request, path):
 # ########################################################
 @login_required
 def home_view(request):
-    items = NewsAndEvents.objects.all().order_by("-updated_date")
-    context = {
-        "title": "News & Events",
-        "items": items,
-    }
-    return render(request, "core/index.html", context)
+    return render(
+        request,
+        "core/index.html",
+        {
+            "path": "http://localhost:3000/home-lms",
+        },
+    )
 
 
 @login_required

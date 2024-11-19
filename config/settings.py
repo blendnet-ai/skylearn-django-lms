@@ -46,7 +46,8 @@ LOCAL_MEM_CACHE = {
     }
 }
 
-DEBUG = config("DEBUG", default=False, cast=bool)
+# DEBUG = config("DEBUG", default=False, cast=bool)
+DEBUG = True
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE
@@ -207,22 +208,23 @@ INTEGRATED_APPS = [
     "practice",
     "custom_auth",
     "corsheaders",
+    "sass_processor",
 ]
 
 # Combine all apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS + INTEGRATED_APPS
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # Add this line at the top
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
+    "corsheaders.middleware.CorsMiddleware",  # Add this line at the top
     "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -330,7 +332,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "sass_processor.finders.CssFinder",
 ]
+SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 
 
 # Media files config

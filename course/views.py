@@ -32,36 +32,6 @@ from evaluation.usecases import AssessmentUseCase
 
 
 # ########################################################
-# Assessment Views
-# ########################################################
-
-
-@login_required
-def assessment_single(request, course_slug, id):
-
-    # fetch all assessments for the user in the course
-    assessments = AssessmentUseCase.fetch_display_data(request.user)
-
-    # filter the assessment whose id is the same as the one in the url
-    retrieved_assessment = [
-        assessment
-        for assessment in assessments
-        if assessment["assessment_generation_id"] == id
-    ]
-
-    return render(
-        request,
-        "course/assessment_single.html",
-        {
-            "title": "Assessment",
-            "course_slug": course_slug,
-            "assessment_id": id,
-            "assessment": retrieved_assessment[0] if retrieved_assessment else None,
-        },
-    )
-
-
-# ########################################################
 # Program Views
 # ########################################################
 
