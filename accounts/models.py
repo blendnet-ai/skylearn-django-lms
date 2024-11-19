@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from PIL import Image
 
-from course.models import Program
+from course.models import Batch, Program
 from .validators import ASCIIUsernameValidator
 
 
@@ -153,6 +153,7 @@ class Student(models.Model):
     # id_number = models.CharField(max_length=20, unique=True, blank=True)
     level = models.CharField(max_length=25, choices=LEVEL, null=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)
+    batches = models.ManyToManyField(Batch, blank=True)
 
     objects = StudentManager()
 

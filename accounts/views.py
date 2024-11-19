@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -20,9 +21,17 @@ from accounts.forms import (
     StudentAddForm,
 )
 from accounts.models import Parent, Student, User
+from accounts.serializers import EnrollStudentsInBatchSerializer
+from accounts.usecases import BatchAllocationUsecase
 from core.models import Semester, Session
-from course.models import Course
+from course.models import Batch, Course
 from result.models import TakenCourse
+
+from django.views.decorators.csrf import csrf_exempt
+
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
 
 # ########################################################
 # Utility Functions
@@ -411,3 +420,32 @@ class ParentAdd(CreateView):
     def form_valid(self, form):
         messages.success(self.request, "Parent added successfully.")
         return super().form_valid(form)
+
+
+@csrf_exempt
+@api_view(["POST"])
+def enroll_students_in_batch(request):
+    serializer = EnrollStudentsInBatchSerializer(data=request.data)
+    if serializer.is_valid():
+        try:
+            enrolled_students, failed_to_enroll_studends = (
+                BatchAllocationUsecase.enroll_students_in_batch(
+                    serializer.validated_data["batch_id"],
+                    serializer.validated_data["student_ids"],
+                )
+            )
+            return Response(
+                (
+                    {
+                        "enrolled_students": enrolled_students,
+                        "failed_to_enroll_studends": failed_to_enroll_studends,
+                    }
+                ),
+                status=status.HTTP_201_CREATED,
+            )
+        except Batch.DoesNotExist:
+            return Response(
+                {"error": "Batch does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
