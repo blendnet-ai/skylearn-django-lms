@@ -1,4 +1,5 @@
 from datetime import datetime
+from email import message
 from django.utils import timezone
 from datetime import timedelta
 import logging
@@ -12,15 +13,18 @@ from custom_auth.services.sendgrid_service import SendgridService
 from data_repo.repositories import ConfigMapRepository
 from evaluation.management.register.utils import Utils
 from evaluation.repositories import AssessmentAttemptRepository
-
+from config.settings import TELEGRAM_BOT_NAME, TWO_Factor_SMS_API_KEY
 #from DoubtSolving.usecases import UserMappingUseCase
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
+from services.sms_service import SMS2FactorService
 import re
 from datetime import timedelta
 import datetime
 import pytz
 
 logger = logging.getLogger(__name__)
-
+SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
+GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
 
 class BetaUserlistUsecase:
     @staticmethod
@@ -117,6 +121,64 @@ class SignUpUsecase:
 
         return None
 
+
+class OnBoardingUsecase:
+    @staticmethod
+    def get_onboaring_status(user_id):
+        onboarding_status=UserProfileRepository.get_onboarding_status_details(user_id)
+        onboarding_status['telegram_url']=f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
+        return onboarding_status      
+    
+    @staticmethod
+    def determine_onboarding_step(user_id):
+        onboarding_details=UserProfileRepository.get_onboarding_status_details(user_id)
+        if not onboarding_details['telegram_status']:
+            return 'telegram_onboarding'
+        
+        elif onboarding_details['telegram_status'] and not onboarding_details['mobile_verification_status']:
+            return 'mobile_verification'
+        
+        elif onboarding_details['telegram_status'] and onboarding_details['mobile_verification_status'] and not onboarding_details['onboarding_status']:
+            return 'onboarding_form'
+        
+        else:
+            return 'dashboard'
+    
+    def handle_otp_sending(user,phone_number):
+        if phone_number:
+            user.phone = phone_number
+            user.save()
+            status, message = SMS2FactorService.send_otp(phone_number)
+            #status,message=True,"OTP Sent Successfully"
+            if status:
+                return {"otp_sent":True,"status":status,"message":message}
+            else:
+                return {"otp_sent":False,"status":status,"message":message}
+        else:
+            return {"otp_sent":False,"status":False,"message": "Please provide phone number"}
+        
+    
+    def handle_otp_verification(user,entered_otp_value):
+        phone_number = user.phone
+        is_verified, message = SMS2FactorService.verify_otp(phone_number, entered_otp_value)
+        #is_verified, message = True, "Verified OTP Successfully"  # Simulated verification
+
+        if is_verified:
+            UserProfileRepository.set_mobile_verification_complete(user)
+            return {"otp_verified":is_verified, "message":message}
+        else:
+            return {"otp_verified":is_verified, "message":message}
+        
+    def handle_fetching_filled_data( user):
+        data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
+        print("dsa",data)
+        if data is not None:
+            UserProfileRepository.set_user_profile_user_data(user, data)
+            UserProfileRepository.set_onboarding_complete(user.id)
+            return {'onboarding_data_fetched':True,'data':data}
+        else:
+            return {'onboarding_data_fetched':False,'data':data}
+        
 # class DoubtSolvingTokenUseCase():
 #     @staticmethod
 #     def create_or_get_token(user_id,api_key):
@@ -139,4 +201,3 @@ class SignUpUsecase:
 #                 return None
             
             
-    

@@ -51,6 +51,8 @@ class UserProfile (models.Model):
     doubt_solving_mapping_created = models.BooleanField(default=False)
     doubt_solving_token=models.CharField(max_length=8,null=True,blank=True)
     token_expiration_time=models.DateTimeField(null=True, blank=True)
+    is_telegram_connected = models.BooleanField(default=False)
+    is_mobile_verified = models.BooleanField(default=False)
 
     def get_user_details_for_memgpt(self) -> str:
         return f"name={self.name}, email={self.email}, age={self.age}, gender={self.gender}, " \

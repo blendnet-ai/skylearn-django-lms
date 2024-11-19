@@ -204,7 +204,8 @@ INTEGRATED_APPS = [
     'common',
     'OpenAIService',
     'practice',
-    'custom_auth'
+    'custom_auth',
+    'telegram_bot'
 ]
 
 # Combine all apps
@@ -220,6 +221,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
+    'custom_auth.middleware.OnboardingMiddleware',
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -480,3 +482,7 @@ if LANGFUSE_SECRET_KEY and LANGFUSE_PUBLIC_KEY:
     litellm.failure_callback = ["langfuse"]
 
 DOUBT_SOLVING_ORG_API_KEY = os.environ.get("DOUBT_SOLVING_ORG_API_KEY")
+
+
+TELEGRAM_BOT_NAME=os.environ.get("TELEGRAM_BOT_NAME",'Ap32_bot')
+TWO_Factor_SMS_API_KEY= os.environ.get("TWO_Factor_SMS_API_KEY","82615175-a581-11ef-8b17-0200cd93604")#2

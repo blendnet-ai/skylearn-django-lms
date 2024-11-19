@@ -18,6 +18,7 @@ urlpatterns = [
                 path("data/", include("data_repo.urls")),
                 path('ai_learning/', include('ai_learning.urls')),  # Include ai_learning app's URLs
                 path('evaluation/', include('evaluation.urls')),  # Include evaluation app's URLs
+                path('custom_auth/',include('custom_auth.urls'))
             ]
         ),
     ),

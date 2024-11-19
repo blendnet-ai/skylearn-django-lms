@@ -30,6 +30,8 @@ from .views import (
     render_student_pdf_list,  # new
 )
 
+from custom_auth.views import OnBoardingView
+
 # from .forms import EmailValidationOnForgotPassword
 
 
@@ -63,6 +65,7 @@ urlpatterns = [
     path(
         "create_students_pdf_list/", render_student_pdf_list, name="student_list_pdf"
     ),  # new
+    path("onboarding/", OnBoardingView, name="onboarding")
     # path('add-student/', StudentAddView.as_view(), name='add_student'),
     # path('programs/course/delete/<int:pk>/', course_delete, name='delete_course'),
     # Setting urls

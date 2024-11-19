@@ -1,23 +1,39 @@
+from pyexpat.errors import messages
+from urllib import request
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+import random
 
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import rest_framework.exceptions as rest_framework_exceptions
 from rest_framework.permissions import AllowAny
-from speechai.settings import DOUBT_SOLVING_ORG_API_KEY
-from InstituteConfiguration.repositories import QuestionListRepository
+# from speechai.settings import DOUBT_SOLVING_ORG_API_KEY
+# from InstituteConfiguration.repositories import QuestionListRepository
 from custom_auth.authentication import FirebaseAuthentication, HardcodedAuthentication
 from custom_auth.serializers import ActivityDataSerializer, UserSerializer, FormFetchSerializer, FormSubmitSerializer
-from custom_auth.usecases import ActivityDataUseCase, SignUpUsecase,DoubtSolvingTokenUseCase
+from custom_auth.usecases import ActivityDataUseCase, OnBoardingUsecase, SignUpUsecase, OnBoardingUsecase
 from data_repo.repositories import ConfigMapRepository
+from services.sms_service import SMS2FactorService
 from .repositories import FormRepository, UserProfileRepository
+from django.views.generic.base import TemplateView
 import logging
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from config.settings import TWO_Factor_SMS_API_KEY,TELEGRAM_BOT_NAME
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
+from django.contrib.auth.decorators import login_required
+import re
 
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
+SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
+print(TWO_Factor_SMS_API_KEY)
+GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
 
 class FormCRUD(APIView):
     permission_classes = [IsAuthenticated]
@@ -114,21 +130,72 @@ class SignUpView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-class DoubtSolvingTokenView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [FirebaseAuthentication]
-    
-    def get(self, request, format=None):
-        user_id=request.user.id
-        data=DoubtSolvingTokenUseCase.create_or_get_token(user_id,DOUBT_SOLVING_ORG_API_KEY)
-        if data is None:
-            return Response(
-            {"message": "Something went wrong"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        return Response(
-            {"data": data},
-            status=status.HTTP_200_OK
-        )
+
+@login_required
+def OnBoardingView(request):
+    user = request.user
+    user_id=user.id
+    onboarding_details = OnBoardingUsecase.get_onboaring_status(user_id)
+    if not onboarding_details.get('telegram_status',False):
+        messages.error(request,"Complete telegram onboarding first")
         
+    # Determine the current onboarding step
+    step= OnBoardingUsecase.determine_onboarding_step(user_id)
+    if step == "dashboard":
+        return redirect('dashboard')
+
+    # Prepare context for rendering
+    context = {
+        'onboarding_details': onboarding_details,
+        'step': step
+    }
+
+    # Clear messages after they are retrieved
+    messages.get_messages(request)
+
+    # Handle POST requests for OTP verification and detail verification
+    if request.method == 'POST':
+        if 'send_otp' in request.POST:
+            phone_number = request.POST.get('phone_number')
+            otp_sending_result=OnBoardingUsecase.handle_otp_sending(user,phone_number)
+            if otp_sending_result.get('otp_sent'):
+                messages.success(request, otp_sending_result.get('message'))
+                return redirect('onboarding')
+            else:
+                messages.success(request, otp_sending_result.get('message'))
+                return redirect('onboarding')
+        if 'verify_otp' in request.POST:
+            entered_otp_value = request.POST.get('otp_value')
+            onboarding_verification_result=OnBoardingUsecase.handle_otp_verification(user, entered_otp_value)
+            if onboarding_verification_result.get('otp_verified'):
+                messages.success(request, onboarding_verification_result.get('message'))
+                return redirect('onboarding')
+            else:
+                messages.success(request, onboarding_verification_result.get('message'))
+                return redirect('onboarding')
+                
+        elif 'verify_details' in request.POST:
+            data_fetching_result=OnBoardingUsecase.handle_fetching_filled_data(user)
+            if data_fetching_result.get('onboarding_data_fetched'):
+                messages.success(request, "Onboarding completed successfully.")
+                return redirect('dashboard')
+            else:
+                messages.error(request, "Data not found. Make sure you have filled the form.")
+                return redirect('onboarding')
+
+    messages.get_messages(request)
+    return render(request, "onboarding/onboarding.html", context)
+
+
+
+
+
+
+
+
+
+        
+        
+        
+    
     
