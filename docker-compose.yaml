@@ -15,7 +15,7 @@ services:
     image: postgres:16
     container_name: postgres-lms
     volumes:
-      - pgdb.:/var/lib/postgresql/data
+      - pgdb-lms:/var/lib/postgresql/data
     env_file: .env
     ports:
       - 5432:5432
@@ -50,6 +50,6 @@ services:
       - redis
 
 volumes:
-  pgdb.:
+  pgdb-lms:
     external: true
     
