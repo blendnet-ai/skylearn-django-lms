@@ -41,6 +41,7 @@ from course.serializers import (
 )
 from course.usecases import (
     BatchUseCase,
+    CourseUseCase,
     LiveClassSeriesBatchAllocationUseCase,
     LiveClassUsecase,
 )
@@ -67,10 +68,39 @@ class ProgramFilterView(FilterView):
     filterset_class = ProgramFilter
     template_name = "course/program_list.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = "Programs"
-        return context
+
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context["title"] = "Programs"
+#         return context
+
+from django_filters import rest_framework as filters
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+
+class ProgramFilterView(APIView):
+    permission_classes = [course_provider_admin_or_lecturer_required]
+
+    def get(self, request, *args, **kwargs):
+        # Apply filtering
+        program_filter = ProgramFilter(request.GET, queryset=Program.objects.all())
+        if program_filter.qs.exists():
+            programs = program_filter.qs
+        else:
+            programs = (
+                Program.objects.none()
+            )  # Return an empty queryset if no results found
+
+        # Serialize the filtered programs
+        serializer = ProgramSerializer(programs, many=True)
+
+        # Return the response with the serialized data
+        return Response(
+            {"title": "Programs", "programs": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
 
 @login_required
@@ -811,3 +841,10 @@ def get_batches_by_course_id(request, course_id):
         return Response(batches, status=status.HTTP_200_OK)
     except Course.DoesNotExist:
         return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_courses_by_course_provider_id(request, course_provider_id):
+    course_provider = CourseUseCase.get_courses_by_course_provider(course_provider_id)
+    return Response(course_provider, status=status.HTTP_200_OK)

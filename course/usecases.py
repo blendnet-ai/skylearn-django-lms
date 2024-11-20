@@ -1,4 +1,5 @@
 from accounts.repositories import StudentRepository, UserRepository
+import course
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
     BatchRepository,
@@ -255,3 +256,7 @@ class BatchUseCase:
         return batches
 
 
+class CourseUseCase:
+    def get_courses_by_course_provider(course_provider_id):
+        courses= list(CourseRepository.get_courses_by_course_provider(course_provider_id).values())
+        return courses

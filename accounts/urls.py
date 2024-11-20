@@ -29,6 +29,7 @@ from .views import (
     register,
     render_lecturer_pdf_list,  # new
     render_student_pdf_list,  # new
+    get_course_provider
 )
 
 # from .forms import EmailValidationOnForgotPassword
@@ -69,6 +70,7 @@ urlpatterns = [
         enroll_students_in_batch,
         name="enroll_students_in_batch",
     ),
+    path("get-course-provider",get_course_provider,name="get_course_provider")
     # path('add-student/', StudentAddView.as_view(), name='add_student'),
     # path('programs/course/delete/<int:pk>/', course_delete, name='delete_course'),
     # Setting urls
