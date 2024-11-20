@@ -26,7 +26,7 @@
 		{% url 'course_registration' as cr %} {% url 'edit_profile' as ep %} {% url 'change_password' as cp %}
 		{% url 'quiz_progress' as qpr %} {% url 'quiz_marking' as qce %} {% url 'user_course_list' as ucl %}
 		{% url 'admin_panel' as admin_p %}
-		
+
 
 
 		<ul>
@@ -35,9 +35,18 @@
 				<a href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt"></i>{% trans 'Dashboard' %}</a>
 			</li>
 			{% endif %}
+
+			{% if request.user.is_course_provider_admin %}
+			<li class="{% if request.path == hom %}active{% endif %}">
+				<a href="{% url 'home' %}"><i class="fas fa-tachometer-alt"></i>{% trans 'Dashboard' %}</a>
+			</li>
+			{% endif %}
+
+			{% if request.user.is_lecturer or request.user.is_student %}
 			<li class="{% if request.path == hom %}active{% endif %}">
 				<a href="{% url 'home' %}"><i class="fas fa-home"></i>{% trans 'Home' %}</a>
 			</li>
+			{% endif %}
 			<!-- <li class="{% if request.path == prof %}active{% endif %}">
 				<a href="{% url 'profile' %}"><i class="fas fa-user"></i>{% trans 'Profile' %}</a>
 			</li> -->
@@ -60,19 +69,19 @@
 			</li>
 			{% endif %}
 
-			{% if request.user.is_superuser or request.user.is_lecturer %}
+			{% if request.user.is_superuser %}
 			<li class="{% if request.path == pro %}active{% endif %}">
 				<a href="{% url 'programs' %}"><i class="fas fa-book-open"></i>{% trans 'Courses' %}</a>
 			</li>
 			{% endif %}
 
-			{% if request.user.is_superuser or request.user.is_lecturer %}
+			<!-- {% if request.user.is_superuser or request.user.is_lecturer %}
 			<li class="{% if request.path == qce %}active{% endif %}">
 				<a href="{% url 'quiz_marking' %}"><i class="fas fa-check-double"></i>{% trans 'Complete Exams' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 
-			{% if request.user.is_superuser %}
+			<!-- {% if request.user.is_superuser %}
 			<li class="{% if request.path == qpr %}active{% endif %}">
 				<a href="{% url 'quiz_progress' %}"><i class="fas fa-record-vinyl"></i>{% trans 'Quiz Progress Rec' %}</a>
 			</li>
@@ -85,13 +94,13 @@
 			<li class="{% if request.path == sem %}active{% endif %}">
 				<a href="{% url 'semester_list' %}"><i class="fas fa-calendar-alt"></i>{% trans 'Manage Semester' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 
-			{% if request.user.is_lecturer %}
+			<!-- {% if request.user.is_lecturer %}
 			<li class="{% if request.path == ascore %}active{% endif %}">
 				<a href="{% url 'add_score' %}"><i class="fas fa-table"></i>{% trans 'Manage Score' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 
 			<!-- {% if request.user.is_student %}
 			<li class="{% if request.path == qpr %}active{% endif %}">
@@ -149,9 +158,9 @@
 
 {% block js %}
 <script>
-	document.getElementById("lang-select").addEventListener("change", function() {
+	document.getElementById("lang-select").addEventListener("change", function () {
 		console.log("Changed!")
-    	document.getElementById("lang-form").submit();  // Submit the form programmatically
+		document.getElementById("lang-form").submit();  // Submit the form programmatically
 	});
 </script>
 {% endblock js %}

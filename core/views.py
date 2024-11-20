@@ -33,11 +33,17 @@ def sakshm_embed_view(request, path):
 # ########################################################
 @login_required
 def home_view(request):
+    path = "http://localhost:3000/"
+    if request.user.is_student or request.user.is_lecturer:
+        path += "home-lms"
+    else:
+        path += "course-provider-admin/home-lms"
+
     return render(
         request,
         "core/index.html",
         {
-            "path": "http://localhost:3000/home-lms",
+            "path": path,
         },
     )
 
