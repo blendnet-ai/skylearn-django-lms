@@ -29,6 +29,27 @@ services:
     ports:
       - 6379:6379
 
+
+  lms-notebook-dev:
+    container_name: lms-notebook
+    image: skylearn-lms:latest
+    platform: linux/amd64
+    entrypoint: python manage.py shell_plus --notebook -- --ip 0.0.0.0 --port 8000
+    restart: unless-stopped
+    volumes:
+      - .:/home/appuser/code
+    working_dir: /home/appuser/code
+    ports:
+      - "8888:8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_ALLOW_ASYNC_UNSAFE=true
+    depends_on:
+      - postgres
+      - redis
+
 volumes:
   pgdb.:
     external: true
+    

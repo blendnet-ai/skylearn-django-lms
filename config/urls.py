@@ -10,21 +10,6 @@ admin.site.site_header = "SkyLearn Admin"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # path(
-    #     "api/v1/",
-    #     include(
-    #         [
-    #             path("practice/", include("practice.urls")),
-    #             path("data/", include("data_repo.urls")),
-    #             path(
-    #                 "ai_learning/", include("ai_learning.urls")
-    #             ),  # Include ai_learning app's URLs
-    #             path(
-    #                 "evaluation/", include("evaluation.urls")
-    #             ),  # Include evaluation app's URLs
-    #         ]
-    #     ),
-    # ),
     path("practice/", include("practice.urls")),
     path("data/", include("data_repo.urls")),
     path("ai_learning/", include("ai_learning.urls")),
