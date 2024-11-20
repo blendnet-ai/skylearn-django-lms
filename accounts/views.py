@@ -22,7 +22,7 @@ from accounts.forms import (
 )
 from accounts.models import Parent, Student, User
 from accounts.serializers import EnrollStudentsInBatchSerializer
-from accounts.usecases import BatchAllocationUsecase
+from accounts.usecases import BatchAllocationUsecase, CourseProviderUsecase
 from core.models import Semester, Session
 from course.models import Batch, Course
 from result.models import TakenCourse
@@ -449,3 +449,15 @@ def enroll_students_in_batch(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_course_provider(request):
+    user_id=request.user.id
+    #user_id=7
+    course_provider=CourseProviderUsecase.get_course_provider(user_id)
+    if course_provider is not None:
+        return Response(course_provider, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND)

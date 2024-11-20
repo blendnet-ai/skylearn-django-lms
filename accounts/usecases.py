@@ -1,6 +1,7 @@
 from accounts.models import Student
-from accounts.repositories import StudentRepository
+from accounts.repositories import StudentRepository,CourseProviderRepository
 from course.repositories import BatchRepository
+import json
 
 
 class BatchAllocationUsecase:
@@ -36,3 +37,12 @@ class BatchAllocationUsecase:
     def does_batch_of_course_exist(student_id, course_id):
         student_batches = StudentRepository.get_batches_by_student_id(student_id)
         return any(batch.course.id == course_id for batch in student_batches)
+
+
+class CourseProviderUsecase:
+    def get_course_provider(user_id):
+        course_provider=CourseProviderRepository.get_course_provider_by_user_id(user_id)
+        data=None
+        if course_provider is not None:
+            data={"name":course_provider.name,"id":course_provider.id}
+        return data
