@@ -1,3 +1,4 @@
+import json
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -8,8 +9,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import CreateView
 from django_filters.views import FilterView
 
-from accounts.decorators import lecturer_required, student_required
-from accounts.models import Student
+from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
+from accounts.models import Student, User
 from core.models import Semester
 from course.filters import CourseAllocationFilter, ProgramFilter
 from course.forms import (
@@ -27,16 +28,34 @@ from course.models import (
     Upload,
     UploadVideo,
 )
+from course.serializers import (
+    BatchSerializer,
+    LiveClassDateRangeSerializer,
+    LiveClassSeriesSerializer,
+    LiveClassUpdateSerializer,
+)
+from course.usecases import (
+    BatchUseCase,
+    LiveClassSeriesBatchAllocationUseCase,
+    LiveClassUsecase,
+)
+from meetings.models import Meeting, MeetingSeries
+from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from result.models import TakenCourse
 from evaluation.usecases import AssessmentUseCase
 
+from django.views.decorators.csrf import csrf_exempt
+
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
 
 # ########################################################
 # Program Views
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
 class ProgramFilterView(FilterView):
     filterset_class = ProgramFilter
     template_name = "course/program_list.html"
@@ -48,7 +67,7 @@ class ProgramFilterView(FilterView):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def program_add(request):
     if request.method == "POST":
         form = ProgramForm(request.POST)
@@ -85,7 +104,7 @@ def program_detail(request, pk):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def program_edit(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -103,7 +122,7 @@ def program_edit(request, pk):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def program_delete(request, pk):
     program = get_object_or_404(Program, pk=pk)
     title = program.title
@@ -155,7 +174,7 @@ def course_single(request, slug):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def course_add(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -177,7 +196,7 @@ def course_add(request, pk):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def course_edit(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -197,7 +216,7 @@ def course_edit(request, slug):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def course_delete(request, slug):
     course = get_object_or_404(Course, slug=slug)
     title = course.title
@@ -212,7 +231,7 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -233,7 +252,7 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -245,7 +264,7 @@ class CourseAllocationFilterView(FilterView):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def edit_allocated_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     if request.method == "POST":
@@ -265,7 +284,7 @@ def edit_allocated_course(request, pk):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def deallocate_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     allocation.delete()
@@ -279,7 +298,7 @@ def deallocate_course(request, pk):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_file_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -301,7 +320,7 @@ def handle_file_upload(request, slug):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_file_edit(request, slug, file_id):
     course = get_object_or_404(Course, slug=slug)
     upload = get_object_or_404(Upload, pk=file_id)
@@ -322,7 +341,7 @@ def handle_file_edit(request, slug, file_id):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_file_delete(request, slug, file_id):
     upload = get_object_or_404(Upload, pk=file_id)
     title = upload.title
@@ -337,7 +356,7 @@ def handle_file_delete(request, slug, file_id):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_video_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -370,7 +389,7 @@ def handle_video_single(request, slug, video_slug):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_video_edit(request, slug, video_slug):
     course = get_object_or_404(Course, slug=slug)
     video = get_object_or_404(UploadVideo, slug=video_slug)
@@ -391,7 +410,7 @@ def handle_video_edit(request, slug, video_slug):
 
 
 @login_required
-@lecturer_required
+@course_provider_admin_or_lecturer_required
 def handle_video_delete(request, slug, video_slug):
     video = get_object_or_404(UploadVideo, slug=video_slug)
     title = video.title
@@ -490,7 +509,6 @@ def course_drop(request):
     if request.method == "POST":
         student = get_object_or_404(Student, student__pk=request.user.id)
         course_ids = request.POST.getlist("course_ids")
-        print("course_ids", course_ids)
         for course_id in course_ids:
             course = get_object_or_404(Course, pk=course_id)
             TakenCourse.objects.filter(student=student, course=course).delete()
@@ -520,3 +538,267 @@ def user_course_list(request):
 
     # For other users
     return render(request, "course/user_course_list.html")
+
+
+# admin/course provider
+@csrf_exempt
+@api_view(["POST"])
+def create_live_class_series(request):
+    serializer = LiveClassSeriesSerializer(data=request.data)
+
+    if serializer.is_valid():
+        try:
+            live_class_series_id, batches_allocated, batches_failed_to_allocate = (
+                LiveClassUsecase.create_live_class_series(
+                    title=serializer.validated_data["title"],
+                    batch_ids=serializer.validated_data["batch_ids"],
+                    start_time=serializer.validated_data["start_time"],
+                    start_date=serializer.validated_data["start_date"],
+                    duration=serializer.validated_data["duration"],
+                    end_date=serializer.validated_data["end_date"],
+                    recurrence_type=serializer.validated_data["recurrence_type"],
+                    weekday_schedule=serializer.validated_data.get(
+                        "weekday_schedule", None
+                    ),
+                    monthly_day=serializer.validated_data.get("monthly_day", None),
+                )
+            )
+
+            return Response(
+                {
+                    "message": f"Live class created successfully.",
+                    "id": live_class_series_id,
+                    "batches_allocated": batches_allocated,
+                    "batches_failed_to_allocate": batches_failed_to_allocate,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except (
+            MeetingSeriesUsecase.WeekdayScheduleNotSet,
+            MeetingSeriesUsecase.MonthlyDayNotSet,
+            MeetingSeriesUsecase.InvalidWeekdaySchedule,
+            MeetingSeriesUsecase.NoRecurringDatesFound,
+            MeetingSeriesUsecase.StartDateInPast,
+            MeetingSeriesUsecase.EndDateSmallerThanStartDate,
+        ) as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+# admin/course provider
+@csrf_exempt
+@api_view(["PUT"])
+def update_live_class_series(request, id):
+    serializer = LiveClassSeriesSerializer(data=request.data)
+    if serializer.is_valid():
+        try:
+            batches_allocated, batches_failed_to_allocate = (
+                LiveClassUsecase.update_live_class_series(
+                    id,
+                    title=serializer.validated_data["title"],
+                    batch_ids=serializer.validated_data["batch_ids"],
+                    start_time=serializer.validated_data["start_time"],
+                    start_date=serializer.validated_data["start_date"],
+                    duration=serializer.validated_data["duration"],
+                    end_date=serializer.validated_data["end_date"],
+                    recurrence_type=serializer.validated_data["recurrence_type"],
+                    weekday_schedule=serializer.validated_data.get(
+                        "weekday_schedule", None
+                    ),
+                    monthly_day=serializer.validated_data.get("monthly_day", None),
+                )
+            )
+            return Response(
+                {
+                    "message": f"Live class series updated successfully.",
+                    "batches_allocated": batches_allocated,
+                    "batches_failed_to_allocate": batches_failed_to_allocate,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except MeetingSeries.DoesNotExist:
+            return Response(
+                {"error": "Live class series not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+# admin/course provider
+@csrf_exempt
+@api_view(["DELETE"])
+def delete_live_class_series(_, id):
+    try:
+        LiveClassUsecase.delete_live_class_series(id)
+        return Response(
+            {"message": f"Live class series deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
+    except MeetingSeries.DoesNotExist:
+        return Response(
+            {"error": "Live class series not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+# admin/course provider (can be modified for lecturer later, not in requirements currently)
+@csrf_exempt
+@api_view(["GET"])
+def get_live_classes_by_batch_id(request, batch_id):
+
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    serializer = LiveClassDateRangeSerializer(
+        data={"start_date": start_date, "end_date": end_date}
+    )
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    live_classes = (
+        LiveClassSeriesBatchAllocationUseCase.get_live_classes_of_batch_in_period(
+            batch_id, start_date, end_date
+        )
+    )
+
+    return Response(live_classes, status=status.HTTP_200_OK)
+
+
+# student/lecturer
+@csrf_exempt
+@api_view(["GET"])
+def get_live_classes(request):
+    request.user=User.objects.get(id=2)
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    serializer = LiveClassDateRangeSerializer(
+        data={"start_date": start_date, "end_date": end_date}
+    )
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    live_classes = LiveClassUsecase.get_live_classes_in_period_for_lecturer_or_student(
+        request.user, start_date, end_date
+    )
+
+    return Response(live_classes, status=status.HTTP_200_OK)
+
+
+# student (can be modified for lecturer and course provider later, not in requirements currently)
+@csrf_exempt
+@api_view(["GET"])
+def get_live_classes_by_course_id(request, course_id):
+    try:
+        #request.user=User.objects.get(id=2)
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+        serializer = LiveClassDateRangeSerializer(
+            data={"start_date": start_date, "end_date": end_date}
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        live_classes = (
+            LiveClassUsecase.get_live_classes_of_course_in_period_for_student(
+                course_id, request.user.id, start_date, end_date
+            )
+        )
+
+        return Response(live_classes, status=status.HTTP_200_OK)
+    except LiveClassUsecase.UserNotInBatchOfCourseException as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+
+@csrf_exempt
+@api_view(["DELETE"])
+def delete_live_class(_, id):
+    try:
+        MeetingUsecase.delete_meeting(id)
+        return Response(
+            {"message": f"Live class deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
+    except Meeting.DoesNotExist:
+        return Response(
+            {"error": "Live class not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@csrf_exempt
+@api_view(["PUT"])
+def update_live_class(request, id):
+    serializer = LiveClassUpdateSerializer(data=request.data)
+    if serializer.is_valid():
+        try:
+            MeetingUsecase.update_meeting(
+                id,
+                serializer.validated_data.get("start_time", None),
+                serializer.validated_data.get("duration", None),
+                serializer.validated_data.get("start_date", None),
+            )
+
+            return Response(
+                {"message": "Live class updated successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        except Meeting.DoesNotExist:
+            return Response(
+                {"error": "Live class not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+    return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+@csrf_exempt
+@api_view(["POST"])
+def create_batch(request, course_id):
+    serializer = BatchSerializer(data=request.data)
+
+    if serializer.is_valid():
+        try:
+            batch = BatchUseCase.create_batch(
+                course_id,
+                serializer.validated_data["title"],
+                serializer.validated_data["lecturer_id"],
+            )
+            return Response(
+                {"message": f"Batch created successfully.", "id": batch.id},
+                status=status.HTTP_201_CREATED,
+            )
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Invalid lecturer id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except BatchUseCase.UserIsNotLecturerException as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_batches_by_course_id(request, course_id):
+    try:
+        batches = BatchUseCase.get_batches_by_course_id(course_id)
+        return Response(batches, status=status.HTTP_200_OK)
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+    
