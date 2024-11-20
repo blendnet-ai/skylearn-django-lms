@@ -4,6 +4,11 @@ from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
 
+from meetings.services.msteams import MSTeamsConferencePlatformService
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class MeetingSeriesUsecase:
     class WeekdayScheduleNotSet(Exception):
@@ -228,6 +233,63 @@ class MeetingSeriesUsecase:
 
 
 class MeetingUsecase:
+    @staticmethod
+    def create_teams_meeting(meeting_id: int) -> None:
+        """
+        Creates a Teams meeting for a given meeting ID
+        """
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        if not meeting or not meeting.series.presenter_details:
+            return
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+
+            # Create Teams meeting using model properties
+            meeting_details = teams_service.create_meeting(
+                presenter=meeting.series.presenter_details,
+                start_time=meeting.start_time,
+                end_time=meeting.end_time,
+                subject=meeting.title,
+            )
+
+            # Update meeting with Teams details
+            meeting.link = meeting_details["join_url"]
+            meeting.conference_metadata = meeting_details["metadata"]
+            meeting.conference_id = meeting_details["id"]
+            meeting.save()
+
+        except Exception as e:
+            logger.error(
+                f"Failed to create Teams meeting for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+
+    @staticmethod
+    def delete_teams_meeting(meeting_id: int) -> None:
+        """
+        Deletes a Teams meeting for a given meeting ID
+        """
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        if not meeting or not meeting.conference_id:
+            return
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            teams_service.delete_meeting(meeting.conference_id)
+
+            # Clear meeting conference details
+            meeting.link = ""
+            meeting.conference_metadata = None
+            meeting.conference_id = None
+            meeting.save()
+
+        except Exception as e:
+            logger.error(
+                f"Failed to delete Teams meeting for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+
     @staticmethod
     def update_meeting(id, start_time_override, duration_override, start_date):
         meeting = MeetingRepository.get_meeting_by_id(id)

@@ -29,5 +29,13 @@ python-decouple==3.8
 stripe==5.5.0
 gopay==2.0.1
 
+#Database
 psycopg==3.1.12
 psycopg[binary]==3.1.12
+
+#Redis
+django-redis==5.4.0
+
+#Celery
+celery==5.3.4
+django-celery-beat==2.7.0

@@ -1,6 +1,6 @@
 from django.db import models
-
 from django.contrib.postgres.fields import ArrayField
+from datetime import datetime, timedelta
 
 
 class MeetingSeries(models.Model):
@@ -34,6 +34,11 @@ class MeetingSeries(models.Model):
     monthly_day = models.IntegerField(
         null=True, blank=True, help_text="Day of month for monthly recurring classes"
     )
+    presenter_details = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="JSON containing presenter details (guid, name, email)",
+    )
 
     class Meta:
         verbose_name = "Live Class Series"
@@ -46,12 +51,44 @@ class Meeting(models.Model):
     title_override = models.CharField(max_length=255, null=True, blank=True)
     start_time_override = models.TimeField(null=True, blank=True)
     duration_override = models.DurationField(null=True, blank=True)
-    link = models.URLField()
+    link = models.URLField(max_length=500, null=True, blank=True)
+    conference_id = models.CharField(max_length=255, null=True, blank=True)
+    conference_metadata = models.JSONField(null=True, blank=True)
     first_notification_sent = models.BooleanField(default=False)
     second_notification_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"
+
+    @property
+    def start_time(self) -> datetime:
+        """
+        Get the effective start time, considering overrides
+        Returns combined datetime of start_date and effective start time
+        """
+        effective_time = self.start_time_override or self.series.start_time
+        return datetime.combine(self.start_date, effective_time)
+
+    @property
+    def duration(self) -> timedelta:
+        """
+        Get the effective duration, considering overrides
+        """
+        return self.duration_override or self.series.duration
+
+    @property
+    def end_time(self) -> datetime:
+        """
+        Calculate the end time based on start time and duration
+        """
+        return self.start_time + self.duration
+
+    @property
+    def title(self) -> str:
+        """
+        Get the effective title, considering overrides
+        """
+        return self.title_override or self.series.title
 
     class Meta:
         verbose_name = "Live Class"

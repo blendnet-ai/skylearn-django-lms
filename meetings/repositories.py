@@ -1,4 +1,5 @@
 from meetings.models import Meeting, MeetingSeries
+import typing
 
 
 class MeetingSeriesRepository:
@@ -55,11 +56,11 @@ class MeetingRepository:
         return Meeting.objects.create(series=series, start_date=start_date, link=link)
 
     @staticmethod
-    def get_meetings_by_series_id(series_id):
-        return Meeting.objects.filter(series_id=series_id)
+    def get_meetings_by_series_id(series_id) -> typing.List[Meeting]:
+        return list(Meeting.objects.filter(series_id=series_id))
 
     @staticmethod
-    def get_meeting_by_id(id):
+    def get_meeting_by_id(id) -> Meeting:
         return Meeting.objects.get(id=id)
 
     @staticmethod

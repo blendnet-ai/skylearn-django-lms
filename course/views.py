@@ -557,6 +557,9 @@ def create_live_class_series(request):
                 status=status.HTTP_201_CREATED,
             )
         except (
+            # Sanchit -  these could have inherited a single exception and then that be caught here
+            # Also, it would be cleaner if all these exceptions are raised internally in a single validation function
+            # somewhere
             MeetingSeriesUsecase.WeekdayScheduleNotSet,
             MeetingSeriesUsecase.MonthlyDayNotSet,
             MeetingSeriesUsecase.InvalidWeekdaySchedule,

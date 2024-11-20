@@ -109,14 +109,14 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    "default": {
         "ATOMIC_REQUESTS": True,
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['POSTGRES_DB'],
-        'USER': os.environ['POSTGRES_USER'],
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': os.environ['POSTGRES_HOST'],
-        'PORT': os.environ['POSTGRES_PORT'],
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"],
+        "USER": os.environ["POSTGRES_USER"],
+        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
+        "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.environ["POSTGRES_PORT"],
     }
 }
 
@@ -275,3 +275,28 @@ SEMESTER_CHOICES = (
     (SECOND, _("Second")),
     (THIRD, _("Third")),
 )
+
+# Celery Configuration
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/0"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
+
+# Celery Beat Settings (if you need scheduled tasks)
+CELERY_BEAT_SCHEDULE = {
+    # Example of a scheduled task:
+    # 'cleanup-old-meetings': {
+    #     'task': 'meetings.tasks.cleanup_old_meetings',
+    #     'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
+    # },
+}
+
+# Task-specific settings
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes timeout
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # Soft timeout 5 minutes before hard timeout
+CELERY_TASK_MAX_RETRIES = 3
+CELERY_TASK_RETRY_DELAY = 300  # 5 minutes
