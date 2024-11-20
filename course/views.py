@@ -9,7 +9,12 @@ from django.utils.decorators import method_decorator
 from django.views.generic import CreateView
 from django_filters.views import FilterView
 
-from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
+from accounts.decorators import (
+    lecturer_required,
+    student_required,
+    course_provider_admin_required,
+    course_provider_admin_or_lecturer_required,
+)
 from accounts.models import Student, User
 from core.models import Semester
 from course.filters import CourseAllocationFilter, ProgramFilter
@@ -55,7 +60,9 @@ from rest_framework.decorators import api_view
 # ########################################################
 
 
-@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
+@method_decorator(
+    [login_required, course_provider_admin_or_lecturer_required], name="dispatch"
+)
 class ProgramFilterView(FilterView):
     filterset_class = ProgramFilter
     template_name = "course/program_list.html"
@@ -231,7 +238,9 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
+@method_decorator(
+    [login_required, course_provider_admin_or_lecturer_required], name="dispatch"
+)
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -252,7 +261,9 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator([login_required, course_provider_admin_or_lecturer_required], name="dispatch")
+@method_decorator(
+    [login_required, course_provider_admin_or_lecturer_required], name="dispatch"
+)
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -673,7 +684,7 @@ def get_live_classes_by_batch_id(request, batch_id):
 @csrf_exempt
 @api_view(["GET"])
 def get_live_classes(request):
-    request.user=User.objects.get(id=2)
+    request.user = User.objects.get(id=4)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(
@@ -695,7 +706,7 @@ def get_live_classes(request):
 @api_view(["GET"])
 def get_live_classes_by_course_id(request, course_id):
     try:
-        #request.user=User.objects.get(id=2)
+        # request.user=User.objects.get(id=2)
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         serializer = LiveClassDateRangeSerializer(
@@ -792,7 +803,6 @@ def create_batch(request, course_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @csrf_exempt
 @api_view(["GET"])
 def get_batches_by_course_id(request, course_id):
@@ -801,4 +811,3 @@ def get_batches_by_course_id(request, course_id):
         return Response(batches, status=status.HTTP_200_OK)
     except Course.DoesNotExist:
         return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
-    
