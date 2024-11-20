@@ -249,24 +249,33 @@ class MeetingUsecase:
         )
         meetings_data = []
         for meeting in meetings:
+            # Combine date and time for start_time
+            start_datetime = (
+                datetime.combine(meeting.start_date, meeting.start_time_override)
+                if meeting.start_time_override
+                else datetime.combine(meeting.start_date, meeting.series.start_time)
+            )
+            end_datetime = start_datetime + meeting.series.duration
             meetings_data.append(
                 {
-                    "type":0, #hardcoded for now for live classes
-                    "title":meeting.series.title,
+                    "type": 0,
+                    "title": meeting.series.title,
                     "meeting_id": meeting.id,
                     "series_id": meeting.series_id,
                     "start_date": meeting.start_date,
-                    "start_time": (
-                        datetime.combine(meeting.start_date, meeting.start_time_override).isoformat()
-                        if meeting.start_time_override
-                        else datetime.combine(meeting.start_date, meeting.series.start_time).isoformat()
-                    ),
-                    "end_time": (
-                        (datetime.combine(datetime.today(), meeting.start_time_override) + meeting.duration_override)
-                        if meeting.start_time_override and meeting.duration_override
-                        else (datetime.combine(datetime.today(), meeting.series.start_time) + meeting.series.duration)
-                    ),
+                    "start_timestamp": start_datetime,
+                    "end_timestamp": end_datetime,
                     "link": meeting.link,
+                    "start_time": (
+                        meeting.start_time_override
+                        if meeting.start_time_override
+                        else meeting.series.start_time
+                    ),
+                    "duration": (
+                        meeting.duration_override
+                        if meeting.duration_override
+                        else meeting.series.duration
+                    ),
                 }
             )
         return meetings_data
