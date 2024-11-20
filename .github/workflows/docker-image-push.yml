@@ -1,0 +1,22 @@
+name: Docker Image Build + Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-push:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        name: Checking out code
+
+      - name: Copy Environment
+        run: cp .env.local .env
+
+      - name: Build the Docker image
+        run: eval `ssh-agent -s` && ssh-add ~/.ssh/id_rsa && DOCKER_BUILDKIT=1 docker compose build
+
+      - name: Push the Docker image
+        run: docker compose push
