@@ -68,39 +68,10 @@ class ProgramFilterView(FilterView):
     filterset_class = ProgramFilter
     template_name = "course/program_list.html"
 
-
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context["title"] = "Programs"
-#         return context
-
-from django_filters import rest_framework as filters
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
-
-class ProgramFilterView(APIView):
-    permission_classes = [course_provider_admin_or_lecturer_required]
-
-    def get(self, request, *args, **kwargs):
-        # Apply filtering
-        program_filter = ProgramFilter(request.GET, queryset=Program.objects.all())
-        if program_filter.qs.exists():
-            programs = program_filter.qs
-        else:
-            programs = (
-                Program.objects.none()
-            )  # Return an empty queryset if no results found
-
-        # Serialize the filtered programs
-        serializer = ProgramSerializer(programs, many=True)
-
-        # Return the response with the serialized data
-        return Response(
-            {"title": "Programs", "programs": serializer.data},
-            status=status.HTTP_200_OK,
-        )
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Programs"
+        return context
 
 
 @login_required
