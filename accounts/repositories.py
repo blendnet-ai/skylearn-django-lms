@@ -1,4 +1,4 @@
-from accounts.models import Student, User
+from accounts.models import Student, User, CourseProvider,CourseProviderAdmin
 
 
 class StudentRepository:
@@ -17,3 +17,22 @@ class StudentRepository:
 class UserRepository:
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
+
+
+class CourseProviderRepository:
+    @staticmethod
+    def get_course_provider_by_user_id(user_id):
+        try:
+            # Fetch the CourseProviderAdmin instance using the user_id
+            course_provider_admin = CourseProviderAdmin.objects.get(course_provider_admin__id=user_id)
+            
+            # Fetch the related CourseProvider instance
+            course_provider = CourseProvider.objects.filter(admins=course_provider_admin).first()
+            
+            if course_provider is None:
+                return None
+            
+            return course_provider
+
+        except CourseProviderAdmin.DoesNotExist:
+            return None 

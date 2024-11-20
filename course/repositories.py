@@ -6,6 +6,9 @@ class CourseRepository:
     def get_course_by_id(course_id):
         return Course.objects.get(id=course_id)
     
+    def get_courses_by_course_provider(course_provider_id):
+        return Course.objects.filter(course_provider_id=course_provider_id)
+    
     
 
 
