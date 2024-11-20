@@ -3,6 +3,7 @@ from meetings.repositories import MeetingRepository, MeetingSeriesRepository
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
+from datetime import datetime
 
 
 class MeetingSeriesUsecase:
@@ -250,18 +251,20 @@ class MeetingUsecase:
         for meeting in meetings:
             meetings_data.append(
                 {
+                    "type":0, #hardcoded for now for live classes
+                    "title":meeting.series.title,
                     "meeting_id": meeting.id,
                     "series_id": meeting.series_id,
                     "start_date": meeting.start_date,
                     "start_time": (
-                        meeting.start_time_override
+                        datetime.combine(meeting.start_date, meeting.start_time_override).isoformat()
                         if meeting.start_time_override
-                        else meeting.series.start_time
+                        else datetime.combine(meeting.start_date, meeting.series.start_time).isoformat()
                     ),
-                    "duration": (
-                        meeting.duration_override
-                        if meeting.duration_override
-                        else meeting.series.duration
+                    "end_time": (
+                        (datetime.combine(datetime.today(), meeting.start_time_override) + meeting.duration_override)
+                        if meeting.start_time_override and meeting.duration_override
+                        else (datetime.combine(datetime.today(), meeting.series.start_time) + meeting.series.duration)
                     ),
                     "link": meeting.link,
                 }

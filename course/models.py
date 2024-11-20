@@ -71,6 +71,7 @@ class Course(models.Model):
     semester = models.CharField(choices=settings.SEMESTER_CHOICES, max_length=200)
     is_elective = models.BooleanField(default=False)
     assessment_generation_ids = models.JSONField(blank=True, default=list)
+    course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
 
     objects = CourseManager()
 

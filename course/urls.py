@@ -115,4 +115,5 @@ urlpatterns = [
         name="delete_live_class",
     ),
     path("course/<course_id>/batch/create/", views.create_batch, name="create_batch"),
+    path("course/<course_id>/get-batches/", views.get_batches_by_course_id, name="get_batches"),
 ]

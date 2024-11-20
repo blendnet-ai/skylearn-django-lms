@@ -72,6 +72,7 @@ class User(AbstractUser):
     is_lecturer = models.BooleanField(default=False)
     is_parent = models.BooleanField(default=False)
     is_dep_head = models.BooleanField(default=False)
+    is_course_provider_admin=models.BooleanField(default=False)
     gender = models.CharField(max_length=1, choices=GENDERS, blank=True, null=True)
     phone = models.CharField(max_length=60, blank=True, null=True)
     address = models.CharField(max_length=60, blank=True, null=True)
@@ -107,7 +108,8 @@ class User(AbstractUser):
             role = _("Lecturer")
         elif self.is_parent:
             role = _("Parent")
-
+        elif self.is_course_provider_admin:
+            role = _("Course Provider Admin")
         return role
 
     def get_picture(self):
@@ -211,3 +213,17 @@ class DepartmentHead(models.Model):
 
     def __str__(self):
         return "{}".format(self.user)
+
+
+class CourseProviderAdmin(models.Model):
+    course_provider_admin = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )    
+    
+class CourseProvider(models.Model):
+    name=models.CharField(max_length=100)
+    
+    admins = models.ManyToManyField(
+        CourseProviderAdmin
+    )
