@@ -5,3 +5,5 @@
 black==22.12.0  # https://github.com/psf/black
 factory-boy==3.3.1
 django-extensions==3.2.3
+python-dotenv
+firebase-admin==6.2.0

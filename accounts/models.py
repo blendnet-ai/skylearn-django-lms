@@ -68,6 +68,7 @@ GENDERS = ((_("M"), _("Male")), (_("F"), _("Female")))
 
 
 class User(AbstractUser):
+    firebase_uid = models.CharField(max_length=150, unique=True, null=True)
     is_student = models.BooleanField(default=False)
     is_lecturer = models.BooleanField(default=False)
     is_parent = models.BooleanField(default=False)

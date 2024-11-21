@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
@@ -12,7 +11,8 @@ from django.views.generic import (
     UpdateView,
 )
 
-from accounts.decorators import lecturer_required
+from accounts.authentication import FirebaseAuthentication
+from accounts.permissions import IsLecturer, IsLoggedIn, firebase_drf_authentication
 from .forms import (
     EssayForm,
     MCQuestionForm,
@@ -29,14 +29,18 @@ from .models import (
     Quiz,
     Sitting,
 )
-
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
 
 # ########################################################
 # Quiz Views
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class QuizCreateView(CreateView):
     model = Quiz
     form_class = QuizAddForm
@@ -62,7 +66,7 @@ class QuizCreateView(CreateView):
             )
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class QuizUpdateView(UpdateView):
     model = Quiz
     form_class = QuizAddForm
@@ -82,8 +86,9 @@ class QuizUpdateView(UpdateView):
             return redirect("quiz_index", self.kwargs["slug"])
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def quiz_delete(request, slug, pk):
     quiz = get_object_or_404(Quiz, pk=pk)
     quiz.delete()
@@ -91,7 +96,9 @@ def quiz_delete(request, slug, pk):
     return redirect("quiz_index", slug=slug)
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def quiz_list(request, slug):
     course = get_object_or_404(Course, slug=slug)
     quizzes = Quiz.objects.filter(course=course).order_by("-timestamp")
@@ -105,7 +112,7 @@ def quiz_list(request, slug):
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class MCQuestionCreate(CreateView):
     model = MCQuestion
     form_class = MCQuestionForm
@@ -164,7 +171,7 @@ class MCQuestionCreate(CreateView):
 # ########################################################
 
 
-@method_decorator([login_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn), name="dispatch")
 class QuizUserProgressView(TemplateView):
     template_name = "quiz/progress.html"
 
@@ -177,7 +184,7 @@ class QuizUserProgressView(TemplateView):
         return context
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class QuizMarkingList(ListView):
     model = Sitting
     template_name = "quiz/quiz_marking_list.html"
@@ -197,7 +204,7 @@ class QuizMarkingList(ListView):
         return queryset
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class QuizMarkingDetail(DetailView):
     model = Sitting
     template_name = "quiz/quiz_marking_detail.html"
@@ -224,7 +231,7 @@ class QuizMarkingDetail(DetailView):
 # ########################################################
 
 
-@method_decorator([login_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn), name="dispatch")
 class QuizTake(FormView):
     form_class = QuestionForm
     template_name = "quiz/question.html"

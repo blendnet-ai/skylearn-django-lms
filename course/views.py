@@ -9,8 +9,16 @@ from django.utils.decorators import method_decorator
 from django.views.generic import CreateView
 from django_filters.views import FilterView
 
+from accounts.authentication import FirebaseAuthentication
 from accounts.decorators import admin_required, lecturer_required, student_required
 from accounts.models import Student, User
+from accounts.permissions import (
+    IsLecturer,
+    IsLoggedIn,
+    IsStudent,
+    IsSuperuser,
+    firebase_drf_authentication,
+)
 from core.models import Semester
 from course.filters import CourseAllocationFilter, ProgramFilter
 from course.forms import (
@@ -47,15 +55,24 @@ from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
+from rest_framework.response import Response
+
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.mixins import ListModelMixin
 
 # ########################################################
 # Program Views
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class ProgramFilterView(FilterView):
+
     filterset_class = ProgramFilter
     template_name = "course/program_list.html"
 
@@ -65,8 +82,9 @@ class ProgramFilterView(FilterView):
         return context
 
 
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def program_add(request):
     if request.method == "POST":
         form = ProgramForm(request.POST)
@@ -82,7 +100,9 @@ def program_add(request):
     )
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def program_detail(request, pk):
     program = get_object_or_404(Program, pk=pk)
     courses = Course.objects.filter(program_id=pk).order_by("-year")
@@ -102,8 +122,9 @@ def program_detail(request, pk):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def program_edit(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -120,8 +141,9 @@ def program_edit(request, pk):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def program_delete(request, pk):
     program = get_object_or_404(Program, pk=pk)
     title = program.title
@@ -135,7 +157,9 @@ def program_delete(request, pk):
 # ########################################################
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def course_single(request, slug):
     course = get_object_or_404(Course, slug=slug)
     files = Upload.objects.filter(course__slug=slug)
@@ -155,8 +179,9 @@ def course_single(request, slug):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def course_add(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -177,8 +202,9 @@ def course_add(request, pk):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", ""])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def course_edit(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -197,8 +223,9 @@ def course_edit(request, slug):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def course_delete(request, slug):
     course = get_object_or_404(Course, slug=slug)
     title = course.title
@@ -213,7 +240,7 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -234,7 +261,7 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator([login_required, lecturer_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -245,8 +272,9 @@ class CourseAllocationFilterView(FilterView):
         return context
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def edit_allocated_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     if request.method == "POST":
@@ -265,8 +293,9 @@ def edit_allocated_course(request, pk):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def deallocate_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     allocation.delete()
@@ -279,8 +308,9 @@ def deallocate_course(request, pk):
 # ########################################################
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_file_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -301,8 +331,9 @@ def handle_file_upload(request, slug):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_file_edit(request, slug, file_id):
     course = get_object_or_404(Course, slug=slug)
     upload = get_object_or_404(Upload, pk=file_id)
@@ -322,8 +353,9 @@ def handle_file_edit(request, slug, file_id):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_file_delete(request, slug, file_id):
     upload = get_object_or_404(Upload, pk=file_id)
     title = upload.title
@@ -337,8 +369,9 @@ def handle_file_delete(request, slug, file_id):
 # ########################################################
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_video_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -359,7 +392,9 @@ def handle_video_upload(request, slug):
     )
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def handle_video_single(request, slug, video_slug):
     course = get_object_or_404(Course, slug=slug)
     video = get_object_or_404(UploadVideo, slug=video_slug)
@@ -370,8 +405,9 @@ def handle_video_single(request, slug, video_slug):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_video_edit(request, slug, video_slug):
     course = get_object_or_404(Course, slug=slug)
     video = get_object_or_404(UploadVideo, slug=video_slug)
@@ -391,8 +427,9 @@ def handle_video_edit(request, slug, video_slug):
     )
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def handle_video_delete(request, slug, video_slug):
     video = get_object_or_404(UploadVideo, slug=video_slug)
     title = video.title
@@ -406,8 +443,9 @@ def handle_video_delete(request, slug, video_slug):
 # ########################################################
 
 
-@login_required
-@student_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
 def course_registration(request):
     if request.method == "POST":
         student = Student.objects.get(student__pk=request.user.id)
@@ -485,13 +523,14 @@ def course_registration(request):
         return render(request, "course/course_registration.html", context)
 
 
-@login_required
-@student_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
 def course_drop(request):
     if request.method == "POST":
         student = get_object_or_404(Student, student__pk=request.user.id)
         course_ids = request.POST.getlist("course_ids")
-        print("course_ids", course_ids)
+
         for course_id in course_ids:
             course = get_object_or_404(Course, pk=course_id)
             TakenCourse.objects.filter(student=student, course=course).delete()
@@ -504,7 +543,9 @@ def course_drop(request):
 # ########################################################
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def user_course_list(request):
     if request.user.is_lecturer:
         courses = Course.objects.filter(allocated_course__lecturer__pk=request.user.id)
@@ -524,8 +565,9 @@ def user_course_list(request):
 
 
 # admin/course provider
-@csrf_exempt
 @api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def create_live_class_series(request):
     serializer = LiveClassSeriesSerializer(data=request.data)
 
@@ -576,8 +618,9 @@ def create_live_class_series(request):
 
 
 # admin/course provider
-@csrf_exempt
 @api_view(["PUT"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def update_live_class_series(request, id):
     serializer = LiveClassSeriesSerializer(data=request.data)
 
@@ -615,8 +658,9 @@ def update_live_class_series(request, id):
 
 
 # admin/course provider
-@csrf_exempt
 @api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def delete_live_class_series(_, id):
     try:
         LiveClassUsecase.delete_live_class_series(id)
@@ -631,8 +675,9 @@ def delete_live_class_series(_, id):
 
 
 # admin/course provider (can be modified for lecturer later, not in requirements currently)
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def get_live_classes_by_batch_id(request, batch_id):
 
     start_date = request.GET.get("start_date")
@@ -654,8 +699,9 @@ def get_live_classes_by_batch_id(request, batch_id):
 
 
 # student/lecturer
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_live_classes(request):
 
     start_date = request.GET.get("start_date")
@@ -675,8 +721,9 @@ def get_live_classes(request):
 
 
 # student (can be modified for lecturer and course provider later, not in requirements currently)
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_live_classes_by_course_id(request, course_id):
     try:
         start_date = request.GET.get("start_date")
@@ -702,8 +749,9 @@ def get_live_classes_by_course_id(request, course_id):
         )
 
 
-@csrf_exempt
 @api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def delete_live_class(_, id):
     try:
         MeetingUsecase.delete_meeting(id)
@@ -717,8 +765,9 @@ def delete_live_class(_, id):
         )
 
 
-@csrf_exempt
 @api_view(["PUT"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def update_live_class(request, id):
     serializer = LiveClassUpdateSerializer(data=request.data)
 
@@ -747,8 +796,9 @@ def update_live_class(request, id):
     )
 
 
-@csrf_exempt
 @api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def create_batch(request, course_id):
     serializer = BatchSerializer(data=request.data)
 

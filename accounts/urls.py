@@ -9,6 +9,7 @@ from django.urls import path, include
 #     LogoutView,
 # )
 from .views import (
+    token_loading_page,
     enroll_students_in_batch,
     profile,
     profile_single,
@@ -35,6 +36,7 @@ from .views import (
 
 
 urlpatterns = [
+    path("loading/", token_loading_page, name="token_loading_page"),
     path("", include("django.contrib.auth.urls")),
     path("admin_panel/", admin_panel, name="admin_panel"),
     path("profile/", profile, name="profile"),

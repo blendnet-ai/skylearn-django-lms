@@ -1,5 +1,5 @@
 "use strict";
-
+import { auth } from "./firebase.js";
 // side navigation bar
 function toggleSidebar() {
   document.getElementById("side-nav").classList.toggle("toggle-active");
@@ -10,7 +10,6 @@ function toggleSidebar() {
 
 // #################################
 // popup
-
 var c = 0;
 function pop() {
   if (c == 0) {
@@ -86,4 +85,14 @@ $(document).ready(function () {
     $("#side-nav").css("pointer-events", "auto");
     $("#main-content").css("pointer-events", "auto");
   });
+});
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    user
+      .getIdToken()
+      .then(
+        (token) =>
+          (document.cookie = `firebaseToken=${token}; path=/; max-age=3600; SameSite=Strict; Secure`)
+      );
+  }
 });
