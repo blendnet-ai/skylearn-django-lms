@@ -48,6 +48,19 @@ def home_view(request):
     )
 
 
+# my courses view
+@login_required
+def course_view(request):
+    path = "http://localhost:3000/my-courses/"
+    return render(
+        request,
+        "core/index.html",
+        {
+            "path": path,
+        },
+    )
+
+
 @login_required
 @admin_required
 def dashboard_view(request):
