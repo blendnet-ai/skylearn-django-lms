@@ -1,6 +1,7 @@
 from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation, Module, Upload, UploadVideo
 from evaluation.models import AssessmentGenerationConfig
-from django.db.models import Prefetch
+from django.db.models import Prefetch,F,CharField, Value
+from django.db.models.functions import Concat
 
 class CourseRepository:
     @staticmethod
@@ -14,7 +15,16 @@ class CourseRepository:
         return Course.objects.filter(allocated_course__lecturer__pk=user_id).values()
 
     def get_courses_for_student(user_id):
-        return Course.objects.filter(taken_courses__student__student_id=user_id).values()
+        return Course.objects.filter(taken_courses__student__student_id=user_id).prefetch_related(Prefetch(
+        'allocated_course',
+        queryset=CourseAllocation.objects.select_related('lecturer'))).annotate(
+            lecturer_full_name=Concat(
+                F('allocated_course__lecturer__first_name'),
+                Value(' '),  # Adding a space between first and last name
+                F('allocated_course__lecturer__last_name'),
+                output_field=CharField()
+            ),  
+        ).values()
     
 
 
