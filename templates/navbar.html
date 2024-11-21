@@ -41,7 +41,7 @@
 					<a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user me-2"></i>{% trans 'Profile' %}</a>
 					<a class="dropdown-item" href="{% url 'edit_profile' %}"><i class="fas fa-cog me-2"></i>{% trans 'Setting' %}</a>
 					<hr>
-					<div style="display: flex; justify-content: center; align-items: center;">
+					<div style="display: flex; justify-content: center; align-items: center;"  onclick="document.cookie = 'firebaseToken=; path=/;';">
 						<a class="btn btn-secondary" href="{% url 'logout' %}">
 							<i class="fas fa-sign-out-alt"></i> {% trans 'Signout' %}
 						</a>

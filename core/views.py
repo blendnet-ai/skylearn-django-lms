@@ -2,16 +2,22 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from accounts.decorators import admin_required, lecturer_required
+from accounts.authentication import FirebaseAuthentication
 from accounts.models import User, Student
+from accounts.permissions import IsLoggedIn, IsLecturer, IsSuperuser
 from .forms import SessionForm, SemesterForm, NewsAndEventsForm
 from .models import NewsAndEvents, ActivityLog, Session, Semester
-
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.decorators import api_view
 
 # ########################################################
 # News & Events
 # ########################################################
-@login_required
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def home_view(request):
     items = NewsAndEvents.objects.all().order_by("-updated_date")
     context = {
@@ -21,8 +27,9 @@ def home_view(request):
     return render(request, "core/index.html", context)
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def dashboard_view(request):
     logs = ActivityLog.objects.all().order_by("-created_at")[:10]
     gender_count = Student.get_gender_count()
@@ -37,7 +44,9 @@ def dashboard_view(request):
     return render(request, "core/dashboard.html", context)
 
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def post_add(request):
     if request.method == "POST":
         form = NewsAndEventsForm(request.POST)
@@ -52,8 +61,9 @@ def post_add(request):
     return render(request, "core/post_add.html", {"title": "Add Post", "form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def edit_post(request, pk):
     instance = get_object_or_404(NewsAndEvents, pk=pk)
     if request.method == "POST":
@@ -69,8 +79,9 @@ def edit_post(request, pk):
     return render(request, "core/post_add.html", {"title": "Edit Post", "form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def delete_post(request, pk):
     post = get_object_or_404(NewsAndEvents, pk=pk)
     post_title = post.title
@@ -82,16 +93,18 @@ def delete_post(request, pk):
 # ########################################################
 # Session
 # ########################################################
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def session_list_view(request):
     """Show list of all sessions"""
     sessions = Session.objects.all().order_by("-is_current_session", "-session")
     return render(request, "core/session_list.html", {"sessions": sessions})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def session_add_view(request):
     """Add a new session"""
     if request.method == "POST":
@@ -107,8 +120,9 @@ def session_add_view(request):
     return render(request, "core/session_update.html", {"form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def session_update_view(request, pk):
     session = get_object_or_404(Session, pk=pk)
     if request.method == "POST":
@@ -124,8 +138,9 @@ def session_update_view(request, pk):
     return render(request, "core/session_update.html", {"form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def session_delete_view(request, pk):
     session = get_object_or_404(Session, pk=pk)
     if session.is_current_session:
@@ -147,15 +162,17 @@ def unset_current_session():
 # ########################################################
 # Semester
 # ########################################################
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def semester_list_view(request):
     semesters = Semester.objects.all().order_by("-is_current_semester", "-semester")
     return render(request, "core/semester_list.html", {"semesters": semesters})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def semester_add_view(request):
     if request.method == "POST":
         form = SemesterForm(request.POST)
@@ -171,8 +188,9 @@ def semester_add_view(request):
     return render(request, "core/semester_update.html", {"form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def semester_update_view(request, pk):
     semester = get_object_or_404(Semester, pk=pk)
     if request.method == "POST":
@@ -189,8 +207,9 @@ def semester_update_view(request, pk):
     return render(request, "core/semester_update.html", {"form": form})
 
 
-@login_required
-@lecturer_required
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def semester_delete_view(request, pk):
     semester = get_object_or_404(Semester, pk=pk)
     if semester.is_current_semester:

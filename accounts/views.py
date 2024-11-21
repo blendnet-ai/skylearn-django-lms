@@ -11,7 +11,6 @@ from django.views.generic import CreateView
 from django_filters.views import FilterView
 from xhtml2pdf import pisa
 
-from accounts.decorators import admin_required
 from accounts.filters import LecturerFilter, StudentFilter
 from accounts.forms import (
     ParentAddForm,
@@ -21,6 +20,7 @@ from accounts.forms import (
     StudentAddForm,
 )
 from accounts.models import Parent, Student, User
+from accounts.permissions import IsLoggedIn, IsSuperuser, firebase_drf_authentication
 from accounts.serializers import EnrollStudentsInBatchSerializer
 from accounts.usecases import BatchAllocationUsecase, CourseProviderUsecase
 from core.models import Semester, Session
@@ -32,6 +32,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.decorators import api_view
+from accounts.authentication import FirebaseAuthentication
+
 
 # ########################################################
 # Utility Functions
@@ -80,7 +84,9 @@ def register(request):
 # ########################################################
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def profile(request):
     """Show profile of the current user."""
     current_session = Session.objects.filter(is_current_session=True).first()
@@ -122,8 +128,9 @@ def profile(request):
     return render(request, "accounts/profile.html", context)
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def profile_single(request, user_id):
     """Show profile of any selected user."""
     if request.user.id == user_id:
@@ -173,8 +180,9 @@ def profile_single(request, user_id):
     return render(request, "accounts/profile_single.html", context)
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def admin_panel(request):
     return render(request, "setting/admin_panel.html", {"title": "Admin Panel"})
 
@@ -184,7 +192,9 @@ def admin_panel(request):
 # ########################################################
 
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def profile_update(request):
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
@@ -198,7 +208,9 @@ def profile_update(request):
     return render(request, "setting/profile_info_change.html", {"form": form})
 
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def change_password(request):
     if request.method == "POST":
         form = PasswordChangeForm(request.user, request.POST)
@@ -218,8 +230,9 @@ def change_password(request):
 # ########################################################
 
 
-@login_required
-@admin_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def staff_add_view(request):
     if request.method == "POST":
         form = StaffAddForm(request.POST)
@@ -240,8 +253,9 @@ def staff_add_view(request):
     )
 
 
-@login_required
-@admin_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def edit_staff(request, pk):
     lecturer = get_object_or_404(User, is_lecturer=True, pk=pk)
     if request.method == "POST":
@@ -259,7 +273,7 @@ def edit_staff(request, pk):
     )
 
 
-@method_decorator([login_required, admin_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsSuperuser), name="dispatch")
 class LecturerFilterView(FilterView):
     filterset_class = LecturerFilter
     queryset = User.objects.filter(is_lecturer=True)
@@ -272,8 +286,9 @@ class LecturerFilterView(FilterView):
         return context
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def render_lecturer_pdf_list(request):
     lecturers = User.objects.filter(is_lecturer=True)
     template_path = "pdf/lecturer_list.html"
@@ -288,8 +303,9 @@ def render_lecturer_pdf_list(request):
     return response
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def delete_staff(request, pk):
     lecturer = get_object_or_404(User, is_lecturer=True, pk=pk)
     full_name = lecturer.get_full_name
@@ -303,8 +319,9 @@ def delete_staff(request, pk):
 # ########################################################
 
 
-@login_required
-@admin_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def student_add_view(request):
     if request.method == "POST":
         form = StudentAddForm(request.POST)
@@ -326,8 +343,9 @@ def student_add_view(request):
     )
 
 
-@login_required
-@admin_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def edit_student(request, pk):
     student_user = get_object_or_404(User, is_student=True, pk=pk)
     if request.method == "POST":
@@ -345,7 +363,7 @@ def edit_student(request, pk):
     )
 
 
-@method_decorator([login_required, admin_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsSuperuser), name="dispatch")
 class StudentListView(FilterView):
     queryset = Student.objects.all()
     filterset_class = StudentFilter
@@ -358,8 +376,9 @@ class StudentListView(FilterView):
         return context
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def render_student_pdf_list(request):
     students = Student.objects.all()
     template_path = "pdf/student_list.html"
@@ -374,8 +393,9 @@ def render_student_pdf_list(request):
     return response
 
 
-@login_required
-@admin_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def delete_student(request, pk):
     student = get_object_or_404(Student, pk=pk)
     full_name = student.student.get_full_name
@@ -384,8 +404,9 @@ def delete_student(request, pk):
     return redirect("student_list")
 
 
-@login_required
-@admin_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def edit_student_program(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     user = get_object_or_404(User, pk=pk)
@@ -411,7 +432,7 @@ def edit_student_program(request, pk):
 # ########################################################
 
 
-@method_decorator([login_required, admin_required], name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsSuperuser), name="dispatch")
 class ParentAdd(CreateView):
     model = Parent
     form_class = ParentAddForm
@@ -422,8 +443,9 @@ class ParentAdd(CreateView):
         return super().form_valid(form)
 
 
-@csrf_exempt
 @api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsSuperuser])
 def enroll_students_in_batch(request):
     serializer = EnrollStudentsInBatchSerializer(data=request.data)
     if serializer.is_valid():
@@ -454,10 +476,17 @@ def enroll_students_in_batch(request):
 @csrf_exempt
 @api_view(["GET"])
 def get_course_provider(request):
-    user_id=request.user.id
-    #user_id=7
-    course_provider=CourseProviderUsecase.get_course_provider(user_id)
+    user_id = request.user.id
+    # user_id=7
+    course_provider = CourseProviderUsecase.get_course_provider(user_id)
     if course_provider is not None:
         return Response(course_provider, status=status.HTTP_200_OK)
     else:
-        return Response({"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+def token_loading_page(request):
+    next_url = request.GET.get("next", "/")
+    return render(request, "core/token_loading.html", {"next_url": next_url})
