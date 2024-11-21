@@ -809,7 +809,7 @@ def get_modules_and_resources_by_course_id(request, course_id):
 @csrf_exempt
 @api_view(["GET"])
 def user_courses_list(request):
-    request.user=User.objects.get(id=2)
+    #request.user=User.objects.get(id=2)
     courses=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
         return Response({courses}, status=status.HTTP_200_OK)
