@@ -26,13 +26,7 @@ from course.forms import (
     UploadFormFile,
     UploadFormVideo,
 )
-from course.models import (
-    Course,
-    CourseAllocation,
-    Program,
-    Upload,
-    UploadVideo,
-)
+from course.models import Course, CourseAllocation, Program, Upload, UploadVideo, Module
 from course.serializers import (
     BatchSerializer,
     LiveClassDateRangeSerializer,
@@ -820,3 +814,28 @@ def get_batches_by_course_id(request, course_id):
 def get_courses_by_course_provider_id(request, course_provider_id):
     course_provider = CourseUseCase.get_courses_by_course_provider(course_provider_id)
     return Response(course_provider, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_modules_and_resources_by_course_id(request, course_id):
+    module_data = CourseUseCase.get_modules_by_course_id(course_id)
+    if not module_data:
+        return Response(
+            {"error": "No modules found for the given course ID."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return Response(module_data, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+@api_view(["GET"])
+def user_course_list(request):
+    request.user = User.objects.get(id=3)
+    courses = CourseUseCase.get_courses_for_student_or_lecturer(request.user)
+    if courses:
+        return Response({courses}, status=status.HTTP_200_OK)
+    else:
+        return Response(
+            {"error": "No Courses Found For User"}, status=status.HTTP_404_NOT_FOUND
+        )
