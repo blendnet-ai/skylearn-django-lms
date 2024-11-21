@@ -88,3 +88,29 @@ class IsLoggedIn(BasePermissionImplementation):
 
     def check_permission(self, user):
         return bool(user and user.is_authenticated)
+
+
+class IsCourseProviderAdminOrLecturer(BasePermissionImplementation):
+    """
+    Permission check for course provider admin or lecturer access with redirect capability.
+    """
+
+    message = "Course provider admin or lecturer access required"
+
+    def check_permission(self, user):
+        return (
+            user.is_active
+            and (user.is_course_provider_admin or user.is_lecturer)
+            or user.is_superuser
+        )
+
+
+class IsCourseProviderAdmin(BasePermissionImplementation):
+    """
+    Permission check for course provider admin access with redirect capability.
+    """
+
+    message = "Course provider admin access required"
+
+    def check_permission(self, user):
+        return user.is_active and user.is_course_provider_admin or user.is_superuser

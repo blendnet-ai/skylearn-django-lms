@@ -11,7 +11,6 @@ from django.views.generic import CreateView
 from django_filters.views import FilterView
 from xhtml2pdf import pisa
 
-from accounts.decorators import admin_required
 from accounts.filters import LecturerFilter, StudentFilter
 from accounts.forms import (
     ParentAddForm,
@@ -34,8 +33,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes, permission_classes
-from rest_framework.decorators import api_view
 from accounts.authentication import FirebaseAuthentication
+
 
 
 # ########################################################
@@ -474,15 +473,11 @@ def enroll_students_in_batch(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def token_loading_page(request):
-    next_url = request.GET.get("next", "/")
-    return render(request, "core/token_loading.html", {"next_url": next_url})
-
 @csrf_exempt
 @api_view(["GET"])
 def get_course_provider(request):
-    # user_id=request.user.id
-    user_id = 6
+    user_id = request.user.id
+    # user_id=7
     course_provider = CourseProviderUsecase.get_course_provider(user_id)
     if course_provider is not None:
         return Response(course_provider, status=status.HTTP_200_OK)
@@ -490,3 +485,9 @@ def get_course_provider(request):
         return Response(
             {"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+
+def token_loading_page(request):
+    next_url = request.GET.get("next", "/")
+    return render(request, "core/token_loading.html", {"next_url": next_url})

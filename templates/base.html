@@ -26,28 +26,25 @@
 
 <body>
     {% block sidebar %}
-    {% include 'sidebar.html' %}
+        {% include 'sidebar.html' %}
     {% endblock %}
 
     {% block maincontent %}
-    <div id="main" style="height: 100vh;">
+    <div id="main">
         {% block topbar %}
-        {% include 'navbar.html' %}
+            {% include 'navbar.html' %}
         {% endblock %}
 
-        <div class="h-100" id="main-content">
-
-            <div class="h-100" id="main-content">
-                {% block content %}{% endblock content %}
-            </div>
-
+        <div class="container-fluid" id="main-content">
+            {% block content %}{% endblock content %}
         </div>
-        {% endblock %}
-        <script src="{% url 'javascript-catalog' %}"></script>
-        <script type="text/javascript" src="{% static 'vendor/jquery-3.7.1/jquery-3.7.1.min.js' %}"></script>
-        <script type="text/javascript" src="{% static 'vendor/bootstrap-5.3.2/js/bootstrap.bundle.min.js' %}"></script>
 
-        <script type="text/javascript" src="{% static 'js/main.js' %}"></script>
+    </div>
+    {% endblock %}
+    <script src="{% url 'javascript-catalog' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/jquery-3.7.1/jquery-3.7.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/bootstrap-5.3.2/js/bootstrap.bundle.min.js' %}"></script>
+
     <script>
         window.firebaseConfig = {
             apiKey: "{{ FIREBASE_API_KEY|escapejs }}",

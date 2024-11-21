@@ -13,6 +13,7 @@ from accounts.authentication import FirebaseAuthentication
 from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
 from accounts.models import Student, User
 from accounts.permissions import (
+    IsCourseProviderAdminOrLecturer,
     IsLecturer,
     IsLoggedIn,
     IsStudent,
@@ -59,13 +60,22 @@ from rest_framework.response import Response
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import ListModelMixin
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
+from rest_framework.response import Response
+
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.mixins import ListModelMixin
 
 # ########################################################
 # Program Views
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
 class ProgramFilterView(FilterView):
 
     filterset_class = ProgramFilter
@@ -79,7 +89,7 @@ class ProgramFilterView(FilterView):
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def program_add(request):
     if request.method == "POST":
         form = ProgramForm(request.POST)
@@ -119,7 +129,7 @@ def program_detail(request, pk):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def program_edit(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -138,7 +148,7 @@ def program_edit(request, pk):
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def program_delete(request, pk):
     program = get_object_or_404(Program, pk=pk)
     title = program.title
@@ -176,7 +186,7 @@ def course_single(request, slug):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def course_add(request, pk):
     program = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -199,7 +209,7 @@ def course_add(request, pk):
 
 @api_view(["GET", ""])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def course_edit(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -220,7 +230,7 @@ def course_edit(request, slug):
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def course_delete(request, slug):
     course = get_object_or_404(Course, slug=slug)
     title = course.title
@@ -235,7 +245,7 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -256,7 +266,7 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsLecturer), name="dispatch")
+@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -267,9 +277,10 @@ class CourseAllocationFilterView(FilterView):
         return context
 
 
+
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def edit_allocated_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     if request.method == "POST":
@@ -290,7 +301,7 @@ def edit_allocated_course(request, pk):
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def deallocate_course(request, pk):
     allocation = get_object_or_404(CourseAllocation, pk=pk)
     allocation.delete()
@@ -305,7 +316,7 @@ def deallocate_course(request, pk):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_file_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -328,7 +339,7 @@ def handle_file_upload(request, slug):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_file_edit(request, slug, file_id):
     course = get_object_or_404(Course, slug=slug)
     upload = get_object_or_404(Upload, pk=file_id)
@@ -350,7 +361,7 @@ def handle_file_edit(request, slug, file_id):
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_file_delete(request, slug, file_id):
     upload = get_object_or_404(Upload, pk=file_id)
     title = upload.title
@@ -366,7 +377,7 @@ def handle_file_delete(request, slug, file_id):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_video_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -402,7 +413,7 @@ def handle_video_single(request, slug, video_slug):
 
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_video_edit(request, slug, video_slug):
     course = get_object_or_404(Course, slug=slug)
     video = get_object_or_404(UploadVideo, slug=video_slug)
@@ -424,7 +435,7 @@ def handle_video_edit(request, slug, video_slug):
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def handle_video_delete(request, slug, video_slug):
     video = get_object_or_404(UploadVideo, slug=video_slug)
     title = video.title
