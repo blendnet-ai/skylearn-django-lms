@@ -28,6 +28,16 @@ def sakshm_embed_view(request, path):
     )
 
 
+def sakshm_embed_view_with_slug(request, slug):
+    return render(
+        request,
+        "core/saksham_wrapper.html",
+        {
+            "path": "http://localhost:3000/" + slug,
+        },
+    )
+
+
 # ########################################################
 # News & Events
 # ########################################################
@@ -54,7 +64,7 @@ def course_view(request):
     path = "http://localhost:3000/my-courses/"
     return render(
         request,
-        "core/index.html",
+        "core/saksham_wrapper.html",
         {
             "path": path,
         },

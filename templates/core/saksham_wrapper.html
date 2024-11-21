@@ -51,6 +51,17 @@
             console.log("Final URL: ", currentUrl.toString());
             window.location.href = currentUrl;
         }
+        if (event.data && event.data.type === 'ROUTE_CHANGE_COURSE') {
+            console.log("ROUTE_CHANGE_COURSE", event.data);
+            console.log(event.data.courseId);
+            const currentUrl = new URL(window.location.href);
+            console.log("Current URL: ", currentUrl.pathname);
+            currentUrl.pathname = "en/sakshm/" + event.data.route
+            currentUrl.search = `?courseId=${event.data.courseId}`;
+            console.log("Final URL: ", currentUrl.toString());
+            window.location.href = currentUrl
+        }
+
     });
 
 

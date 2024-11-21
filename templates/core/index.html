@@ -21,13 +21,6 @@
     const newUrl = url.split('sakshm/')[0]
     const currentUrl = new URL(window.location.href);
 
-    console.log(
-        {
-            url,
-            newUrl,
-        }
-    );
-
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'ROUTE_CHANGE') {
             const newRoute = event.data.route;
