@@ -32,6 +32,9 @@ ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com"]
 
 # change the default user models to our custom model
 AUTH_USER_MODEL = "accounts.User"
+STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
+LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
+
 
 # Application definition
 
@@ -244,10 +247,6 @@ LOGGING = {
 # WhiteNoise configuration
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
-LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
-
-
 # Constants
 YEARS = (
     (1, "1"),
@@ -300,3 +299,15 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes timeout
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # Soft timeout 5 minutes before hard timeout
 CELERY_TASK_MAX_RETRIES = 3
 CELERY_TASK_RETRY_DELAY = 300  # 5 minutes
+
+
+# MS Teams settings
+MS_TEAMS_ACCESS_TOKEN_CACHE_KEY = "msteams_access_token"
+MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID")
+MS_TEAMS_CLIENT_SECRET = config("MS_TEAMS_CLIENT_SECRET")
+MS_TEAMS_TENANT_ID = config("MS_TEAMS_TENANT_ID")
+# This Admin user id is needed to be given permissions to create meetings via powershell
+# refer to this gpt chat for documentation https://chatgpt.com/share/673f0e30-d540-8007-b07d-a22c9a60fd4a
+MS_TEAMS_ADMIN_USER_ID = config("MS_TEAMS_ADMIN_USER_ID")
+MS_TEAMS_ADMIN_USER_NAME = config("MS_TEAMS_ADMIN_USER_NAME")
+MS_TEAMS_ADMIN_UPN = config("MS_TEAMS_ADMIN_UPN")

@@ -254,9 +254,9 @@ class MeetingUsecase:
             )
 
             # Update meeting with Teams details
-            meeting.link = meeting_details["join_url"]
-            meeting.conference_metadata = meeting_details["metadata"]
-            meeting.conference_id = meeting_details["id"]
+            meeting.link = meeting_details.join_url
+            meeting.conference_metadata = meeting_details.all_details
+            meeting.conference_id = meeting_details.id
             meeting.save()
 
         except Exception as e:

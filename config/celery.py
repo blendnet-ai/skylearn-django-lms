@@ -6,13 +6,13 @@ from celery import Celery
 from celery.signals import setup_logging
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "speechai.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 from celery.signals import before_task_publish, task_prerun
 from common.django_commons import local
 import logging
 
 logger = logging.getLogger(__name__)
-app = Celery("speechai")
+app = Celery("lms")
 
 
 # if not settings.DEBUG:

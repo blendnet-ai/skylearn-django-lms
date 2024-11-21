@@ -1,7 +1,7 @@
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from .exceptions import ConferencePlatformError
-from .usecases import MeetingUsecase
+
 
 logger = get_task_logger(__name__)
 
@@ -17,6 +17,8 @@ def create_teams_meeting_task(self, meeting_id: int) -> None:
     """
     Celery task to create a Teams meeting
     """
+    from .usecases import MeetingUsecase
+
     logger.info(f"Creating Teams meeting for meeting ID: {meeting_id}")
     try:
         MeetingUsecase.create_teams_meeting(meeting_id)

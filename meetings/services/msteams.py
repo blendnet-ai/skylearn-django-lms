@@ -1,12 +1,16 @@
-from datetime import datetime
-from typing import Dict, Any
-from .base import BaseConferencePlatformService
+from datetime import datetime, timedelta
+import requests
+from typing import Dict, Any, Optional
+from django.core.cache import cache
 from django.conf import settings
+from .base import BaseConferencePlatformService, MeetingDetails, Presenter
 
 
 class MSTeamsConferencePlatformService(BaseConferencePlatformService):
+    AUTH_URL = f"https://login.microsoftonline.com/{settings.MS_TEAMS_TENANT_ID}/oauth2/v2.0/token"
+    GRAPH_API_URL = "https://graph.microsoft.com/v1.0/users/{user_id}/onlineMeetings"
+
     from dataclasses import dataclass
-    from typing import Optional
 
     @dataclass
     class MSTeamsSettings:
@@ -24,26 +28,112 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             self.client_secret = teams_settings.client_secret
             self.tenant_id = teams_settings.tenant_id
         # Initialize MS Graph client here
+        self.access_token = None
+
+    def _get_cached_token(self) -> Optional[str]:
+        return cache.get(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+
+    def _cache_token(self, token: str, expires_in: int) -> None:
+        # Cache token for slightly less than its expiry time
+        cache.set(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY, token, expires_in - 300)
+
+    def _get_access_token(self) -> str:
+        cached_token = self._get_cached_token()
+        if cached_token:
+            return cached_token
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        data = {
+            "grant_type": "client_credentials",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "scope": "https://graph.microsoft.com/.default",
+        }
+
+        response = requests.post(self.AUTH_URL, headers=headers, data=data)
+        response.raise_for_status()
+        token_data = response.json()
+        self._cache_token(token_data["access_token"], token_data["expires_in"])
+        return token_data["access_token"]
 
     def create_meeting(
         self,
-        presenter: Dict[str, str],
+        presenter: Presenter,
         start_time: datetime,
         end_time: datetime,
         subject: str,
-    ) -> Dict[str, Any]:
-        # Implementation using Microsoft Graph API
-        # Create online meeting and return meeting details
-        # This is a placeholder - actual implementation would use MS Graph SDK
-        meeting_details = {
-            "id": "generated_meeting_id",
-            "join_url": "teams_meeting_url",
-            "metadata": {
-                "conference_id": "conf_id",
-                "participant_passcode": "passcode",
-            },
-        }
-        return meeting_details
+    ) -> MeetingDetails:
+        """
+        Create a Teams meeting with the specified parameters.
+
+        Args:
+            presenter: Presenter details containing guid, name and email
+            start_time: Meeting start time
+            end_time: Meeting end time
+            subject: Meeting subject/title
+
+        Returns:
+            MeetingDetails containing meeting id, join URL and all metadata
+        """
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+
+            meeting_data = {
+                "startDateTime": start_time.isoformat() + "Z",
+                "endDateTime": end_time.isoformat() + "Z",
+                "subject": subject,
+                "recordAutomatically": False,
+                "lobbyBypassSettings": {"scope": "everyone"},
+                "allowedPresenters": "organization",
+                "participants": {
+                    "organizer": {
+                        "identity": {
+                            "user": {
+                                "id": settings.MS_TEAMS_ADMIN_USER_ID,
+                                "displayName": settings.MS_TEAMS_ADMIN_USER_NAME,
+                            }
+                        },
+                        "upn": settings.email,
+                    },
+                    "attendees": [
+                        {
+                            "identity": {
+                                "user": {
+                                    "id": presenter.guid,
+                                    "displayName": presenter.name,
+                                },
+                                "role": "presenter",
+                                "upn": "admin@sakshm.com",
+                            }
+                        }
+                    ],
+                },
+            }
+
+            response = requests.post(
+                self.GRAPH_API_URL.format(user_id=presenter.guid),
+                headers=headers,
+                json=meeting_data,
+            )
+            response.raise_for_status()
+            meeting_details = response.json()
+
+            return MeetingDetails(
+                id=meeting_details.get("id"),
+                join_url=meeting_details.get("joinWebUrl"),
+                all_details=meeting_details,
+            )
+
+        except requests.exceptions.RequestException as e:
+            # If authentication failed, clear cache and retry once
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.create_meeting(presenter, start_time, end_time, subject)
+            raise
 
     def delete_meeting(self, meeting_id: str) -> None:
         # Implementation using Microsoft Graph API

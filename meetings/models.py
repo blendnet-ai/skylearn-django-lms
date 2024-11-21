@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from datetime import datetime, timedelta
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .tasks import create_teams_meeting_task
 
 
 class MeetingSeries(models.Model):
@@ -93,3 +96,12 @@ class Meeting(models.Model):
     class Meta:
         verbose_name = "Live Class"
         verbose_name_plural = "Live Classes"
+
+
+@receiver(post_save, sender=Meeting)
+def meeting_post_save(sender, instance, created, **kwargs):
+    """
+    Signal handler to create Teams meeting when a new meeting is created
+    """
+    if created:
+        create_teams_meeting_task.delay(instance.id)
