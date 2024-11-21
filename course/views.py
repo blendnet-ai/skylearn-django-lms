@@ -685,7 +685,8 @@ def get_live_classes_by_batch_id(request, batch_id):
 @csrf_exempt
 @api_view(["GET"])
 def get_live_classes(request):
-    request.user = User.objects.get(id=4)
+    request.user = User.objects.get(id=5)
+    # print(request.user)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(

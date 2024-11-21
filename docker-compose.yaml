@@ -15,7 +15,7 @@ services:
     image: postgres:16
     container_name: postgres-lms
     volumes:
-      - pgdb-lms:/var/lib/postgresql/data
+      - pgdb.:/var/lib/postgresql/data
     env_file: .env
     ports:
       - 5432:5432
@@ -28,7 +28,6 @@ services:
     command: /bin/sh -c "redis-server --requirepass ${REDIS_PASSWORD}"
     ports:
       - 6379:6379
-
 
   lms-notebook-dev:
     container_name: lms-notebook
@@ -50,6 +49,5 @@ services:
       - redis
 
 volumes:
-  pgdb-lms:
+  pgdb.:
     external: true
-    

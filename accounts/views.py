@@ -454,10 +454,12 @@ def enroll_students_in_batch(request):
 @csrf_exempt
 @api_view(["GET"])
 def get_course_provider(request):
-    user_id=request.user.id
-    #user_id=7
-    course_provider=CourseProviderUsecase.get_course_provider(user_id)
+    # user_id=request.user.id
+    user_id = 6
+    course_provider = CourseProviderUsecase.get_course_provider(user_id)
     if course_provider is not None:
         return Response(course_provider, status=status.HTTP_200_OK)
     else:
-        return Response({"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"error": "Course provider not found"}, status=status.HTTP_404_NOT_FOUND
+        )
