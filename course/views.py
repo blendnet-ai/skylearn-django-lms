@@ -42,7 +42,6 @@ from course.usecases import (
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from result.models import TakenCourse
-from evaluation.usecases import AssessmentUseCase
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -144,22 +143,6 @@ def course_single(request, slug):
     files = Upload.objects.filter(course__slug=slug)
     videos = UploadVideo.objects.filter(course__slug=slug)
     lecturers = CourseAllocation.objects.filter(courses__pk=course.id)
-
-    # fetch all assessments for the user in the course
-    assessments = AssessmentUseCase.fetch_display_data(request.user.id)
-
-    assessment_generation_ids = list(course.assessment_generation_ids)
-
-    if len(assessment_generation_ids) > 0:
-        # filter the assessments to only those that are in the course
-        assessments = [
-            assessment
-            for assessment in assessments
-            if assessment["assessment_generation_id"] in assessment_generation_ids
-        ]
-    else:
-        assessments = []
-
     return render(
         request,
         "course/course_single.html",
@@ -170,7 +153,6 @@ def course_single(request, slug):
             "videos": videos,
             "lecturers": lecturers,
             "media_url": settings.MEDIA_URL,
-            "assessments": assessments,
         },
     )
 
@@ -679,8 +661,7 @@ def get_live_classes_by_batch_id(request, batch_id):
 @csrf_exempt
 @api_view(["GET"])
 def get_live_classes(request):
-    request.user = User.objects.get(id=5)
-    # print(request.user)
+    request.user = User.objects.get(id=2)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(
@@ -830,8 +811,8 @@ def get_modules_and_resources_by_course_id(request, course_id):
 
 @csrf_exempt
 @api_view(["GET"])
-def user_course_list(request):
-    request.user = User.objects.get(id=3)
+def user_courses_list(request):
+    request.user = User.objects.get(id=2)
     courses = CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
         return Response({courses}, status=status.HTTP_200_OK)

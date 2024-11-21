@@ -117,5 +117,5 @@ urlpatterns = [
     path("course/<course_id>/get-batches/", views.get_batches_by_course_id, name="get_batches"),
     path("course-provider/<course_provider_id>/get-courses/", views.get_courses_by_course_provider_id, name="get_batches"),
     path("course/<course_id>/get-modules-data/", views.get_modules_and_resources_by_course_id, name="get_modules_data"),
-    path("course/user-course-list",views.user_course_list,name="user_course_list")
+    path("course/user-courses-list",views.user_courses_list,name="user_courses_list")
 ]
