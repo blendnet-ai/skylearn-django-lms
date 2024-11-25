@@ -65,6 +65,20 @@ def home_view(request):
         },
     )
     
+# my courses view
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def course_view(request):
+    path = "http://localhost:3000/my-courses/"
+    return render(
+        request,
+        "core/saksham_wrapper.html",
+        {
+            "path": path,
+        },
+    )
+    
 
 
 @api_view(["GET"])
