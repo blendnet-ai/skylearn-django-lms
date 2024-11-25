@@ -6,6 +6,7 @@ import typing
 from .models import Form, UserProfile
 from django.contrib.auth import get_user_model
 import logging
+from channels.db import database_sync_to_async
 
 User = get_user_model()
 ONBOARDING_FORM_NAME = 'onboarding'
@@ -45,6 +46,7 @@ class UserProfileRepository:
         return UserProfile.objects.get_or_create(user_id=user)
 
     def fetch_value_from_form(field_name, form_data):
+        print(form_data)
         for section in form_data['sections']:
             for field in section['fields']:
                 if field['name'] == field_name:
@@ -135,11 +137,41 @@ class UserProfileRepository:
         return UserProfile.objects.all()
     
     @staticmethod
-    def update_doubt_solving_token(user_id, doubt_solving_uuid,doubt_solving_mapping_created,doubt_solving_token,token_expiration_time):
-        user_profile=UserProfileRepository.get(user_id=user_id)
-        user_profile.doubt_solving_mapping_created=doubt_solving_mapping_created
-        user_profile.doubt_solving_token=doubt_solving_token
-        user_profile.token_expiration_time=token_expiration_time
-        user_profile.doubt_solving_uuid=doubt_solving_uuid
+    def get_onboarding_status_details(user_id):
+        try:
+            user_profile=UserProfile.objects.get(user_id__id=user_id)
+            telegram_status=user_profile.is_telegram_connected
+            mobile_status=user_profile.is_mobile_verified
+            onboarding_status =user_profile.onboarding_complete
+            otp=user_profile.otp
+            return {"telegram_status":telegram_status,"mobile_verification_status":mobile_status,"onboarding_status":onboarding_status,"otp":otp}
+        except UserProfile.DoesNotExist:
+            return None
+    
+    @staticmethod
+    @database_sync_to_async
+    def set_telegram_onboarding_complete(user: str):
+        user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.is_telegram_connected = True
         user_profile.save()
+        
+    def set_mobile_verification_complete(user: str):
+        user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.is_mobile_verified = True
+        user_profile.save()
+
+    def set_user_profile_user_data(user: str,user_data):
+        user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.user_data = user_data
+        user_profile.save()
+
+
+    # @staticmethod
+    # def update_doubt_solving_token(user_id, doubt_solving_uuid,doubt_solving_mapping_created,doubt_solving_token,token_expiration_time):
+    #     user_profile=UserProfileRepository.get(user_id=user_id)
+    #     user_profile.doubt_solving_mapping_created=doubt_solving_mapping_created
+    #     user_profile.doubt_solving_token=doubt_solving_token
+    #     user_profile.token_expiration_time=token_expiration_time
+    #     user_profile.doubt_solving_uuid=doubt_solving_uuid
+    #     user_profile.save()
         

@@ -12,8 +12,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("practice/", include("practice.urls")),
     path("data/", include("data_repo.urls")),
-    path('ai_learning/', include('ai_learning.urls')),
-    path('evaluation/', include('evaluation.urls')),
+    path('ai_learning/', include('ai_learning.urls')),  # Include ai_learning app's URLs
+    path('evaluation/', include('evaluation.urls')),  # Include evaluation app's URLs
+    path('custom_auth/',include('custom_auth.urls')),
     path("i18n/", include("django.conf.urls.i18n")),
 ]
 

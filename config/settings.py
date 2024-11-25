@@ -187,6 +187,15 @@ PROJECT_APPS = [
 
 # apps from speechai
 INTEGRATED_APPS = [
+    'evaluation',
+    'ai_learning',
+    'data_repo',
+    'services',
+    'common',
+    'OpenAIService',
+    'practice',
+    'custom_auth',
+    'telegram_bot'
     "evaluation",
     "ai_learning",
     "data_repo",
@@ -218,6 +227,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
+    'custom_auth.middleware.OnboardingMiddleware',
 ]
 
 ROOT_URLCONF = "config.urls"
