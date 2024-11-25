@@ -1,10 +1,15 @@
-from course.models import Batch, Course, LiveClassSeriesBatchAllocation
+from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation
 
 
 class CourseRepository:
     @staticmethod
     def get_course_by_id(course_id):
         return Course.objects.get(id=course_id)
+    
+    def get_courses_by_course_provider(course_provider_id):
+        return Course.objects.filter(course_provider_id=course_provider_id)
+    
+    
 
 
 class BatchRepository:
@@ -18,7 +23,7 @@ class BatchRepository:
 
     @staticmethod
     def get_batches_by_course_id(course_id):
-        return Batch.objects.get(course_id=course_id)
+        return Batch.objects.filter(course_id=course_id)
 
     @staticmethod
     def get_batches_by_lecturer_id(lecturer_id):

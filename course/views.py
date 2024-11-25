@@ -10,7 +10,7 @@ from django.views.generic import CreateView
 from django_filters.views import FilterView
 
 from accounts.authentication import FirebaseAuthentication
-from accounts.decorators import admin_required, lecturer_required, student_required
+from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
 from accounts.models import Student, User
 from accounts.permissions import (
     IsLecturer,
@@ -44,6 +44,7 @@ from course.serializers import (
 )
 from course.usecases import (
     BatchUseCase,
+    CourseUseCase,
     LiveClassSeriesBatchAllocationUseCase,
     LiveClassUsecase,
 )
@@ -623,7 +624,6 @@ def create_live_class_series(request):
 @permission_classes([IsLoggedIn, IsSuperuser])
 def update_live_class_series(request, id):
     serializer = LiveClassSeriesSerializer(data=request.data)
-
     if serializer.is_valid():
         try:
             batches_allocated, batches_failed_to_allocate = (
@@ -703,7 +703,7 @@ def get_live_classes_by_batch_id(request, batch_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_live_classes(request):
-
+    request.user=User.objects.get(id=2)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(
@@ -726,6 +726,7 @@ def get_live_classes(request):
 @permission_classes([IsLoggedIn])
 def get_live_classes_by_course_id(request, course_id):
     try:
+        #request.user=User.objects.get(id=2)
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         serializer = LiveClassDateRangeSerializer(
@@ -770,7 +771,6 @@ def delete_live_class(_, id):
 @permission_classes([IsLoggedIn, IsSuperuser])
 def update_live_class(request, id):
     serializer = LiveClassUpdateSerializer(data=request.data)
-
     if serializer.is_valid():
         try:
             MeetingUsecase.update_meeting(
@@ -824,3 +824,21 @@ def create_batch(request, course_id):
         except BatchUseCase.UserIsNotLecturerException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_batches_by_course_id(request, course_id):
+    try:
+        batches = BatchUseCase.get_batches_by_course_id(course_id)
+        return Response(batches, status=status.HTTP_200_OK)
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@csrf_exempt
+@api_view(["GET"])
+def get_courses_by_course_provider_id(request, course_provider_id):
+    course_provider = CourseUseCase.get_courses_by_course_provider(course_provider_id)
+    return Response(course_provider, status=status.HTTP_200_OK)

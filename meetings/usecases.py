@@ -3,6 +3,7 @@ from meetings.repositories import MeetingRepository, MeetingSeriesRepository
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
+from datetime import datetime
 
 
 class MeetingSeriesUsecase:
@@ -248,11 +249,23 @@ class MeetingUsecase:
         )
         meetings_data = []
         for meeting in meetings:
+            # Combine date and time for start_time
+            start_datetime = (
+                datetime.combine(meeting.start_date, meeting.start_time_override)
+                if meeting.start_time_override
+                else datetime.combine(meeting.start_date, meeting.series.start_time)
+            )
+            end_datetime = start_datetime + meeting.series.duration
             meetings_data.append(
                 {
+                    "type": 0,
+                    "title": meeting.series.title,
                     "meeting_id": meeting.id,
                     "series_id": meeting.series_id,
                     "start_date": meeting.start_date,
+                    "start_timestamp": start_datetime,
+                    "end_timestamp": end_datetime,
+                    "link": meeting.link,
                     "start_time": (
                         meeting.start_time_override
                         if meeting.start_time_override
@@ -263,7 +276,6 @@ class MeetingUsecase:
                         if meeting.duration_override
                         else meeting.series.duration
                     ),
-                    "link": meeting.link,
                 }
             )
         return meetings_data

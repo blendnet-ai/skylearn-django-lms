@@ -1,4 +1,5 @@
 from accounts.repositories import StudentRepository, UserRepository
+import course
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
     BatchRepository,
@@ -121,7 +122,6 @@ class LiveClassUsecase:
         else:
             # This is not in the requirements currently
             return []
-
         live_classes = []
         # Get the live classes of the batches in the given period
         for batch in batches:
@@ -134,6 +134,8 @@ class LiveClassUsecase:
         # This is to remove duplicate live classes
         unique_tuples = {tuple(meeting.items()) for meeting in live_classes}
         return [dict(t) for t in unique_tuples]
+    
+        
 
 
 class LiveClassSeriesBatchAllocationUseCase:
@@ -247,3 +249,14 @@ class BatchUseCase:
             if user_batch.course_id == course_id:
                 return user_batch
         return None
+    
+    @staticmethod
+    def get_batches_by_course_id(course_id):
+        batches = list(BatchRepository.get_batches_by_course_id(course_id).values())
+        return batches
+
+
+class CourseUseCase:
+    def get_courses_by_course_provider(course_provider_id):
+        courses= list(CourseRepository.get_courses_by_course_provider(course_provider_id).values())
+        return courses
