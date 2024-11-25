@@ -9,7 +9,37 @@ from accounts.permissions import IsLoggedIn, IsLecturer, IsSuperuser
 from .forms import SessionForm, SemesterForm, NewsAndEventsForm
 from .models import NewsAndEvents, ActivityLog, Session, Semester
 from rest_framework.decorators import authentication_classes, permission_classes
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_viewfrom urllib.parse import urlencode
+
+
+# ########################################################
+# Saksham
+# ########################################################
+@login_required
+def sakshm_embed_view(request, path):
+    query_params = request.GET.dict()
+
+    query_string = "?" + urlencode(query_params)
+    print("query_string", query_string)
+
+    return render(
+        request,
+        "core/saksham_wrapper.html",
+        {
+            "path": "http://localhost:3000/" + path + query_string,
+        },
+    )
+
+
+def sakshm_embed_view_with_slug(request, slug):
+    return render(
+        request,
+        "core/saksham_wrapper.html",
+        {
+            "path": "http://localhost:3000/" + slug,
+        },
+    )
+
 
 # ########################################################
 # News & Events
@@ -20,12 +50,20 @@ from rest_framework.decorators import api_view
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def home_view(request):
-    items = NewsAndEvents.objects.all().order_by("-updated_date")
-    context = {
-        "title": "News & Events",
-        "items": items,
-    }
-    return render(request, "core/index.html", context)
+    path = "http://localhost:3000/"
+    if request.user.is_student or request.user.is_lecturer:
+        path += "home-lms"
+    else:
+        path += "course-provider-admin/home-lms"
+
+    return render(
+        request,
+        "core/index.html",
+        {
+            "path": path,
+        },
+    )
+    
 
 
 @api_view(["GET"])

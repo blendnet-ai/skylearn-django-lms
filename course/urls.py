@@ -1,7 +1,6 @@
 from django.urls import path
 from . import views
 
-
 urlpatterns = [
     # Program urls
     path("", views.ProgramFilterView.as_view(), name="programs"),

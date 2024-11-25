@@ -3,14 +3,14 @@
 
 <div id="side-nav">
 	<div class="main-menu">
-		<div class="top-side text-center py-4" style="background-image: url({% static 'img/dotted.jpg' %});">
+		<div class="top-side text-center py-4" style="background-image: url({% static 'img/dotted.jpg' %})">
 			<div class="desktop-hide">
 				<div class="toggle-btn" onclick="toggleSidebar()">
 					<i class="fas fa-times"></i>
 				</div>
 			</div>
 			<a href="/">
-				<img src="{% static 'img/brand.svg' %}" width="210px" alt="SkyLearn">
+				<img src="{% static 'img/brand.svg' %}" width="210px" alt="Sakshm">
 			</a>
 			<p class="mt-2 small">
 				<mark class="bg-secondary text-light" style="border-radius: 2px; padding: 2px 5px;">
@@ -26,21 +26,30 @@
 		{% url 'course_registration' as cr %} {% url 'edit_profile' as ep %} {% url 'change_password' as cp %}
 		{% url 'quiz_progress' as qpr %} {% url 'quiz_marking' as qce %} {% url 'user_course_list' as ucl %}
 		{% url 'admin_panel' as admin_p %}
-		
+
 
 
 		<ul>
-			{% if request.user.is_superuser %}
+			<!-- {% if request.user.is_superuser %}
 			<li class="{% if request.path == dash %}active{% endif %}">
 				<a href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt"></i>{% trans 'Dashboard' %}</a>
 			</li>
+			{% endif %} -->
+
+			{% if request.user.is_course_provider_admin %}
+			<li class="{% if request.path == hom %}active{% endif %}">
+				<a href="{% url 'home' %}"><i class="fas fa-tachometer-alt"></i>{% trans 'Dashboard' %}</a>
+			</li>
 			{% endif %}
+
+			{% if request.user.is_lecturer or request.user.is_student %}
 			<li class="{% if request.path == hom %}active{% endif %}">
 				<a href="{% url 'home' %}"><i class="fas fa-home"></i>{% trans 'Home' %}</a>
 			</li>
-			<li class="{% if request.path == prof %}active{% endif %}">
+			{% endif %}
+			<!-- <li class="{% if request.path == prof %}active{% endif %}">
 				<a href="{% url 'profile' %}"><i class="fas fa-user"></i>{% trans 'Profile' %}</a>
-			</li>
+			</li> -->
 
 			{% if request.user.is_superuser %}
 			<li class="{% if request.path == admin_p %}active{% endif %}">
@@ -55,24 +64,26 @@
 			{% endif %}
 
 			{% if request.user.is_lecturer or request.user.is_student %}
-			<li class="{% if request.path == ucl %}active{% endif %}">
-				<a href="{% url 'user_course_list' %}"><i class="fas fa-book"></i>{% trans 'My Courses' %}</a>
-			</li>
-			{% endif %}
-
-			{% if request.user.is_superuser or request.user.is_lecturer %}
-			<li class="{% if request.path == pro %}active{% endif %}">
-				<a href="{% url 'programs' %}"><i class="fas fa-book-open"></i>{% trans 'Programs & Courses' %}</a>
-			</li>
-			{% endif %}
-
-			{% if request.user.is_superuser or request.user.is_lecturer %}
-			<li class="{% if request.path == qce %}active{% endif %}">
-				<a href="{% url 'quiz_marking' %}"><i class="fas fa-check-double"></i>{% trans 'Complete Exams' %}</a>
+			<li class="{% if request.path == '/en/courses/' %}active{% endif %}">
+				<a href="{% url 'my_courses' %}"><i class="fas fa-book"></i>
+					{% trans 'My Courses' %}
+				</a>
 			</li>
 			{% endif %}
 
 			{% if request.user.is_superuser %}
+			<li class="{% if request.path == pro %}active{% endif %}">
+				<a href="{% url 'programs' %}"><i class="fas fa-book-open"></i>{% trans 'Courses' %}</a>
+			</li>
+			{% endif %}
+
+			<!-- {% if request.user.is_superuser or request.user.is_lecturer %}
+			<li class="{% if request.path == qce %}active{% endif %}">
+				<a href="{% url 'quiz_marking' %}"><i class="fas fa-check-double"></i>{% trans 'Complete Exams' %}</a>
+			</li>
+			{% endif %} -->
+
+			<!-- {% if request.user.is_superuser %}
 			<li class="{% if request.path == qpr %}active{% endif %}">
 				<a href="{% url 'quiz_progress' %}"><i class="fas fa-record-vinyl"></i>{% trans 'Quiz Progress Rec' %}</a>
 			</li>
@@ -85,15 +96,15 @@
 			<li class="{% if request.path == sem %}active{% endif %}">
 				<a href="{% url 'semester_list' %}"><i class="fas fa-calendar-alt"></i>{% trans 'Manage Semester' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 
-			{% if request.user.is_lecturer %}
+			<!-- {% if request.user.is_lecturer %}
 			<li class="{% if request.path == ascore %}active{% endif %}">
 				<a href="{% url 'add_score' %}"><i class="fas fa-table"></i>{% trans 'Manage Score' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 
-			{% if request.user.is_student %}
+			<!-- {% if request.user.is_student %}
 			<li class="{% if request.path == qpr %}active{% endif %}">
 				<a href="{% url 'quiz_progress' %}"><i class="fas fa-record-vinyl"></i>{% trans 'Quiz Progress Rec' %}</a>
 			</li>
@@ -106,19 +117,19 @@
 			<li class="{% if request.path == cr %}active{% endif %}">
 				<a href="{% url 'course_registration' %}"><i class="fas fa-plus"></i>{% trans 'Add' %} &amp; {% trans 'Drop Course' %}</a>
 			</li>
-			{% endif %}
+			{% endif %} -->
 			<br />
-			<p class="ms-3 text-secondary">&RightArrow; Others</p>
-			<li class="{% if request.path == ep %}active{% endif %}">
+			<!-- <p class="ms-3 text-secondary">&RightArrow; Others</p> -->
+			<!-- <li class="{% if request.path == ep %}active{% endif %}">
 				<a href="{% url 'edit_profile' %}"><i class="fas fa-cogs"></i>{% trans 'Account Setting' %}</a>
 			</li>
 			<li class="{% if request.path == cp %}active{% endif %}">
 				<a href="{% url 'change_password' %}"><i class="fas fa-key"></i>{% trans 'Change Password' %}</a>
-			</li>
+			</li> -->
 		</ul>
 	</div>
 
-	<footer class="card-footer mt-5 pt-3 pb-5 px-2">
+	<!-- <footer class="card-footer mt-5 pt-3 pb-5 px-2">
 		<div class="col-12">
 
 			<form action="{% url 'set_language' %}" method="post" id="lang-form">{% csrf_token %}
@@ -144,14 +155,14 @@
 				{% trans '⭐️ Star This Project' %}
 			</a>
 		</div>
-	</footer>
+	</footer> -->
 </div>
 
 {% block js %}
 <script>
-	document.getElementById("lang-select").addEventListener("change", function() {
+	document.getElementById("lang-select").addEventListener("change", function () {
 		console.log("Changed!")
-    	document.getElementById("lang-form").submit();  // Submit the form programmatically
+		document.getElementById("lang-form").submit();  // Submit the form programmatically
 	});
 </script>
 {% endblock js %}

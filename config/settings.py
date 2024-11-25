@@ -19,6 +19,7 @@ import ssl
 from ast import literal_eval
 
 from attr.converters import to_bool
+
 # if os.environ["ENV"] == "dev":
 from dotenv import load_dotenv
 
@@ -37,8 +38,7 @@ SECRET_KEY = config(
 )
 
 
-
-ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com","localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -47,7 +47,8 @@ LOCAL_MEM_CACHE = {
     }
 }
 
-DEBUG = config("DEBUG", default=False, cast=bool)
+# DEBUG = config("DEBUG", default=False, cast=bool)
+DEBUG = True
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE
@@ -62,20 +63,20 @@ else:
         f"{os.environ['REDIS_DB']}"
     )
 
-if os.environ.get("REDIS_CACHE_ENABLED", False) == 'True':
+if os.environ.get("REDIS_CACHE_ENABLED", False) == "True":
     CACHES = {
-        'default': {
+        "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'PASSWORD': os.environ['REDIS_PASSWORD'],
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "PASSWORD": os.environ["REDIS_PASSWORD"],
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            }
+            },
         }
     }
 
 CACHE_TTL = 60 * 60
-CACHE_ENABLED = os.environ.get('CACHE_ENABLED', False)
+CACHE_ENABLED = os.environ.get("CACHE_ENABLED", False)
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
@@ -88,36 +89,38 @@ STORAGE_ACCOUNT_NAME = os.environ.get("STORAGE_ACCOUNT_NAME", "stspeechaistage")
 STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
 
 # Firebase Settings
-FIREBASE_ENABLED = os.environ.get('FIREBASE_ENABLED') == "TRUE"
-FIREBASE_ACCOUNT_TYPE = os.environ.get('FIREBASE_ACCOUNT_TYPE')
-FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID')
-FIREBASE_PRIVATE_KEY_ID = os.environ.get('FIREBASE_PRIVATE_KEY_ID')
-FIREBASE_PRIVATE_KEY = os.environ.get('FIREBASE_PRIVATE_KEY')
-FIREBASE_CLIENT_EMAIL = os.environ.get('FIREBASE_CLIENT_EMAIL')
-FIREBASE_CLIENT_ID = os.environ.get('FIREBASE_CLIENT_ID')
-FIREBASE_AUTH_URI = os.environ.get('FIREBASE_AUTH_URI')
-FIREBASE_TOKEN_URI = os.environ.get('FIREBASE_TOKEN_URI')
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get('FIREBASE_CLIENT_X509_CERT_URL')
-FIREBASE_CLIENT_X509_CERT_URL = os.environ.get('FIREBASE_CLIENT_X509_CERT_URL')
-FIREBASE_UNIVERSE_DOMAIN = os.environ.get('UNIVERSE_DOMAIN')
-
-
+FIREBASE_ENABLED = os.environ.get("FIREBASE_ENABLED") == "TRUE"
+FIREBASE_ACCOUNT_TYPE = os.environ.get("FIREBASE_ACCOUNT_TYPE")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
+FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
+FIREBASE_PRIVATE_KEY = os.environ.get("FIREBASE_PRIVATE_KEY")
+FIREBASE_CLIENT_EMAIL = os.environ.get("FIREBASE_CLIENT_EMAIL")
+FIREBASE_CLIENT_ID = os.environ.get("FIREBASE_CLIENT_ID")
+FIREBASE_AUTH_URI = os.environ.get("FIREBASE_AUTH_URI")
+FIREBASE_TOKEN_URI = os.environ.get("FIREBASE_TOKEN_URI")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+FIREBASE_CLIENT_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+FIREBASE_UNIVERSE_DOMAIN = os.environ.get("UNIVERSE_DOMAIN")
 
 
 ### SERVICE SETTINGS
 ## WHISPER-TIMESTAMP SERVICE
-WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ['WHISPER_TIMESTAMP_SERVICE_ENDPOINT']
-WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ['WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN']
+WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
+WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
+    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
+]
 
 ## CEFR_LEVEL_SERVICE
-CEFR_LEVEL_SERVICE_ENDPOINT = os.environ['CEFR_LEVEL_SERVICE_ENDPOINT']
-CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ['CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN']
+CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
+CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ["CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN"]
 
-PRONUNCIATION_SERVICE_ENDPOINT = os.environ['PRONUNCIATION_SERVICE_ENDPOINT']
-PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ['PRONUNCIATION_SERVICE_AUTH_TOKEN']
+PRONUNCIATION_SERVICE_ENDPOINT = os.environ["PRONUNCIATION_SERVICE_ENDPOINT"]
+PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ["PRONUNCIATION_SERVICE_AUTH_TOKEN"]
 
 AZURE_TEXT_ANALYTICS_CLIENT_KEY = os.environ["AZURE_TEXT_ANALYTICS_CLIENT_KEY"]
-AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ["AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT"]
+AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ[
+    "AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT"
+]
 
 DEEPGRAM_KEY = os.environ["DEEPGRAM_KEY"]
 
@@ -141,24 +144,24 @@ FEEDBACK_FORM_URL = os.environ.get("FEEDBACK_FORM_URL")
 WORD_OF_DAY_CACHE_TTL = 86400
 
 
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
 
 
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
 
 CELERY_TASK_ROUTES = {
-    'evaluation.tasks.*': {'queue': 'evaluation_queue'},
-    'services.tasks.*': {'queue': 'services_queue'}
+    "evaluation.tasks.*": {"queue": "evaluation_queue"},
+    "services.tasks.*": {"queue": "services_queue"},
 }
 
-CELERY_USE_SSL = not (os.environ.get('CELERY_USE_SSL', "TRUE") == "FALSE")
+CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
 if CELERY_USE_SSL:
-    BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
-    CELERY_d_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
+    BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+    CELERY_d_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
 
 # change the default user models to our custom model
 AUTH_USER_MODEL = "accounts.User"
@@ -202,16 +205,18 @@ PROJECT_APPS = [
     "meetings.apps.MeetingsConfig",
 ]
 
-#apps from speechai
+# apps from speechai
 INTEGRATED_APPS = [
-    'evaluation',
-    'ai_learning',
-    'data_repo',
-    'services',
-    'common',
-    'OpenAIService',
-    'practice',
-    'custom_auth',
+    "evaluation",
+    "ai_learning",
+    "data_repo",
+    "services",
+    "common",
+    "OpenAIService",
+    "practice",
+    "custom_auth",
+    "corsheaders",
+    "sass_processor",
     'telegram_bot'
 ]
 
@@ -228,8 +233,10 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
+    "corsheaders.middleware.CorsMiddleware",  # Add this line at the top
     "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -345,8 +352,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "sass_processor.finders.CssFinder",
 ]
-
+SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 
 
 # Media files config
@@ -377,7 +385,6 @@ LOGOUT_REDIRECT_URL = "/"
 # Strip payment config
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
-
 
 
 # LOGGING
@@ -435,33 +442,37 @@ SEMESTER_CHOICES = (
     (THIRD, _("Third")),
 )
 
-AI_BOT_USERNAME = os.environ["AI_BOT_USERNAME"]  ##For staging - "BlendnetAILearningStagingBot"
+AI_BOT_USERNAME = os.environ[
+    "AI_BOT_USERNAME"
+]  ##For staging - "BlendnetAILearningStagingBot"
 AI_TELEGRAM_BOT_TOKEN = os.environ["AI_TELEGRAM_BOT_TOKEN"]
 DEFAULT_AGENT_CONFIG_NAME = os.environ["DEFAULT_AGENT_CONFIG_NAME"]
 ALLOWED_TELEGRAM_USERNAMES = []
-BUFFER_DURATION_MINUTES = os.getenv('BUFFER_DURATION_MINUTES', 2)
-SPEADSHEET_ID=os.environ["SPEADSHEET_ID"]
-TESTS_SUBSHEET_NAME=os.environ["TESTS_SUBSHEET_NAME"]
-USERS_SUBSHEET_NAME=os.environ["USERS_SUBSHEET_NAME"]
+BUFFER_DURATION_MINUTES = os.getenv("BUFFER_DURATION_MINUTES", 2)
+SPEADSHEET_ID = os.environ["SPEADSHEET_ID"]
+TESTS_SUBSHEET_NAME = os.environ["TESTS_SUBSHEET_NAME"]
+USERS_SUBSHEET_NAME = os.environ["USERS_SUBSHEET_NAME"]
 XOBIN_API_KEY = os.environ["XOBIN_API_KEY"]
 XOBIN_ENDPOINT = os.environ["XOBIN_ENDPOINT"]
 RESUME_STORAGE_CONTAINER_NAME = os.environ["RESUME_STORAGE_CONTAINER_NAME"]
-FIREBASE_API_KEY=os.environ["FIREBASE_API_KEY"]
-IDENTITY_TOOLKIT_API_URL=os.environ["IDENTITY_TOOLKIT_API_URL"]
-RESUME_APP_BACKEND_URL=os.environ["RESUME_APP_BACKEND_URL"]
-GITHUB_API_BASE_URL=os.environ["GITHUB_API_BASE_URL"]
-GITHUB_API_TOKEN=os.environ["GITHUB_API_TOKEN"]
-ADMIN_FIREBASE_ACCOUNT_ID=os.environ["ADMIN_FIREBASE_ACCOUNT_ID"]
+FIREBASE_API_KEY = os.environ["FIREBASE_API_KEY"]
+IDENTITY_TOOLKIT_API_URL = os.environ["IDENTITY_TOOLKIT_API_URL"]
+RESUME_APP_BACKEND_URL = os.environ["RESUME_APP_BACKEND_URL"]
+GITHUB_API_BASE_URL = os.environ["GITHUB_API_BASE_URL"]
+GITHUB_API_TOKEN = os.environ["GITHUB_API_TOKEN"]
+ADMIN_FIREBASE_ACCOUNT_ID = os.environ["ADMIN_FIREBASE_ACCOUNT_ID"]
 USER_IDS_CODING_TEST_ENABLED = os.environ["USER_IDS_CODING_TEST_ENABLED"]
-AZURE_OPENAI_API_KEY=os.environ["AZURE_OPENAI_API_KEY"]
-AZURE_OPENAI_API_VERSION=os.environ["AZURE_OPENAI_API_VERSION"]
-AZURE_OPENAI_AZURE_ENDPOINT=os.environ["AZURE_OPENAI_AZURE_ENDPOINT"]
+AZURE_OPENAI_API_KEY = os.environ["AZURE_OPENAI_API_KEY"]
+AZURE_OPENAI_API_VERSION = os.environ["AZURE_OPENAI_API_VERSION"]
+AZURE_OPENAI_AZURE_ENDPOINT = os.environ["AZURE_OPENAI_AZURE_ENDPOINT"]
 
-TEST_EVALUATION_WAITING_TIME_IN_SECONDS = os.environ.get("TEST_EVALUATION_WAITING_TIME_IN_SECONDS",240) #4 minutes
+TEST_EVALUATION_WAITING_TIME_IN_SECONDS = os.environ.get(
+    "TEST_EVALUATION_WAITING_TIME_IN_SECONDS", 240
+)  # 4 minutes
 DSA_FLOW_TEST_QUESTION_ID = os.environ.get("DSA_FLOW_TEST_QUESTION_ID")
 
 AZURE_OPENAI_API_KEY_OLD = os.environ["AZURE_OPENAI_API_KEY_OLD"]
-AZURE_OPENAI_AZURE_ENDPOINT_OLD=os.environ["AZURE_OPENAI_AZURE_ENDPOINT_OLD"]
+AZURE_OPENAI_AZURE_ENDPOINT_OLD = os.environ["AZURE_OPENAI_AZURE_ENDPOINT_OLD"]
 
 GLOT_KEY = os.environ["GLOT_KEY"]
 GLOT_URL = os.environ["GLOT_URL"]
@@ -473,21 +484,23 @@ SENDGRID_KEY = os.environ.get("SENDGRID_KEY")
 CREDS_EMAIL_TEMPLATE_ID = os.environ.get("CREDS_EMAIL_TEMPLATE_ID")
 PASSWORD_EMAIL_TEMPLATE_ID = os.environ.get("PASSWORD_EMAIL_TEMPLATE_ID")
 
-DSA_GLOBAL_SHEET_ID=os.environ.get("DSA_GLOBAL_SHEET_ID")
-DSA_METRICS_SHEET_ID=os.environ.get("DSA_METRICS_SHEET_ID")
-BACKEND_BASE_URL=os.environ.get("BACKEND_BASE_URL")
+DSA_GLOBAL_SHEET_ID = os.environ.get("DSA_GLOBAL_SHEET_ID")
+DSA_METRICS_SHEET_ID = os.environ.get("DSA_METRICS_SHEET_ID")
+BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL")
 
 LLM_CONFIGS_PATH = str(BASE_DIR) + "/llm_configs_v2/"
-DISABLE_PROMPT_VALIDATIONS = to_bool(os.environ.get('DISABLE_PROMPT_VALIDATIONS', 'FALSE'))
+DISABLE_PROMPT_VALIDATIONS = to_bool(
+    os.environ.get("DISABLE_PROMPT_VALIDATIONS", "FALSE")
+)
 
 import litellm
 
 
 LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY")
 LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY")
-LANGFUSE_SAMPLE_RATE = os.environ.get("LANGFUSE_SAMPLE_RATE",1)
+LANGFUSE_SAMPLE_RATE = os.environ.get("LANGFUSE_SAMPLE_RATE", 1)
 
-LANGFUSE_HOST=os.environ.get("LANGFUSE_HOST","https://us.cloud.langfuse.com")
+LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "https://us.cloud.langfuse.com")
 
 if LANGFUSE_SECRET_KEY and LANGFUSE_PUBLIC_KEY:
     litellm.success_callback = ["langfuse"]

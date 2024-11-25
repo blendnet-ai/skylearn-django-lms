@@ -33,6 +33,7 @@ from .models import TakenCourse, Result
 from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.response import Response
+from evaluation.usecases import AssessmentUseCase
 
 CM = 2.54
 
@@ -268,16 +269,12 @@ def grade_result(request):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsStudent])
 def assessment_result(request):
-    student = Student.objects.get(student__pk=request.user.id)
-    courses = TakenCourse.objects.filter(
-        student__student__pk=request.user.id, course__level=student.level
+    attempts = AssessmentUseCase.fetch_history_data(request.user.id).get(
+        "attempted_list"
     )
-    result = Result.objects.filter(student__student__pk=request.user.id)
 
     context = {
-        "courses": courses,
-        "result": result,
-        "student": student,
+        "attempts": attempts,
     }
 
     return render(request, "result/assessment_results.html", context)

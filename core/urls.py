@@ -14,12 +14,26 @@ from .views import (
     semester_update_view,
     semester_delete_view,
     dashboard_view,
+    sakshm_embed_view,
+    sakshm_embed_view_with_slug,
+    course_view,
 )
 
 
 urlpatterns = [
-    # Accounts url
+    # saksham urls
+    path(
+        "sakshm/<slug:slug>/",
+        sakshm_embed_view_with_slug,
+        name="sakshm_embed_with_slug",
+    ),
+    path(
+        "sakshm/<path>",
+        sakshm_embed_view,
+        name="sakshm_embed",
+    ),
     path("", home_view, name="home"),
+    path("courses/", course_view, name="my_courses"),
     path("add_item/", post_add, name="add_item"),
     path("item/<int:pk>/edit/", edit_post, name="edit_post"),
     path("item/<int:pk>/delete/", delete_post, name="delete_post"),

@@ -29,14 +29,7 @@ from course.forms import (
     UploadFormFile,
     UploadFormVideo,
 )
-from course.models import (
-    Course,
-    CourseAllocation,
-    Program,
-    Upload,
-    UploadVideo,
-    Module
-)
+from course.models import Course, CourseAllocation, Program, Upload, UploadVideo, Module
 from course.serializers import (
     BatchSerializer,
     LiveClassDateRangeSerializer,
@@ -709,7 +702,7 @@ def get_live_classes_by_batch_id(request, batch_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_live_classes(request):
-    request.user=User.objects.get(id=2)
+    request.user = User.objects.get(id=4)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(
@@ -732,7 +725,7 @@ def get_live_classes(request):
 @permission_classes([IsLoggedIn])
 def get_live_classes_by_course_id(request, course_id):
     try:
-        #request.user=User.objects.get(id=2)
+        # request.user=User.objects.get(id=2)
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         serializer = LiveClassDateRangeSerializer(
@@ -832,7 +825,6 @@ def create_batch(request, course_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @csrf_exempt
 @api_view(["GET"])
 def get_batches_by_course_id(request, course_id):
@@ -853,11 +845,11 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 @csrf_exempt
 @api_view(["GET"])
 def get_modules_and_resources_by_course_id(request, course_id):
-    module_data=CourseUseCase.get_modules_by_course_id(course_id)
+    module_data = CourseUseCase.get_modules_by_course_id(course_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_404_NOT_FOUND,
         )
     return Response(module_data, status=status.HTTP_200_OK)
 
@@ -870,4 +862,6 @@ def user_courses_list(request):
     if courses:
         return Response({courses}, status=status.HTTP_200_OK)
     else:
-        return Response( {"error": "No Courses Found For User"}, status=status.HTTP_404_NOT_FOUND ) 
+        return Response(
+            {"error": "No Courses Found For User"}, status=status.HTTP_404_NOT_FOUND
+        )

@@ -45,7 +45,6 @@ services:
     ports:
       - 6379:6379
 
-
   lms-notebook-dev:
     container_name: lms-notebook
     image: skylearn-lms:latest
@@ -68,4 +67,3 @@ services:
 volumes:
   pgdb_lms:
     external: true
-    
