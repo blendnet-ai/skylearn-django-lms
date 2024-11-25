@@ -1,4 +1,4 @@
-from accounts.models import Student, User, CourseProvider,CourseProviderAdmin
+from accounts.models import Student, Lecturer, User, CourseProvider,CourseProviderAdmin
 
 
 class StudentRepository:

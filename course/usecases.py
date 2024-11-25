@@ -156,7 +156,6 @@ class LiveClassUsecase:
         return [dict(t) for t in unique_tuples]
 
 class LiveClassSeriesPresenterAssignmentUseCase:
-
     @staticmethod
     def assign_presenters_to_batches(batches_allocated, live_class_series):
         assignment_results = {}
