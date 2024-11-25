@@ -5,6 +5,7 @@ from course.repositories import (
     BatchRepository,
     CourseRepository,
     LiveClassSeriesBatchAllocationRepository,
+    ModuleRepository,
 )
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -260,3 +261,55 @@ class CourseUseCase:
     def get_courses_by_course_provider(course_provider_id):
         courses= list(CourseRepository.get_courses_by_course_provider(course_provider_id).values())
         return courses
+    
+    def get_courses_for_student_or_lecturer(user):
+        if user.is_lecturer:
+            courses = CourseRepository.get_courses_for_lecturer(user.id) 
+            return courses
+
+        elif  user.is_student:
+            courses = CourseRepository.get_courses_for_student(user.id) 
+            return courses
+        else:
+            return None
+
+    def get_modules_by_course_id(course_id):
+        modules=ModuleRepository.get_module_details_by_course_id(course_id)
+        module_data = []
+        for module in modules:
+            assessment_generation_configs=[
+                config.assessment_generation_id for config in module.assignment_configs.all()
+            ]
+             
+            #Collect reading resources
+            resource_data_reading = [
+                {
+                    "type": "reading",
+                    "id": resource.id,
+                    "title": resource.title,
+                    "url": resource.file.url
+                }
+                for resource in module.uploads.all()
+            ]
+
+            # Collect video resources
+            resource_data_video = [
+                {
+                    "type": "video",
+                    "id": resource.id,
+                    "title": resource.title,
+                    "url": resource.video.url
+                }
+                for resource in module.video_uploads.all()
+            ]
+
+            
+            module_data.append({
+                "id": module.id,
+                "order_in_course":module.order_in_course,
+                "title": module.title,
+                "resources_reading": resource_data_reading,
+                "resources_video": resource_data_video,
+                "assessment_generation_configs":assessment_generation_configs
+            })
+        return module_data

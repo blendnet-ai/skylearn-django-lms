@@ -1,5 +1,7 @@
-from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation
-
+from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation, Module, Upload, UploadVideo
+from evaluation.models import AssessmentGenerationConfig
+from django.db.models import Prefetch,F,CharField, Value
+from django.db.models.functions import Concat
 
 class CourseRepository:
     @staticmethod
@@ -9,6 +11,20 @@ class CourseRepository:
     def get_courses_by_course_provider(course_provider_id):
         return Course.objects.filter(course_provider_id=course_provider_id)
     
+    def get_courses_for_lecturer(user_id):
+        return Course.objects.filter(allocated_course__lecturer__pk=user_id).values()
+
+    def get_courses_for_student(user_id):
+        return Course.objects.filter(taken_courses__student__student_id=user_id).prefetch_related(Prefetch(
+        'allocated_course',
+        queryset=CourseAllocation.objects.select_related('lecturer'))).annotate(
+            lecturer_full_name=Concat(
+                F('allocated_course__lecturer__first_name'),
+                Value(' '),  # Adding a space between first and last name
+                F('allocated_course__lecturer__last_name'),
+                output_field=CharField()
+            ),  
+        ).values()
     
 
 
@@ -55,3 +71,14 @@ class LiveClassSeriesBatchAllocationRepository:
         LiveClassSeriesBatchAllocation.objects.filter(
             live_class_series=live_class_series, batch_id=batch_id
         ).delete()
+        
+        
+class ModuleRepository:
+    def get_module_details_by_course_id(course_id):
+        modules = Module.objects.filter(course_id=course_id).prefetch_related(
+            Prefetch('uploads', queryset=Upload.objects.all()),
+            Prefetch('video_uploads', queryset=UploadVideo.objects.all()),
+            Prefetch('assignment_configs', queryset=AssessmentGenerationConfig.objects.all())
+        ).order_by('order_in_course') 
+        return modules
+    
