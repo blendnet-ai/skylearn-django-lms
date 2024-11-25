@@ -10,6 +10,10 @@ admin.site.site_header = "SkyLearn Admin"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("practice/", include("practice.urls")),
+    path("data/", include("data_repo.urls")),
+    path('ai_learning/', include('ai_learning.urls')),
+    path('evaluation/', include('evaluation.urls')),
     path("i18n/", include("django.conf.urls.i18n")),
 ]
 
@@ -25,7 +29,7 @@ urlpatterns += i18n_patterns(
     path("result/", include("result.urls")),
     path("search/", include("search.urls")),
     path("quiz/", include("quiz.urls")),
-    path("payments/", include("payments.urls")),
+    path("payments/", include("payments.urls"))
 )
 
 

@@ -1,0 +1,8 @@
+name: "text-embedding-ada-002-azure"
+llm_config_class: "AzureOpenAILLMConfig"
+endpoint: "https://bts-openai-france-central.openai.azure.com/"
+deployment_name: "text-embedding-ada-002"
+api_key: "65e13fdb0efa476aa07face5a657b7d2"
+api_version: "2024-05-01-preview"
+tools_enabled: true
+

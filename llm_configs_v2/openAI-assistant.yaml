@@ -1,0 +1,6 @@
+name: 'OpenAI-assistant'
+llm_config_class: 'OpenAIAssistantConfig'
+model_name: 'gpt-4o'
+api_key: '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'
+tools_enabled: true
+
