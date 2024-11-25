@@ -59,8 +59,7 @@ class Meeting(models.Model):
     conference_metadata = models.JSONField(null=True, blank=True)
     first_notification_sent = models.BooleanField(default=False)
     second_notification_sent = models.BooleanField(default=False)
-    attendance_reports=models.JSONField(null=True, blank=True)
-    recordings=models.JSONField(null=True, blank=True)
+
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"
