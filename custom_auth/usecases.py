@@ -171,7 +171,6 @@ class OnBoardingUsecase:
         
     def handle_fetching_filled_data( user):
         data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
-        print("dsa",data)
         if data is not None:
             UserProfileRepository.set_user_profile_user_data(user, data)
             UserProfileRepository.set_onboarding_complete(user.id)
