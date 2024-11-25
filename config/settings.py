@@ -191,6 +191,8 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     #"django_celery_beat",
+    "corsheaders",
+    "sass_processor",
 ]
 
 # Custom apps
@@ -215,8 +217,6 @@ INTEGRATED_APPS = [
     "OpenAIService",
     "practice",
     "custom_auth",
-    "corsheaders",
-    "sass_processor",
     'telegram_bot'
 ]
 

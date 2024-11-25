@@ -9,7 +9,8 @@ from accounts.permissions import IsLoggedIn, IsLecturer, IsSuperuser
 from .forms import SessionForm, SemesterForm, NewsAndEventsForm
 from .models import NewsAndEvents, ActivityLog, Session, Semester
 from rest_framework.decorators import authentication_classes, permission_classes
-from rest_framework.decorators import api_viewfrom urllib.parse import urlencode
+from rest_framework.decorators import api_view
+from urllib.parse import urlencode
 
 
 # ########################################################
