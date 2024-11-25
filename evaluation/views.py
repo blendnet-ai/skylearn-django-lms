@@ -8,12 +8,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.dateformat import DateFormat
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsLoggedIn
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponseBadRequest
 from django.db.models import Sum
-from custom_auth.authentication import FirebaseAuthentication,HardcodedAuthentication
+from accounts.authentication import FirebaseAuthentication
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from rest_framework.authentication import SessionAuthentication
@@ -35,12 +35,19 @@ from .models import AssessmentAttempt, DSAPracticeChatData
 
 module_name = 'evaluation.assessment.assessment_classes'
 module = importlib.import_module(module_name)
+from accounts.permissions import (
+    IsLecturer,
+    IsLoggedIn,
+    IsStudent,
+    IsSuperuser,
+    firebase_drf_authentication,
+)
 
 
 class AssessmentDisplayData(APIView):
     
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
     
     def get(self, request, format=None):
                 
@@ -53,7 +60,7 @@ class AssessmentDisplayData(APIView):
         
 class DashboardData(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def get(self, request, format=None):
@@ -65,8 +72,8 @@ class DashboardData(APIView):
 
 class StartAssessment(APIView):
     
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
         user = request.user
@@ -87,8 +94,8 @@ class StartAssessment(APIView):
                     
 class GetNextQuestion(APIView):
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
 
@@ -114,8 +121,8 @@ class GetNextQuestion(APIView):
         
 class FetchQuestion(APIView):
     
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
     
     def get(self, request, format=None):
         assessment_id = request.query_params.get('assessment_id')
@@ -144,8 +151,8 @@ class FetchQuestion(APIView):
     
 class FetchAssessmentData(APIView):
     
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         assessment_id = request.query_params.get('assessment_id')
@@ -157,8 +164,8 @@ class FetchAssessmentData(APIView):
     
 class FetchAssessmentHistory(APIView):
         
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         user_id = request.user.id
@@ -169,8 +176,8 @@ class FetchAssessmentHistory(APIView):
 
 class FetchAssessmentState(APIView):
         
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         assessment_id = request.query_params.get('assessment_id')
@@ -192,7 +199,7 @@ class FetchAssessmentState(APIView):
 
 class FetchScorecard(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -205,7 +212,7 @@ class FetchScorecard(APIView):
 
 class FetchIndividualScorecard(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -223,7 +230,7 @@ class FetchIndividualScorecard(APIView):
 
 class SubmitAssessmentAnswerMCQ(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -245,7 +252,7 @@ class SubmitAssessmentAnswerMCQ(APIView):
 
 class SubmitAssessmentAnswerMMCQ(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -267,7 +274,7 @@ class SubmitAssessmentAnswerMMCQ(APIView):
         
 class SubmitAssessmentAnswerSubjective(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -289,7 +296,7 @@ class SubmitAssessmentAnswerSubjective(APIView):
 
 class SubmitAssessmentAnswerVoice(APIView):
         
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -310,7 +317,7 @@ class SubmitAssessmentAnswerVoice(APIView):
 
 class CloseAssessment(APIView):    
         
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -332,7 +339,7 @@ class CloseAssessment(APIView):
     
 class ExitAssessment(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -369,7 +376,7 @@ class XobinResultWebhook(APIView):
     
 class AzureStorageURL(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -382,7 +389,7 @@ class AzureStorageURL(APIView):
 
 class DSAExecute(APIView):
     
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     
     def post(self, request, format=None):
@@ -417,7 +424,7 @@ class DSAExecute(APIView):
         
 
 class DSAExecutionStatus(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
     def get(self, request,format=None):
         user = request.user
@@ -428,7 +435,7 @@ class DSAExecutionStatus(APIView):
 
 class DSAChatHistory(APIView):
 
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, _=None):
@@ -457,7 +464,7 @@ class DSAChatHistory(APIView):
 
 class DSAFullChatHistory(APIView):
 
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, _=None):
@@ -486,7 +493,7 @@ class DSAFullChatHistory(APIView):
         return Response({"data": chat_history}, status=status.HTTP_200_OK)
 
 class DSAReport(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, _=None):
@@ -511,7 +518,7 @@ class DSAReport(APIView):
         return Response({"data": report}, status=status.HTTP_200_OK)
 
 class BaseDSAQuestionsList(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get_dsa_questions(self, request, is_lab=False):
@@ -529,7 +536,7 @@ class DSALabQuestionsList(BaseDSAQuestionsList):
 
 
 class DSAPracticeAttemptGenerator(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request):
@@ -540,7 +547,7 @@ class DSAPracticeAttemptGenerator(APIView):
         return Response({"data": generated_assessment_data}, status=status.HTTP_200_OK)
 
 class QuestionIssueReport(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def post(self, request):
@@ -563,7 +570,7 @@ class QuestionIssueReport(APIView):
         return Response({"data": f'Issue created {question_issue_id}'}, status=status.HTTP_201_CREATED)
 
 class DSAPracticeReportHistory(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request):
@@ -573,7 +580,7 @@ class DSAPracticeReportHistory(APIView):
         
 
 class FetchDashboardDetails(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request):
@@ -583,7 +590,7 @@ class FetchDashboardDetails(APIView):
 
 
 class DSASheetList(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request):
@@ -595,7 +602,7 @@ class DSASheetList(APIView):
     
 
 class DSAAssessmentChatHistoryView(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     authentication_classes = [SessionAuthentication]
     @method_decorator(login_required)
     def get(self, request, **kwargs):
@@ -607,7 +614,7 @@ class DSAAssessmentChatHistoryView(APIView):
             return render(request, 'error.html', {'error_message': 'Only staff members can access chat history.'})
 
 class AvailableInterviewTypesView(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request):
@@ -616,7 +623,7 @@ class AvailableInterviewTypesView(APIView):
 
 
 class MockInterviewBehaviouralReportView(APIView):
-    #permission_classes = [IsAuthenticated]
+    #permission_classes = [IsLoggedIn]
     #authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, _=None):
