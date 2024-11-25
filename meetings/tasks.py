@@ -1,6 +1,5 @@
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from meetings.repositories import MeetingRepository
 from .exceptions import ConferencePlatformError
 
 
@@ -93,6 +92,7 @@ def fetch_meetings_attendance_data(self) -> None:
     Celery task to fetch and update attendance data for all pending Teams meetings.
     """
     logger.info("Fetching pending meetings to update Teams attendance.")
+    from meetings.repositories import MeetingRepository
     try:
         pending_meetings = MeetingRepository.get_attendance_details_pending_meetings()
         for meeting in pending_meetings:
@@ -138,6 +138,7 @@ def fetch_meetings_recordings_data(self) -> None:
     Celery task to fetch and update recording data for all pending Teams meetings.
     """
     logger.info("Fetching pending recordings to update attendance data.")
+    from meetings.repositories import MeetingRepository
     try:
         pending_meetings = MeetingRepository.get_recordings_pending_meetings()
         for meeting in pending_meetings:
