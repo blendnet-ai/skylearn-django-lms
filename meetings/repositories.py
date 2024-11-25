@@ -1,4 +1,8 @@
 from meetings.models import Meeting, MeetingSeries
+import typing
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, DatabaseError
+from datetime import datetime, timedelta, timezone
 
 
 class MeetingSeriesRepository:
@@ -47,6 +51,12 @@ class MeetingSeriesRepository:
     @staticmethod
     def get_meeting_series_by_id(id):
         return MeetingSeries.objects.get(id=id)
+    
+    @staticmethod
+    def add_presenter_details_to_meeting_series(meeting_series,presenter_details):
+        meeting_series.presenter_details=presenter_details
+        meeting_series.save()
+        
 
 
 class MeetingRepository:
@@ -55,11 +65,11 @@ class MeetingRepository:
         return Meeting.objects.create(series=series, start_date=start_date, link=link)
 
     @staticmethod
-    def get_meetings_by_series_id(series_id):
-        return Meeting.objects.filter(series_id=series_id)
+    def get_meetings_by_series_id(series_id) -> typing.List[Meeting]:
+        return list(Meeting.objects.filter(series_id=series_id))
 
     @staticmethod
-    def get_meeting_by_id(id):
+    def get_meeting_by_id(id) -> Meeting:
         return Meeting.objects.get(id=id)
 
     @staticmethod
@@ -67,3 +77,4 @@ class MeetingRepository:
         return Meeting.objects.filter(
             start_date__range=(start_date, end_date), series_id=series_id
         ).select_related("series")
+

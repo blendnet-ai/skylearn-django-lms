@@ -21,7 +21,11 @@ class LiveClassSeriesSerializer(serializers.ModelSerializer):
             "weekday_schedule",
             "monthly_day",
         ]
-
+    def validate_batch_ids(self,value):
+        if len(value) >1:
+            raise serializers.ValidationError("You can create live class series for only one batch at a time")
+        return value
+        
     def validate_duration(self, value):
         """
         Validate that duration is positive and reasonable

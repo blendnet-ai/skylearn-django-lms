@@ -1,5 +1,4 @@
-from accounts.repositories import StudentRepository, UserRepository
-import course
+from accounts.repositories import StudentRepository, UserRepository,LecturerRepository
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
     BatchRepository,
@@ -29,6 +28,7 @@ class LiveClassUsecase:
         monthly_day,
     ):
 
+        
         live_class_series = (
             MeetingSeriesUsecase.create_or_update_meeting_series_and_create_occurrences(
                 title=title,
@@ -47,11 +47,23 @@ class LiveClassUsecase:
                 batch_ids, live_class_series
             )
         )
+        
+        presenter_assignment_success=[]
+        # Assign presenters to the allocated batches
+        if batches_allocated:
+            presenter_assignment_success = (
+                LiveClassSeriesPresenterAssignmentUseCase.assign_presenters_to_batches(
+                    batches_allocated, live_class_series
+                )
+            )
+        
+        
 
         return (
             live_class_series.id,
             batches_allocated,
             batches_failed_to_allocate,
+            presenter_assignment_success
         )
 
     @staticmethod
@@ -89,8 +101,15 @@ class LiveClassUsecase:
                 live_class_series, new_batch_ids
             )
         )
+        presenter_assignment_success=[]
+        if batches_allocated:
+            presenter_assignment_success = (
+                LiveClassSeriesPresenterAssignmentUseCase.assign_presenters_to_batches(
+                    batches_allocated, live_class_series
+                )
+            )
 
-        return batches_allocated, batches_failed_to_allocate
+        return batches_allocated, batches_failed_to_allocate,presenter_assignment_success
 
     @staticmethod
     def delete_live_class_series(id):
@@ -135,7 +154,24 @@ class LiveClassUsecase:
         # This is to remove duplicate live classes
         unique_tuples = {tuple(meeting.items()) for meeting in live_classes}
         return [dict(t) for t in unique_tuples]
+
+class LiveClassSeriesPresenterAssignmentUseCase:
+
+    @staticmethod
+    def assign_presenters_to_batches(batches_allocated, live_class_series):
+        assignment_results = {}
+        for batch in batches_allocated:
+            batch=BatchRepository.get_batch_by_id(batch)
+            presenter_details= LecturerRepository.get_presenter_details_by_lecturer_id(batch.lecturer.id)
+
+            if presenter_details:
+                success=LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(live_class_series,presenter_details)
+                assignment_results[batch.id] = "True"
+
+        return assignment_results
     
+    def assign_presenter(live_class_series,presenter_details):
+        MeetingSeriesRepository.add_presenter_details_to_meeting_series(live_class_series,presenter_details)
         
 
 
@@ -203,6 +239,7 @@ class LiveClassSeriesBatchAllocationUseCase:
         if not isinstance(batch_id, int):
             raise LiveClassSeriesBatchAllocationUseCase.BatchIdNotIntegerException()
         batch = BatchRepository.get_batch_by_id(batch_id)
+        
         return LiveClassSeriesBatchAllocationRepository.create_live_class_series_batch_allocation(
             live_class_series, batch=batch
         )

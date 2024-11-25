@@ -1,9 +1,19 @@
-from meetings.models import MeetingSeries
+from telnetlib import LOGOUT
+from meetings.models import Meeting, MeetingSeries, meeting_post_save
 from meetings.repositories import MeetingRepository, MeetingSeriesRepository
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
 from datetime import datetime
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
+from django.db import transaction
+from .exceptions import MeetingNotFoundError,PresenterDetailsMissingError,ConferenceIDMissingError
+
+from meetings.services.msteams import MSTeamsConferencePlatformService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MeetingSeriesUsecase:
@@ -224,11 +234,117 @@ class MeetingSeriesUsecase:
     @staticmethod
     def delete_meeting_series(id):
         meeting_series = MeetingSeriesRepository.get_meeting_series_by_id(id)
-        MeetingRepository.get_meetings_by_series_id(id).delete()
+        MeetingRepository.get_meetings_by_series_id(id)
         meeting_series.delete()
 
 
 class MeetingUsecase:
+    @staticmethod
+    def create_teams_meeting(meeting_id: int) -> None:
+        """
+        Creates a Teams meeting for a given meeting ID
+        """
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        if not meeting:
+            raise MeetingNotFoundError(f"Meeting with ID {meeting_id} not found")
+        
+        if not meeting.series.presenter_details:
+            raise PresenterDetailsMissingError(f"Presenter details are missing for meeting ID {meeting_id}")
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            # Create Teams meeting using model properties
+            meeting_details = teams_service.create_meeting(
+                presenter=meeting.series.presenter_details,
+                start_time=meeting.start_time,
+                end_time=meeting.end_time,
+                subject=meeting.title,
+            )
+
+            # Update meeting with Teams details
+            meeting.link = meeting_details.join_url
+            meeting.conference_metadata = meeting_details.all_details
+            meeting.conference_id = meeting_details.id
+            # Temporarily disconnect signals
+            post_save.disconnect(meeting_post_save, sender=Meeting)
+
+            # Save the meeting without triggering signals
+            with transaction.atomic():
+                meeting.save()
+
+        except Exception as e:
+            logger.error(
+                f"Failed to create Teams meeting for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+
+    @staticmethod
+    def delete_teams_meeting(meeting_id,presenter_details,conference_id) -> None:
+        """
+        Deletes a Teams meeting for a given meeting ID
+        """
+        
+        if not conference_id:
+            raise ConferenceIDMissingError(f"missing conference id for meeting ID {meeting_id}")
+        
+        if not presenter_details:
+            raise PresenterDetailsMissingError(f"Presenter details are missing for meeting ID {meeting_id}")
+        
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            teams_service.delete_meeting( presenter=presenter_details, meeting_id=conference_id)
+            logger.info(f"Deleted meeting {meeting_id}")
+
+        except Exception as e:
+            logger.error(
+                f"Failed to delete Teams meeting for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+    
+    def update_teams_meeting(meeting_id: int) -> None:
+        """
+        Creates a Teams meeting for a given meeting ID
+        """
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        
+        if not meeting:
+            raise MeetingNotFoundError(f"Meeting with ID {meeting_id} not found")
+        
+        if not meeting.series.presenter_details:
+            raise PresenterDetailsMissingError(f"Presenter details are missing for meeting ID {meeting_id}")
+
+        if not meeting.conference_id:
+            raise ConferenceIDMissingError(f"missing conference id for meeting ID {meeting_id}")
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            # Create Teams meeting using model properties
+            meeting_details = teams_service.update_meeting(
+                presenter=meeting.series.presenter_details,
+                start_time=meeting.start_time,
+                end_time=meeting.end_time,
+                subject=meeting.title,
+                meeting_id=meeting.conference_id
+            )
+            # Update meeting with Teams details
+            meeting.link = meeting_details.join_url
+            meeting.conference_metadata = meeting_details.all_details
+            meeting.conference_id = meeting_details.id
+            
+            # Temporarily disconnect signals
+            post_save.disconnect(meeting_post_save, sender=Meeting)
+
+            # Save the meeting without triggering signals
+            with transaction.atomic():
+                meeting.save()
+
+        except Exception as e:
+            logger.error(
+                f"Failed to create Teams meeting for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+    
+
     @staticmethod
     def update_meeting(id, start_time_override, duration_override, start_date):
         meeting = MeetingRepository.get_meeting_by_id(id)

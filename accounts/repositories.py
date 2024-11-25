@@ -36,3 +36,13 @@ class CourseProviderRepository:
 
         except CourseProviderAdmin.DoesNotExist:
             return None 
+
+class LecturerRepository:
+    @staticmethod
+    def get_presenter_details_by_lecturer_id(lecturer_id):
+        try:
+            lecturer = Lecturer.objects.get(lecturer_id=lecturer_id)
+            return lecturer.presenter_details()  
+        except Lecturer.DoesNotExist:
+            return None
+        

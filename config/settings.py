@@ -23,6 +23,7 @@ from attr.converters import to_bool
 from dotenv import load_dotenv
 
 load_dotenv()
+from celery.schedules import crontab
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -161,6 +162,9 @@ if CELERY_USE_SSL:
 
 # change the default user models to our custom model
 AUTH_USER_MODEL = "accounts.User"
+STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
+LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
+
 
 # Application definition
 
@@ -182,7 +186,8 @@ THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "django_filters",
-    'django_extensions',
+    "django_extensions",
+    #"django_celery_beat",
 ]
 
 # Custom apps
@@ -402,10 +407,6 @@ LOGGING = {
 # WhiteNoise configuration
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
-LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
-
-
 # Constants
 YEARS = (
     (1, "1"),
@@ -538,3 +539,44 @@ if not firebase_admin._apps:
 
 TELEGRAM_BOT_NAME=os.environ.get("TELEGRAM_BOT_NAME",'Ap32_bot')
 TWO_Factor_SMS_API_KEY= os.environ.get("TWO_Factor_SMS_API_KEY","82615175-a581-11ef-8b17-0200cd936042")
+
+# Celery Configuration
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/0"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
+
+# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# # Celery Beat Settings (if you need scheduled tasks)
+# CELERY_BEAT_SCHEDULE = {
+#     'fetch-meeting-attendance-data-every-midnight': {
+#         'task': 'meetings.tasks.fetch_meetings_attendance_data',
+#         'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
+#     },
+#     'fetch-meeting-recordings-data-every-midnight': {
+#         'task': 'meetings.tasks.fetch_meetings_recordings_data',
+#         'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
+#     }   
+# }
+
+# Task-specific settings
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes timeout
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # Soft timeout 5 minutes before hard timeout
+CELERY_TASK_MAX_RETRIES = 3
+CELERY_TASK_RETRY_DELAY = 300  # 5 minutes
+
+
+# MS Teams settings
+MS_TEAMS_ACCESS_TOKEN_CACHE_KEY = "msteams_access_token"
+MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID") 
+MS_TEAMS_CLIENT_SECRET = config("MS_TEAMS_CLIENT_SECRET")
+MS_TEAMS_TENANT_ID = config("MS_TEAMS_TENANT_ID")
+# This Admin user id is needed to be given permissions to create meetings via powershell
+# refer to this gpt chat for documentation https://chatgpt.com/share/673f0e30-d540-8007-b07d-a22c9a60fd4a
+MS_TEAMS_ADMIN_USER_ID = config("MS_TEAMS_ADMIN_USER_ID")
+MS_TEAMS_ADMIN_USER_NAME = config("MS_TEAMS_ADMIN_USER_NAME")
+MS_TEAMS_ADMIN_UPN = config("MS_TEAMS_ADMIN_UPN")

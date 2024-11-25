@@ -228,3 +228,14 @@ class CourseProvider(models.Model):
     admins = models.ManyToManyField(
         CourseProviderAdmin
     )
+
+class Lecturer(models.Model):
+    lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
+    guid=models.CharField(max_length=50,null=False)
+    
+    @property
+    def name(self):
+        return f"{self.lecturer.first_name} {self.lecturer.last_name}"
+    
+    def presenter_details(self):
+        return {"guid":self.guid,"name":self.name}
