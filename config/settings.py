@@ -196,14 +196,7 @@ INTEGRATED_APPS = [
     'practice',
     'custom_auth',
     'telegram_bot'
-    "evaluation",
-    "ai_learning",
-    "data_repo",
-    "services",
-    "common",
-    "OpenAIService",
-    "practice",
-    "custom_auth",
+    "evaluation"
 ]
 
 # Combine all apps
