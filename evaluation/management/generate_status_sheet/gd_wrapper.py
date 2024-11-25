@@ -197,3 +197,30 @@ class GDWrapper:
             body=body
         ).execute()
         return response
+
+    def find_row_by_value(self, sheet_name, column_name, value):
+        logger.info(f"Searching for value '{value}' in column '{column_name}' of sheet '{sheet_name}'.")
+
+        # Fetch existing data from the sheet
+        existing_data = self.get_existing_data(sheet_name)
+
+        # Get the index of the specified column
+        column_index = None
+        for i, field in enumerate(existing_data[0]):
+            if field == column_name:
+                column_index = i
+                break
+
+        if column_index is None:
+            logger.error(f"Column '{column_name}' not found in the sheet '{sheet_name}'.")
+            return None
+
+        # Iterate through the existing data to find the row with the specified value
+        for row in existing_data:
+            if row[column_index] == value:
+                # Convert row data to key-value pair
+                row_data = {existing_data[0][i]: row[i] for i in range(len(row))}
+                return row_data
+
+        logger.info(f"Value '{value}' not found in column '{column_name}' of sheet '{sheet_name}'.")
+        return None

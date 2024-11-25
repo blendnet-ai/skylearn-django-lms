@@ -1,23 +1,45 @@
+from pyexpat.errors import messages
+from urllib import request
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+import random
 
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import rest_framework.exceptions as rest_framework_exceptions
 from rest_framework.permissions import AllowAny
-from speechai.settings import DOUBT_SOLVING_ORG_API_KEY
-from InstituteConfiguration.repositories import QuestionListRepository
+# from speechai.settings import DOUBT_SOLVING_ORG_API_KEY
+# from InstituteConfiguration.repositories import QuestionListRepository
 from custom_auth.authentication import FirebaseAuthentication, HardcodedAuthentication
 from custom_auth.serializers import ActivityDataSerializer, UserSerializer, FormFetchSerializer, FormSubmitSerializer
-from custom_auth.usecases import ActivityDataUseCase, SignUpUsecase,DoubtSolvingTokenUseCase
+from custom_auth.usecases import ActivityDataUseCase, OnBoardingUsecase, SignUpUsecase, OnBoardingUsecase
 from data_repo.repositories import ConfigMapRepository
+from services.sms_service import SMS2FactorService
 from .repositories import FormRepository, UserProfileRepository
+from django.views.generic.base import TemplateView
 import logging
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from config.settings import TWO_Factor_SMS_API_KEY,TELEGRAM_BOT_NAME
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
+from django.contrib.auth.decorators import login_required
+import re
 
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
+SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
+
+GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+
+from django.views.decorators.csrf import csrf_exempt
+
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
 
 class FormCRUD(APIView):
     permission_classes = [IsAuthenticated]
@@ -114,21 +136,71 @@ class SignUpView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-class DoubtSolvingTokenView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [FirebaseAuthentication]
-    
-    def get(self, request, format=None):
-        user_id=request.user.id
-        data=DoubtSolvingTokenUseCase.create_or_get_token(user_id,DOUBT_SOLVING_ORG_API_KEY)
-        if data is None:
-            return Response(
-            {"message": "Something went wrong"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        return Response(
-            {"data": data},
-            status=status.HTTP_200_OK
-        )
+
+@csrf_exempt
+@api_view(['GET'])
+def get_onboarding_status(request):
+    user_id = request.user.id
+    onboarding_status = OnBoardingUsecase.get_onboaring_status(user_id)
+    return Response(onboarding_status, status=status.HTTP_200_OK)
+
+@csrf_exempt
+@api_view(['GET'])
+def determine_onboarding_step(request):
+    user_id = request.user.id
+    step = OnBoardingUsecase.determine_onboarding_step(user_id)
+    return Response({"step": step}, status=status.HTTP_200_OK)
+
+@csrf_exempt
+@api_view(['POST'])
+def send_otp(request):
+    user = request.user
+    phone_number = request.data.get('phone_number')
+
+    if not phone_number:
+        return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    otp_sending_result = OnBoardingUsecase.handle_otp_sending(user, phone_number)
+
+    if otp_sending_result.get('otp_sent'):
+        return Response(otp_sending_result, status=status.HTTP_200_OK)
+    else:
+        return Response(otp_sending_result, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def verify_otp(request):
+    user = request.user
+    entered_otp_value = request.data.get('otp_value')
+
+    if not entered_otp_value:
+        return Response({"error": "OTP value is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    onboarding_verification_result = OnBoardingUsecase.handle_otp_verification(user, entered_otp_value)
+
+    if onboarding_verification_result.get('otp_verified'):
+        return Response(onboarding_verification_result, status=status.HTTP_200_OK)
+    else:
+        return Response(onboarding_verification_result, status=status.HTTP_400_BAD_REQUEST)
+
+@csrf_exempt
+@api_view(['POST'])
+def fetch_filled_data(request):
+    user = request.user
+    data_fetching_result = OnBoardingUsecase.handle_fetching_filled_data(user)
+    return Response(data_fetching_result, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
         
+        
+        
+    
     
