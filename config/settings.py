@@ -174,6 +174,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
 ]
 
 # Third party apps
@@ -193,6 +194,7 @@ PROJECT_APPS = [
     "search.apps.SearchConfig",
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
+    "meetings.apps.MeetingsConfig",
 ]
 
 #apps from speechai
@@ -209,6 +211,14 @@ INTEGRATED_APPS = [
 
 # Combine all apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS + INTEGRATED_APPS
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "accounts.exceptions.custom_exception_handler",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "accounts.authentication.FirebaseAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -235,6 +245,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.auth_context_processor.firebase_config",
                 # 'django.template.context_processors.i18n',
                 # 'django.template.context_processors.media',
                 # 'django.template.context_processors.static',
@@ -250,14 +261,14 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    "default": {
         "ATOMIC_REQUESTS": True,
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['POSTGRES_DB'],
-        'USER': os.environ['POSTGRES_USER'],
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': os.environ['POSTGRES_HOST'],
-        'PORT': os.environ['POSTGRES_PORT'],
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"],
+        "USER": os.environ["POSTGRES_USER"],
+        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
+        "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.environ["POSTGRES_PORT"],
     }
 }
 
@@ -480,3 +491,44 @@ if LANGFUSE_SECRET_KEY and LANGFUSE_PUBLIC_KEY:
     litellm.failure_callback = ["langfuse"]
 
 DOUBT_SOLVING_ORG_API_KEY = os.environ.get("DOUBT_SOLVING_ORG_API_KEY")
+
+import firebase_admin
+from firebase_admin import credentials
+
+FIREBASE_API_KEY = os.environ["FIREBASE_API_KEY"]
+FIREBASE_UNIVERSE_DOMAIN = os.environ["FIREBASE_UNIVERSE_DOMAIN"]
+FIREBASE_ACCOUNT_TYPE = os.environ["FIREBASE_ACCOUNT_TYPE"]
+FIREBASE_PROJECT_ID = os.environ["FIREBASE_PROJECT_ID"]
+FIREBASE_PRIVATE_KEY_ID = os.environ["FIREBASE_PRIVATE_KEY_ID"]
+FIREBASE_PRIVATE_KEY = os.environ["FIREBASE_PRIVATE_KEY"]
+FIREBASE_CLIENT_EMAIL = os.environ["FIREBASE_CLIENT_EMAIL"]
+FIREBASE_CLIENT_ID = os.environ["FIREBASE_CLIENT_ID"]
+FIREBASE_AUTH_URI = os.environ["FIREBASE_AUTH_URI"]
+FIREBASE_TOKEN_URI = os.environ["FIREBASE_TOKEN_URI"]
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ[
+    "FIREBASE_AUTH_PROVIDER_X509_CERT_URL"
+]
+FIREBASE_CLIENT_X509_CERT_URL = os.environ["FIREBASE_CLIENT_X509_CERT_URL"]
+FIREBASE_AUTH_DOMAIN = os.environ["FIREBASE_AUTH_DOMAIN"]
+FIREBASE_STORAGE_BUCKET = os.environ["FIREBASE_STORAGE_BUCKET"]
+FIREBASE_MESSAGING_SENDER_ID = os.environ["FIREBASE_MESSAGING_SENDER_ID"]
+FIREBASE_APP_ID = os.environ["FIREBASE_APP_ID"]
+FIREBASE_MEASUREMENT_ID = os.environ["FIREBASE_MEASUREMENT_ID"]
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(
+        {
+            "type": FIREBASE_ACCOUNT_TYPE,
+            "project_id": FIREBASE_PROJECT_ID,
+            "private_key_id": FIREBASE_PRIVATE_KEY_ID,
+            "private_key": FIREBASE_PRIVATE_KEY.replace("\\n", "\n"),
+            "client_email": FIREBASE_CLIENT_EMAIL,
+            "client_id": FIREBASE_CLIENT_ID,
+            "auth_uri": FIREBASE_AUTH_URI,
+            "token_uri": FIREBASE_TOKEN_URI,
+            "auth_provider_x509_cert_url": FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+            "client_x509_cert_url": FIREBASE_CLIENT_X509_CERT_URL,
+            "universe_domain": FIREBASE_UNIVERSE_DOMAIN,
+        }
+    )
+    firebase_admin.initialize_app(cred)
