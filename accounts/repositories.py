@@ -1,4 +1,4 @@
-from accounts.models import Student, User
+from accounts.models import Lecturer, Student, User
 
 
 class StudentRepository:
@@ -17,3 +17,14 @@ class StudentRepository:
 class UserRepository:
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
+
+
+class LecturerRepository:
+    @staticmethod
+    def get_presenter_details_by_lecturer_id(lecturer_id):
+        try:
+            lecturer = Lecturer.objects.get(lecturer_id=lecturer_id)
+            return lecturer.presenter_details()  
+        except Lecturer.DoesNotExist:
+            return None
+        

@@ -1,5 +1,8 @@
 from meetings.models import Meeting, MeetingSeries
 import typing
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, DatabaseError
+from datetime import datetime, timedelta, timezone
 
 
 class MeetingSeriesRepository:
@@ -48,6 +51,12 @@ class MeetingSeriesRepository:
     @staticmethod
     def get_meeting_series_by_id(id):
         return MeetingSeries.objects.get(id=id)
+    
+    @staticmethod
+    def add_presenter_details_to_meeting_series(meeting_series,presenter_details):
+        meeting_series.presenter_details=presenter_details
+        meeting_series.save()
+        
 
 
 class MeetingRepository:
@@ -68,3 +77,39 @@ class MeetingRepository:
         return Meeting.objects.filter(
             start_date__range=(start_date, end_date), series_id=series_id
         ).select_related("series")
+
+
+    @staticmethod
+    def get_attendance_details_pending_meetings():
+        current_date = timezone.now().date()  # Get the current date
+        # Create a naive datetime for the end of the current day
+        end_of_day = datetime.combine(current_date, datetime.max.time())  # End of the current day (naive)
+
+        # Fetch all meetings
+        meetings = Meeting.objects.all()
+
+        # Filter meetings
+        pending_meetings = [
+            meeting.id for meeting in meetings
+            if meeting.end_time.replace(tzinfo=None) < end_of_day and meeting.attendance_reports is None
+        ]
+
+        return pending_meetings
+
+    @staticmethod
+    def get_recordings_pending_meetings():
+        current_date = timezone.now().date()  # Get the current date
+        # Create a naive datetime for the end of the current day
+        end_of_day = datetime.combine(current_date, datetime.max.time())  # End of the current day (naive)
+
+        # Fetch all meetings
+        meetings = Meeting.objects.all()
+
+        # Filter meetings 
+        pending_meetings = [
+            meeting.id for meeting in meetings
+            if meeting.end_time.replace(tzinfo=None) < end_of_day and meeting.recordings is None
+        ]
+
+        return pending_meetings
+

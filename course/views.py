@@ -531,7 +531,7 @@ def create_live_class_series(request):
 
     if serializer.is_valid():
         try:
-            live_class_series_id, batches_allocated, batches_failed_to_allocate = (
+            live_class_series_id, batches_allocated, batches_failed_to_allocate, presenter_assignement = (
                 LiveClassUsecase.create_live_class_series(
                     title=serializer.validated_data["title"],
                     batch_ids=serializer.validated_data["batch_ids"],
@@ -553,6 +553,7 @@ def create_live_class_series(request):
                     "id": live_class_series_id,
                     "batches_allocated": batches_allocated,
                     "batches_failed_to_allocate": batches_failed_to_allocate,
+                    "presenter_assignment":presenter_assignement
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -586,7 +587,7 @@ def update_live_class_series(request, id):
 
     if serializer.is_valid():
         try:
-            batches_allocated, batches_failed_to_allocate = (
+            batches_allocated, batches_failed_to_allocate,presenter_assignement = (
                 LiveClassUsecase.update_live_class_series(
                     id,
                     title=serializer.validated_data["title"],
@@ -607,6 +608,7 @@ def update_live_class_series(request, id):
                     "message": f"Live class series updated successfully.",
                     "batches_allocated": batches_allocated,
                     "batches_failed_to_allocate": batches_failed_to_allocate,
+                    "presenter_assignement":presenter_assignement
                 },
                 status=status.HTTP_200_OK,
             )

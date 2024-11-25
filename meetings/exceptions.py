@@ -20,3 +20,17 @@ class TeamsMeetingDeletionError(ConferencePlatformError):
     """Raised when Teams meeting deletion fails"""
 
     pass
+
+
+class MeetingNotFoundError(Exception):
+    """Exception raised when a meeting is not found."""
+    pass
+
+class PresenterDetailsMissingError(Exception):
+    """Exception raised when presenter details are missing."""
+    pass
+
+class ConferenceIDMissingError(Exception):
+    """Exception raised when presenter details are missing."""
+    pass
+

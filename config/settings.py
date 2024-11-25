@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 from decouple import config
 from django.utils.translation import gettext_lazy as _
+from celery.schedules import crontab
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,7 +29,7 @@ SECRET_KEY = config(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com"]
+ALLOWED_HOSTS = ["127.0.0.1","localhost", "adilmohak1.pythonanywhere.com"]
 
 # change the default user models to our custom model
 AUTH_USER_MODEL = "accounts.User"
@@ -55,6 +56,8 @@ THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "django_filters",
+    "django_extensions",
+    #"django_celery_beat",
 ]
 
 # Custom apps
@@ -66,7 +69,7 @@ PROJECT_APPS = [
     "search.apps.SearchConfig",
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
-    "meetings.apps.MeetingsConfig",
+    "meetings.apps.MeetingsConfig"
 ]
 
 # Combine all apps
@@ -284,14 +287,17 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
-
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # Celery Beat Settings (if you need scheduled tasks)
 CELERY_BEAT_SCHEDULE = {
-    # Example of a scheduled task:
-    # 'cleanup-old-meetings': {
-    #     'task': 'meetings.tasks.cleanup_old_meetings',
-    #     'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
-    # },
+    'fetch-meeting-attendance-data-every-midnight': {
+        'task': 'meetings.tasks.fetch_meetings_attendance_data',
+        'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
+    },
+    'fetch-meeting-recordings-data-every-midnight': {
+        'task': 'meetings.tasks.fetch_meetings_recordings_data',
+        'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
+    }   
 }
 
 # Task-specific settings
@@ -303,7 +309,7 @@ CELERY_TASK_RETRY_DELAY = 300  # 5 minutes
 
 # MS Teams settings
 MS_TEAMS_ACCESS_TOKEN_CACHE_KEY = "msteams_access_token"
-MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID")
+MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID") 
 MS_TEAMS_CLIENT_SECRET = config("MS_TEAMS_CLIENT_SECRET")
 MS_TEAMS_TENANT_ID = config("MS_TEAMS_TENANT_ID")
 # This Admin user id is needed to be given permissions to create meetings via powershell

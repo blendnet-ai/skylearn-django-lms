@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from venv import logger
 import requests
 from typing import Dict, Any, Optional
 from django.core.cache import cache
@@ -9,6 +10,7 @@ from .base import BaseConferencePlatformService, MeetingDetails, Presenter
 class MSTeamsConferencePlatformService(BaseConferencePlatformService):
     AUTH_URL = f"https://login.microsoftonline.com/{settings.MS_TEAMS_TENANT_ID}/oauth2/v2.0/token"
     GRAPH_API_URL = "https://graph.microsoft.com/v1.0/users/{user_id}/onlineMeetings"
+    MEETING_ID_URL= "https://graph.microsoft.com/v1.0/users/{user_id}/onlineMeetings/{meeting_id}"
 
     from dataclasses import dataclass
 
@@ -97,14 +99,14 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
                                 "displayName": settings.MS_TEAMS_ADMIN_USER_NAME,
                             }
                         },
-                        "upn": settings.email,
+                        "upn": settings.MS_TEAMS_ADMIN_UPN,
                     },
                     "attendees": [
                         {
                             "identity": {
                                 "user": {
-                                    "id": presenter.guid,
-                                    "displayName": presenter.name,
+                                    "id": presenter.get('guid'),
+                                    "displayName": presenter.get('name'),
                                 },
                                 "role": "presenter",
                                 "upn": "admin@sakshm.com",
@@ -115,7 +117,7 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             }
 
             response = requests.post(
-                self.GRAPH_API_URL.format(user_id=presenter.guid),
+                self.GRAPH_API_URL.format(user_id=presenter.get('guid')),
                 headers=headers,
                 json=meeting_data,
             )
@@ -135,7 +137,138 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
                 return self.create_meeting(presenter, start_time, end_time, subject)
             raise
 
-    def delete_meeting(self, meeting_id: str) -> None:
-        # Implementation using Microsoft Graph API
-        # Delete meeting using meeting_id
-        pass
+    def delete_meeting(self,presenter:Presenter,meeting_id:str) -> None:
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            response=requests.delete(
+                headers=headers,
+                url=self.MEETING_ID_URL.format(user_id=presenter.get('guid'),meeting_id=meeting_id)
+            )
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            # If authentication failed, clear cache and retry once
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.delete_meeting(meeting_id=meeting_id)
+            raise
+            
+    def update_meeting(self,presenter:Presenter,meeting_id:str,start_time: datetime,end_time: datetime,subject: str) -> None:
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            meeting_data = {
+                "startDateTime": start_time.isoformat() + "Z",
+                "endDateTime": end_time.isoformat() + "Z",
+                "subject": subject
+            }
+            response=requests.patch(
+                headers=headers,
+                url=self.MEETING_ID_URL.format(user_id=presenter.get('guid'),meeting_id=meeting_id),
+                json=meeting_data
+            )
+            response.raise_for_status()
+            meeting_details = response.json()
+        
+            return MeetingDetails(
+                id=meeting_details.get("id"),
+                join_url=meeting_details.get("joinWebUrl"),
+                all_details=meeting_details,
+            )
+
+        except requests.exceptions.RequestException as e:
+            # If authentication failed, clear cache and retry once
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.delete_meeting(meeting_id=meeting_id)
+            raise 
+    
+    
+    def fetch_attendance_reports(self, presenter: Presenter, meeting_id: str):
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            reports_response = requests.get(
+                self.GRAPH_API_URL.format(user_id=presenter.get('guid')) + f"/{meeting_id}/attendanceReports",
+                headers=headers,
+            )
+            reports_response.raise_for_status()
+            report_ids = reports_response.json().get('value', [])
+
+            attendance_reports = []
+            
+            for report in report_ids:
+                report_id = report.get('id')
+                report_response = requests.get(
+                    self.GRAPH_API_URL.format(user_id=presenter.get('guid')) + f"/{meeting_id}/attendanceReports/{report_id}",
+                    headers=headers,
+                )
+                report_response.raise_for_status()
+                report_data=report_response.json()
+                attendance_reports.append({
+                'report': report,
+                'report_data': report_data
+            })
+
+            return attendance_reports
+
+        except requests.exceptions.RequestException as e:
+            # Handle exceptions (e.g., authentication failures)
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.fetch_attendance_reports(presenter, meeting_id)
+            raise
+    
+        
+    def fetch_recordings(self, presenter: Presenter, meeting_id: str):
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            recordings_response = requests.get(
+                self.GRAPH_API_URL.format(user_id=presenter.get('guid')) + f"/{meeting_id}/recordings",
+                headers=headers,
+            )
+            recordings_response.raise_for_status()
+            recordings_details=recordings_response.json()
+            return recordings_details
+        
+        except requests.exceptions.RequestException as e:
+            # Handle exceptions (e.g., authentication failures)
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.fetch_attendance_reports(presenter, meeting_id)
+            raise
+    
+    def fetch_recording_content(self, presenter: Presenter, meeting_id: str, recording_id):
+        try:
+            access_token = self._get_access_token()
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            recordings_response = requests.get(
+                self.GRAPH_API_URL.format(user_id=presenter.get('guid')) + f"/{meeting_id}/recordings/{recording_id}/content",
+                headers=headers,
+            )
+            recordings_response.raise_for_status()
+            recordings_content=recordings_response.json()
+            return recordings_content
+        
+        except requests.exceptions.RequestException as e:
+            # Handle exceptions (e.g., authentication failures)
+            if e.response and e.response.status_code == 401:
+                cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
+                return self.fetch_attendance_reports(presenter, meeting_id)
+            raise

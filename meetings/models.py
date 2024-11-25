@@ -1,9 +1,9 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from datetime import datetime, timedelta
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save,pre_delete
 from django.dispatch import receiver
-from .tasks import create_teams_meeting_task
+from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
 
 
 class MeetingSeries(models.Model):
@@ -59,6 +59,8 @@ class Meeting(models.Model):
     conference_metadata = models.JSONField(null=True, blank=True)
     first_notification_sent = models.BooleanField(default=False)
     second_notification_sent = models.BooleanField(default=False)
+    attendance_reports=models.JSONField(null=True, blank=True)
+    recordings=models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"
@@ -105,3 +107,13 @@ def meeting_post_save(sender, instance, created, **kwargs):
     """
     if created:
         create_teams_meeting_task.delay(instance.id)
+    elif not created:
+        #in case of update created is false
+        update_teams_meeting_task.delay(instance.id)
+
+@receiver(pre_delete, sender=Meeting)
+def meeting_pre_delete(sender, instance, **kwargs):
+    """
+    Signal handler to delete Teams meeting when a meeting is deleted
+    """
+    delete_teams_meeting_task.delay(instance.id,instance.series.presenter_details,instance.conference_id)
