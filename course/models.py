@@ -59,6 +59,17 @@ class CourseManager(models.Manager):
         return queryset
 
 
+
+class Module(models.Model):
+    title = models.CharField(max_length=200)
+    course = models.ForeignKey('Course', related_name='modules_list', on_delete=models.CASCADE)
+    assignment_configs = models.ManyToManyField('evaluation.AssessmentGenerationConfig', related_name='modules', blank=True)
+    order_in_course = models.IntegerField(null=True) 
+    class Meta:
+        unique_together = ('course', 'order_in_course')
+    def __str__(self):
+        return self.title
+    
 class Course(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     title = models.CharField(max_length=200)
@@ -151,6 +162,7 @@ class CourseAllocation(models.Model):
 class Upload(models.Model):
     title = models.CharField(max_length=100)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='uploads', null=True, blank=True)  # New field
     file = models.FileField(
         upload_to="course_files/",
         help_text=_(
@@ -224,6 +236,7 @@ class UploadVideo(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='video_uploads', null=True, blank=True)  # New field
     video = models.FileField(
         upload_to="course_videos/",
         help_text=_("Valid video formats: mp4, mkv, wmv, 3gp, f4v, avi, mp3"),
