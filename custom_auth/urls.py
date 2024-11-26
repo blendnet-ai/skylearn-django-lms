@@ -1,6 +1,6 @@
 from django.urls import path
 
-from custom_auth.views import ActivityDataView, UserProfileApiView, UserListApiView, FormCRUD, FetchUserData, SignUpView, get_onboarding_status,determine_onboarding_step,send_otp,verify_otp,fetch_filled_data
+from custom_auth.views import ActivityDataView, UserProfileApiView, UserListApiView, FormCRUD, FetchUserData, SignUpView, get_onboarding_status,determine_onboarding_step,send_otp,verify_otp
 
 urlpatterns = [
     path('profile', UserProfileApiView.as_view(), name='get_user_data'),
