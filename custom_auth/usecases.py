@@ -140,9 +140,6 @@ class OnBoardingUsecase:
         
         elif onboarding_details['telegram_status'] and onboarding_details['mobile_verification_status'] and not onboarding_details['onboarding_status']:
             return 'onboarding_form'
-        
-        else:
-            return 'dashboard'
     
     def handle_otp_sending(user,phone_number):
         if phone_number:
