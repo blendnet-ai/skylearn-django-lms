@@ -702,7 +702,6 @@ def get_live_classes_by_batch_id(request, batch_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_live_classes(request):
-    request.user = User.objects.get(id=4)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(

@@ -2,6 +2,7 @@ from firebase_admin import auth
 from rest_framework import authentication
 from rest_framework import exceptions
 from accounts.models import Student, User
+from custom_auth.repositories import UserProfileRepository
 
 
 class FirebaseTokenExpired(Exception):
@@ -29,10 +30,12 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                     firebase_uid=uid, email=email, is_active=True, is_student=True
                 )
                 student = Student.objects.create(student=user)
-
+            user_profile=UserProfileRepository.create_user_profile(user_id=user.id)
             return (user, None)
 
         except auth.ExpiredIdTokenError as e:
+            print(str(e))
             raise FirebaseTokenExpired()
         except Exception as e:
+            print(str(e))
             raise exceptions.AuthenticationFailed("Invalid token")
