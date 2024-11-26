@@ -169,14 +169,14 @@ class OnBoardingUsecase:
         else:
             return {"otp_verified":is_verified, "message":message}
         
-    def handle_fetching_filled_data( user):
-        data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
-        if data is not None:
-            UserProfileRepository.set_user_profile_user_data(user, data)
-            UserProfileRepository.set_onboarding_complete(user.id)
-            return {'onboarding_data_fetched':True,'data':data}
-        else:
-            return {'onboarding_data_fetched':False,'data':data}
+    #def handle_fetching_filled_data( user):
+    #     data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
+    #     if data is not None:
+    #         UserProfileRepository.set_user_profile_user_data(user, data)
+    #         UserProfileRepository.set_onboarding_complete(user.id)
+    #         return {'onboarding_data_fetched':True,'data':data}
+    #     else:
+    #         return {'onboarding_data_fetched':False,'data':data}
         
 # class DoubtSolvingTokenUseCase():
 #     @staticmethod

@@ -13,7 +13,7 @@ urlpatterns = [
     path('onboarding/step', determine_onboarding_step, name='determine_onboarding_step'),
     path('onboarding/send-otp', send_otp, name='send_otp'),
     path('onboarding/verify-otp', verify_otp, name='verify_otp'),
-    path('onboarding/fetch-data', fetch_filled_data, name='fetch_filled_data'),
+    #path('onboarding/fetch-data', fetch_filled_data, name='fetch_filled_data'),
     # path('get-doubt-solving-token',DoubtSolvingTokenView.as_view(), name='get_doubt_solving_token'),
     # path("onboarding/", OnBoardingView, name="onboarding")
 ]

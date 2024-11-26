@@ -188,12 +188,12 @@ def verify_otp(request):
     else:
         return Response(onboarding_verification_result, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
-@api_view(['POST'])
-def fetch_filled_data(request):
-    user = request.user
-    data_fetching_result = OnBoardingUsecase.handle_fetching_filled_data(user)
-    return Response(data_fetching_result, status=status.HTTP_200_OK)
+# @csrf_exempt
+# @api_view(['POST'])
+# def fetch_filled_data(request):
+#     user = request.user
+#     data_fetching_result = OnBoardingUsecase.handle_fetching_filled_data(user)
+#     return Response(data_fetching_result, status=status.HTTP_200_OK)
 
 
 
