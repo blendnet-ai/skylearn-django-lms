@@ -289,8 +289,21 @@ class BatchUseCase:
     
     @staticmethod
     def get_batches_by_course_id(course_id):
-        batches = list(BatchRepository.get_batches_by_course_id(course_id).values())
-        return batches
+        batches = BatchRepository.get_batches_by_course_id(course_id)
+        
+        # Convert to a list of dictionaries, including students
+        batches_with_students = []
+        for batch in batches:
+            batch_data = {
+                'id': batch.id,
+                'title': batch.title,
+                'course_id': batch.course_id,
+                'lecturer_id': batch.lecturer_id,
+                'students_count': len(batch.students.values()),  # Get student data
+            }
+            batches_with_students.append(batch_data)
+
+        return batches_with_students
 
 
 class CourseUseCase:

@@ -106,6 +106,10 @@ class Batch(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    @property
+    def students(self):
+        return self.student_set.all()
 
 
 class LiveClassSeriesBatchAllocation(models.Model):
