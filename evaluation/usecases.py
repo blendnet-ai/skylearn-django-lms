@@ -180,8 +180,6 @@ class AssessmentUseCase:
                 "assessment_generation_id": assessment_generation_id,
                 "test": {
                     "heading": f"{name} test",
-                    "path": f"assessment",
-                    "query_params": f"?id={assessment_generation_id}",
                 },
                 "welcome": {
                     "heading": f"Welcome to {name} test",

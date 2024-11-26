@@ -46,8 +46,8 @@
         if (event.data && event.data.type === 'ROUTE_HOME') {
             console.log("ROUTE_HOME", event.data);
             const currentUrl = new URL(window.location.href);
-            currentUrl.pathname = currentUrl.pathname.split('sakshm/')[0] + event.data.route
-
+            currentUrl.pathname = currentUrl.pathname.split('courses/')[0] + event.data.route
+            console.log("Current URL: ", currentUrl.pathname);
             console.log("Final URL: ", currentUrl.toString());
             window.location.href = currentUrl;
         }
