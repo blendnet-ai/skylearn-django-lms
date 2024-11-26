@@ -155,8 +155,9 @@ class UserProfileRepository:
         user_profile.is_telegram_connected = True
         user_profile.save()
         
-    def set_mobile_verification_complete(user: str):
+    def set_mobile_verification_complete(user: str,phone):
         user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.phone=phone
         user_profile.is_mobile_verified = True
         user_profile.save()
 
