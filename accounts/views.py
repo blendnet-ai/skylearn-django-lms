@@ -473,7 +473,8 @@ def enroll_students_in_batch(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 @api_view(["GET"])
 def get_course_provider(request):
     user_id = request.user.id

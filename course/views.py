@@ -835,8 +835,9 @@ def create_batch(request, course_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_batches_by_course_id(request, course_id):
     try:
         batches = BatchUseCase.get_batches_by_course_id(course_id)
@@ -845,15 +846,17 @@ def get_batches_by_course_id(request, course_id):
         return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_courses_by_course_provider_id(request, course_provider_id):
     course_provider = CourseUseCase.get_courses_by_course_provider(course_provider_id)
     return Response(course_provider, status=status.HTTP_200_OK)
 
 
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_modules_and_resources_by_course_id(request, course_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
     if not module_data:
@@ -864,8 +867,9 @@ def get_modules_and_resources_by_course_id(request, course_id):
     return Response(module_data, status=status.HTTP_200_OK)
 
 
-@csrf_exempt
 @api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def user_courses_list(request):
     #request.user=User.objects.get(id=2)
     courses=CourseUseCase.get_courses_for_student_or_lecturer(request.user)

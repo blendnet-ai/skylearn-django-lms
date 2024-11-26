@@ -30,6 +30,11 @@ from config.settings import TWO_Factor_SMS_API_KEY,TELEGRAM_BOT_NAME
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from django.contrib.auth.decorators import login_required
 import re
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -141,22 +146,25 @@ class SignUpView(APIView):
         )
 
 
-@csrf_exempt
 @api_view(['GET'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_onboarding_status(request):
     user_id = request.user.id
     onboarding_status = OnBoardingUsecase.get_onboaring_status(user_id)
     return Response(onboarding_status, status=status.HTTP_200_OK)
 
-@csrf_exempt
 @api_view(['GET'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def determine_onboarding_step(request):
     user_id = request.user.id
     step = OnBoardingUsecase.determine_onboarding_step(user_id)
     return Response({"step": step}, status=status.HTTP_200_OK)
 
-@csrf_exempt
 @api_view(['POST'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def send_otp(request):
     user = request.user
     phone_number = request.data.get('phone_number')
@@ -172,8 +180,9 @@ def send_otp(request):
         return Response(otp_sending_result, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
 @api_view(['POST'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def verify_otp(request):
     user = request.user
     entered_otp_value = request.data.get('otp_value')
