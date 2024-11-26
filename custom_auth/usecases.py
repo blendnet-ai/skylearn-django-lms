@@ -24,7 +24,7 @@ import pytz
 
 logger = logging.getLogger(__name__)
 SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
-GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+#GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
 
 class BetaUserlistUsecase:
     @staticmethod
