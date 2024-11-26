@@ -71,7 +71,10 @@ from rest_framework.mixins import ListModelMixin
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")h)
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class ProgramFilterView(FilterView):
 
     filterset_class = ProgramFilter
@@ -241,7 +244,10 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -262,7 +268,10 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -271,7 +280,6 @@ class CourseAllocationFilterView(FilterView):
         context = super().get_context_data(**kwargs)
         context["title"] = "Course Allocations"
         return context
-
 
 
 @api_view(["GET", "POST"])
@@ -313,7 +321,6 @@ def deallocate_course(request, pk):
 @api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
->>>>>>> 749fc83 (Implement firebase auth)
 def handle_file_upload(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.method == "POST":
@@ -705,7 +712,7 @@ def get_live_classes_by_batch_id(request, batch_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_live_classes(request):
-    request.user=User.objects.get(id=2)
+    request.user = User.objects.get(id=2)
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     serializer = LiveClassDateRangeSerializer(
@@ -728,7 +735,7 @@ def get_live_classes(request):
 @permission_classes([IsLoggedIn])
 def get_live_classes_by_course_id(request, course_id):
     try:
-        #request.user=User.objects.get(id=2)
+        # request.user=User.objects.get(id=2)
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         serializer = LiveClassDateRangeSerializer(
@@ -826,7 +833,6 @@ def create_batch(request, course_id):
         except BatchUseCase.UserIsNotLecturerException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @csrf_exempt

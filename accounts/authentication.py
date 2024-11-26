@@ -33,6 +33,9 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             return (user, None)
 
         except auth.ExpiredIdTokenError as e:
+            print("EX HERE 1")
             raise FirebaseTokenExpired()
         except Exception as e:
+            print("EX HERE 2")
+            print(str(e))
             raise exceptions.AuthenticationFailed("Invalid token")
