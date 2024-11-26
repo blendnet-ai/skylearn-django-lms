@@ -13,7 +13,10 @@ import rest_framework.exceptions as rest_framework_exceptions
 from rest_framework.permissions import AllowAny
 # from speechai.settings import DOUBT_SOLVING_ORG_API_KEY
 # from InstituteConfiguration.repositories import QuestionListRepository
-from custom_auth.authentication import FirebaseAuthentication, HardcodedAuthentication
+from accounts.authentication import FirebaseAuthentication
+from accounts.permissions import (
+    IsLoggedIn
+)
 from custom_auth.serializers import ActivityDataSerializer, UserSerializer, FormFetchSerializer, FormSubmitSerializer
 from custom_auth.usecases import ActivityDataUseCase, OnBoardingUsecase, SignUpUsecase, OnBoardingUsecase
 from data_repo.repositories import ConfigMapRepository
@@ -33,7 +36,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
 
-GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+# GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -41,8 +44,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 
+
 class FormCRUD(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
     
     def get(self, request, format=None):
@@ -70,7 +74,7 @@ class FormCRUD(APIView):
 
 
 class FetchUserData(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -83,7 +87,7 @@ class FetchUserData(APIView):
 
 
 class UserProfileApiView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -94,7 +98,7 @@ class UserProfileApiView(APIView):
 
 
 class UserListApiView(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsLoggedIn, IsAdminUser]
     authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
@@ -106,7 +110,7 @@ class UserListApiView(APIView):
 
 
 class ActivityDataView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
