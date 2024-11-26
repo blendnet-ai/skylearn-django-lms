@@ -47,7 +47,7 @@ services:
 
   lms-notebook-dev:
     container_name: lms-notebook
-    image: skylearn-lms:latest
+    image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
     entrypoint: python manage.py shell_plus --notebook -- --ip 0.0.0.0 --port 8000
     restart: unless-stopped
@@ -63,6 +63,31 @@ services:
     depends_on:
       - postgres
       - redis
+
+  speechai-celery-whisper-timestamped:
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    container_name: speechai-celery-whisper-timestamped
+    working_dir: /home/appuser/code
+    volumes:
+      - .:/home/appuser/code
+    env_file:
+      - .env
+    entrypoint: python -m celery -A speechai worker -l info -Q whisper-timestamped --concurrency=1
+
+  telegram-bot:
+    container_name: telegram-bot
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    entrypoint: python manage.py run_telegram_bot
+    platform: linux/amd64
+    restart: "no"
+    working_dir: /appuser/code
+    volumes:
+      - .:/appuser/code
+    environment:
+      - DJANGO_DEBUG=FALSE
+    env_file:
+      - .env
 
 volumes:
   pgdb_lms:
