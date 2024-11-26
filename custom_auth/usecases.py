@@ -132,13 +132,13 @@ class OnBoardingUsecase:
     @staticmethod
     def determine_onboarding_step(user_id):
         onboarding_details=UserProfileRepository.get_onboarding_status_details(user_id)
-        if onboarding_details['telegram_status'] and not onboarding_details['mobile_verification_status']:
+        if not onboarding_details['mobile_verification_status']:
             return 'mobile_verification'
         
-        elif onboarding_details['telegram_status'] and onboarding_details['mobile_verification_status'] and not onboarding_details['onboarding_status']:
+        elif onboarding_details['mobile_verification_status'] and not onboarding_details['onboarding_status']:
             return 'onboarding_form'
                 
-        elif not onboarding_details['telegram_status']:
+        elif onboarding_details['mobile_verification_status'] and onboarding_details['onboarding_status'] and not onboarding_details['telegram_status']:
             return 'telegram_onboarding'
     
     def handle_otp_sending(user,phone_number):
