@@ -13,6 +13,7 @@ from accounts.authentication import FirebaseAuthentication
 from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
 from accounts.models import Student, User
 from accounts.permissions import (
+    IsCourseProviderAdmin,
     IsCourseProviderAdminOrLecturer,
     IsLecturer,
     IsLoggedIn,
@@ -573,7 +574,7 @@ def user_course_list(request):
 # admin/course provider
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def create_live_class_series(request):
     serializer = LiveClassSeriesSerializer(data=request.data)
 
@@ -630,7 +631,7 @@ def create_live_class_series(request):
 # admin/course provider
 @api_view(["PUT"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def update_live_class_series(request, id):
     serializer = LiveClassSeriesSerializer(data=request.data)
     if serializer.is_valid():
@@ -670,7 +671,7 @@ def update_live_class_series(request, id):
 # admin/course provider
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def delete_live_class_series(_, id):
     try:
         LiveClassUsecase.delete_live_class_series(id)
@@ -687,7 +688,7 @@ def delete_live_class_series(_, id):
 # admin/course provider (can be modified for lecturer later, not in requirements currently)
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def get_live_classes_by_batch_id(request, batch_id):
 
     start_date = request.GET.get("start_date")
@@ -761,7 +762,7 @@ def get_live_classes_by_course_id(request, course_id):
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def delete_live_class(_, id):
     try:
         MeetingUsecase.delete_meeting(id)
@@ -777,7 +778,7 @@ def delete_live_class(_, id):
 
 @api_view(["PUT"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def update_live_class(request, id):
     serializer = LiveClassUpdateSerializer(data=request.data)
     if serializer.is_valid():
@@ -807,7 +808,7 @@ def update_live_class(request, id):
 
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsSuperuser])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def create_batch(request, course_id):
     serializer = BatchSerializer(data=request.data)
 
@@ -847,16 +848,16 @@ def get_batches_by_course_id(request, course_id):
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_courses_by_course_provider_id(request, course_provider_id):
     course_provider = CourseUseCase.get_courses_by_course_provider(course_provider_id)
     return Response(course_provider, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_modules_and_resources_by_course_id(request, course_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
     recordings_data=CourseUseCase.get_recordings_by_course_id(course_id)
@@ -869,10 +870,10 @@ def get_modules_and_resources_by_course_id(request, course_id):
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def user_courses_list(request):
-    request.user=User.objects.get(id=4)
+    #request.user=User.objects.get(id=4)
     courses=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
         return Response({courses}, status=status.HTTP_200_OK)
