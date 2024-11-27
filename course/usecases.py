@@ -146,13 +146,13 @@ class LiveClassUsecase:
             courses=CourseUseCase.get_courses_by_course_provider(course_provider)
             batches=[]
             for course in courses:
-                batch=BatchRepository.get_batches_by_course_id(course.get('id')).values()
-                if batch:
-                    batches.append(batch)
+                batch_queryset = BatchRepository.get_batches_by_course_id(course.get('id'))
+                if batch_queryset.exists():  # Check if there are any batches
+                    for batch in batch_queryset:  # Iterate over each batch
+                        batches.append(batch) 
         else:
             # This is not in the requirements currently
             return []
-        print(batches)
         live_classes = []
         # Get the live classes of the batches in the given period
         for batch in batches:
