@@ -124,10 +124,18 @@ class SignUpUsecase:
 
 class OnBoardingUsecase:
     @staticmethod
-    def get_onboaring_status(user_id):
-        onboarding_status=UserProfileRepository.get_onboarding_status_details(user_id)
-        onboarding_status['telegram_url']=f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
-        return onboarding_status      
+    def get_onboaring_status(user):
+        if user.is_student:
+            onboarding_status=UserProfileRepository.get_onboarding_status_details(user.id)
+            onboarding_status['telegram_url']=f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
+            return onboarding_status   
+        else:
+            return {
+                "telegram_status": True,
+                "mobile_verification_status": True,
+                "onboarding_status": True,
+                "otp": "000000",
+            }
     
     @staticmethod
     def determine_onboarding_step(user_id):

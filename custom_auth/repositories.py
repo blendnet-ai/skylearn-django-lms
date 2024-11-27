@@ -154,12 +154,9 @@ class UserProfileRepository:
     def get_onboarding_status_details(user_id):
         try:
             user_profile = UserProfile.objects.get(user_id__id=user_id)
-            # telegram_status=user_profile.is_telegram_connected
-            # mobile_status=user_profile.is_mobile_verified
-            # onboarding_status =user_profile.onboarding_complete
-            telegram_status = True
-            mobile_status = True
-            onboarding_status = True
+            telegram_status=user_profile.is_telegram_connected
+            mobile_status=user_profile.is_mobile_verified
+            onboarding_status =user_profile.onboarding_complete
             otp = user_profile.otp
             return {
                 "telegram_status": telegram_status,

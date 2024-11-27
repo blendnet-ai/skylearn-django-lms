@@ -57,13 +57,13 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from custom_auth.authentication import HardcodedAuthentication
+from accounts.permissions import FirebaseAuthentication, IsLoggedIn
 from rest_framework.permissions import IsAuthenticated
 
 
 class FormCRUD(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         data = FormFetchSerializer(data=request.query_params)
@@ -95,8 +95,8 @@ class FormCRUD(APIView):
 
 
 class FetchUserData(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         user_id = request.user.id
@@ -108,8 +108,8 @@ class FetchUserData(APIView):
 
 
 class UserProfileApiView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         user = request.user
@@ -120,7 +120,7 @@ class UserProfileApiView(APIView):
 
 class UserListApiView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
-    authentication_classes = [HardcodedAuthentication]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         users = User.objects.filter(is_active=True, is_staff=False).order_by(
@@ -132,8 +132,8 @@ class UserListApiView(APIView):
 
 
 class ActivityDataView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [HardcodedAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, format=None):
         activity_data = ActivityDataUseCase.get_and_update_activity_data(
@@ -166,16 +166,16 @@ class SignUpView(APIView):
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsLoggedIn])
 def get_onboarding_status(request):
-    user_id = request.user.id
-    onboarding_status = OnBoardingUsecase.get_onboaring_status(user_id)
+    user = request.user
+    onboarding_status = OnBoardingUsecase.get_onboaring_status(user)
     return Response(onboarding_status, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsLoggedIn])
 def determine_onboarding_step(request):
     user_id = request.user.id
     step = OnBoardingUsecase.determine_onboarding_step(user_id)
@@ -183,8 +183,8 @@ def determine_onboarding_step(request):
 
 
 @api_view(["POST"])
-@authentication_classes([HardcodedAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def send_otp(request):
     user = request.user
     phone_number = request.data.get("phone_number")
@@ -203,8 +203,8 @@ def send_otp(request):
 
 
 @api_view(["POST"])
-@authentication_classes([HardcodedAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def verify_otp(request):
     user = request.user
     entered_otp_value = request.data.get("otp_value")
