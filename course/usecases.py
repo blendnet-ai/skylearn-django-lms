@@ -9,6 +9,7 @@ from course.repositories import (
 )
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
+from accounts.repositories import CourseProviderRepository
 
 
 class LiveClassUsecase:
@@ -140,9 +141,18 @@ class LiveClassUsecase:
             batches = StudentRepository.get_batches_by_student_id(user.id)
         elif user.is_lecturer:
             batches = BatchRepository.get_batches_by_lecturer_id(user.id)
+        elif user.is_course_provider_admin:
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(user.id).id
+            courses=CourseUseCase.get_courses_by_course_provider(course_provider)
+            batches=[]
+            for course in courses:
+                batch=BatchRepository.get_batches_by_course_id(course.get('id')).values()
+                if batch:
+                    batches.append(batch)
         else:
             # This is not in the requirements currently
             return []
+        print(batches)
         live_classes = []
         # Get the live classes of the batches in the given period
         for batch in batches:
