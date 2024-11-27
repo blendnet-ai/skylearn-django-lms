@@ -1,4 +1,4 @@
-from accounts.repositories import StudentRepository, UserRepository,LecturerRepository
+from accounts.repositories import StudentRepository, UserRepository, LecturerRepository
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
     BatchRepository,
@@ -30,7 +30,6 @@ class LiveClassUsecase:
         monthly_day,
     ):
 
-        
         live_class_series = (
             MeetingSeriesUsecase.create_or_update_meeting_series_and_create_occurrences(
                 title=title,
@@ -49,8 +48,8 @@ class LiveClassUsecase:
                 batch_ids, live_class_series
             )
         )
-        
-        presenter_assignment_success=[]
+
+        presenter_assignment_success = []
         # Assign presenters to the allocated batches
         if batches_allocated:
             presenter_assignment_success = (
@@ -58,14 +57,12 @@ class LiveClassUsecase:
                     batches_allocated, live_class_series
                 )
             )
-        
-        
 
         return (
             live_class_series.id,
             batches_allocated,
             batches_failed_to_allocate,
-            presenter_assignment_success
+            presenter_assignment_success,
         )
 
     @staticmethod
@@ -103,7 +100,7 @@ class LiveClassUsecase:
                 live_class_series, new_batch_ids
             )
         )
-        presenter_assignment_success=[]
+        presenter_assignment_success = []
         if batches_allocated:
             presenter_assignment_success = (
                 LiveClassSeriesPresenterAssignmentUseCase.assign_presenters_to_batches(
@@ -111,7 +108,11 @@ class LiveClassUsecase:
                 )
             )
 
-        return batches_allocated, batches_failed_to_allocate,presenter_assignment_success
+        return (
+            batches_allocated,
+            batches_failed_to_allocate,
+            presenter_assignment_success,
+        )
 
     @staticmethod
     def delete_live_class_series(id):
@@ -166,23 +167,29 @@ class LiveClassUsecase:
         unique_tuples = {tuple(meeting.items()) for meeting in live_classes}
         return [dict(t) for t in unique_tuples]
 
+
 class LiveClassSeriesPresenterAssignmentUseCase:
     @staticmethod
     def assign_presenters_to_batches(batches_allocated, live_class_series):
         assignment_results = {}
         for batch in batches_allocated:
-            batch=BatchRepository.get_batch_by_id(batch)
-            presenter_details= LecturerRepository.get_presenter_details_by_lecturer_id(batch.lecturer.id)
+            batch = BatchRepository.get_batch_by_id(batch)
+            presenter_details = LecturerRepository.get_presenter_details_by_lecturer_id(
+                batch.lecturer.id
+            )
 
             if presenter_details:
-                success=LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(live_class_series,presenter_details)
+                success = LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(
+                    live_class_series, presenter_details
+                )
                 assignment_results[batch.id] = "True"
 
         return assignment_results
-    
-    def assign_presenter(live_class_series,presenter_details):
-        MeetingSeriesRepository.add_presenter_details_to_meeting_series(live_class_series,presenter_details)
-        
+
+    def assign_presenter(live_class_series, presenter_details):
+        MeetingSeriesRepository.add_presenter_details_to_meeting_series(
+            live_class_series, presenter_details
+        )
 
 
 class LiveClassSeriesBatchAllocationUseCase:
@@ -249,7 +256,7 @@ class LiveClassSeriesBatchAllocationUseCase:
         if not isinstance(batch_id, int):
             raise LiveClassSeriesBatchAllocationUseCase.BatchIdNotIntegerException()
         batch = BatchRepository.get_batch_by_id(batch_id)
-        
+
         return LiveClassSeriesBatchAllocationRepository.create_live_class_series_batch_allocation(
             live_class_series, batch=batch
         )
@@ -297,70 +304,78 @@ class BatchUseCase:
             if user_batch.course_id == course_id:
                 return user_batch
         return None
-    
+
     @staticmethod
-    def get_batches_by_course_id(user,course_id):
+    def get_batches_by_course_id(user, course_id):
         batches = BatchRepository.get_batches_by_course_id(course_id)
-        
+
         # Convert to a list of dictionaries, including students
         batches_with_students = []
         for batch in batches:
             batch_data = {
-                'id': batch.id,
-                'title': batch.title,
-                'course_id': batch.course_id,
-                'lecturer_id': batch.lecturer_id,
-                'start_date':batch.created_at,
-                'students_count': len(batch.students.values()),  # Get student data
+                "id": batch.id,
+                "title": batch.title,
+                "course_id": batch.course_id,
+                "lecturer_id": batch.lecturer_id,
+                "start_date": batch.created_at,
+                "students_count": len(batch.students.values()),  # Get student data
             }
             batches_with_students.append(batch_data)
         if user.is_lecturer:
             if user.is_lecturer:
-                batches_with_students = [batch for batch in batches_with_students if batch['lecturer_id'] == user.id]
-            
+                batches_with_students = [
+                    batch
+                    for batch in batches_with_students
+                    if batch["lecturer_id"] == user.id
+                ]
 
         return batches_with_students
 
 
 class CourseUseCase:
     def get_courses_by_course_provider(course_provider_id):
-        courses= list(CourseRepository.get_courses_by_course_provider(course_provider_id).values())
+        courses = list(
+            CourseRepository.get_courses_by_course_provider(course_provider_id).values()
+        )
         return courses
-    
+
     def get_courses_for_student_or_lecturer(user):
-        if user.is_lecturer:
-            courses = CourseRepository.get_courses_for_lecturer(user.id) 
+        if user.is_lecturer or user.is_course_provider_admin:
+            if user.is_lecturer:
+                courses = CourseRepository.get_courses_for_lecturer(user.id)
+            else:
+                courses = CourseRepository.get_all_courses()
             for course in courses:
                 # Get batches for the current course
-                batches = BatchRepository.get_batches_by_course_id(course.get('id'))
+                batches = BatchRepository.get_batches_by_course_id(course.get("id"))
                 # Filter batches to include only those for the current lecturer
                 lecturer_batches = batches.filter(lecturer_id=user.id)
                 # Count the number of batches for the lecturer
-                course['no_of_batches'] = lecturer_batches.count()
-                return courses
+                course["no_of_batches"] = lecturer_batches.count()
+                return courses, "lecturer"
 
-
-        elif  user.is_student:
-            courses = CourseRepository.get_courses_for_student(user.id) 
-            return courses
+        elif user.is_student:
+            courses = CourseRepository.get_courses_for_student(user.id)
+            return courses, "student"
         else:
-            return None
+            return None, "user"
 
     def get_modules_by_course_id(course_id):
-        modules=ModuleRepository.get_module_details_by_course_id(course_id)
+        modules = ModuleRepository.get_module_details_by_course_id(course_id)
         module_data = []
         for module in modules:
-            assessment_generation_configs=[
-                config.assessment_generation_id for config in module.assignment_configs.all()
+            assessment_generation_configs = [
+                config.assessment_generation_id
+                for config in module.assignment_configs.all()
             ]
-             
-            #Collect reading resources
+
+            # Collect reading resources
             resource_data_reading = [
                 {
                     "type": "reading",
                     "id": resource.id,
                     "title": resource.title,
-                    "url": resource.file.url
+                    "url": resource.file.url,
                 }
                 for resource in module.uploads.all()
             ]
@@ -371,22 +386,23 @@ class CourseUseCase:
                     "type": "video",
                     "id": resource.id,
                     "title": resource.title,
-                    "url": resource.video.url
+                    "url": resource.video.url,
                 }
                 for resource in module.video_uploads.all()
             ]
 
-            
-            module_data.append({
-                "id": module.id,
-                "order_in_course":module.order_in_course,
-                "title": module.title,
-                "resources_reading": resource_data_reading,
-                "resources_video": resource_data_video,
-                "assessment_generation_configs":assessment_generation_configs
-            })
+            module_data.append(
+                {
+                    "id": module.id,
+                    "order_in_course": module.order_in_course,
+                    "title": module.title,
+                    "resources_reading": resource_data_reading,
+                    "resources_video": resource_data_video,
+                    "assessment_generation_configs": assessment_generation_configs,
+                }
+            )
         return module_data
-    
+
     def get_recordings_by_course_id(course_id):
-        recordings_data=RecordingsRepository.get_recordings_by_course_id(course_id)
+        recordings_data = RecordingsRepository.get_recordings_by_course_id(course_id)
         return recordings_data

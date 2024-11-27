@@ -17,6 +17,8 @@ from urllib.parse import urlencode
 # Saksham
 # ########################################################
 # @login_required
+
+
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
@@ -60,7 +62,7 @@ def home_view(request):
     if request.user.is_student or request.user.is_lecturer:
         path += "home-lms"
     else:
-        path += "course-provider-admin/home-lms"
+        path += "course-provider-admin"
 
     return render(
         request,
@@ -69,7 +71,8 @@ def home_view(request):
             "path": path,
         },
     )
-    
+
+
 # my courses view
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
@@ -83,7 +86,6 @@ def course_view(request):
             "path": path,
         },
     )
-    
 
 
 @api_view(["GET"])
