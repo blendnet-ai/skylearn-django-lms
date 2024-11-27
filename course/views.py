@@ -838,7 +838,7 @@ def create_batch(request, course_id):
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn])
+@permission_classes([IsLoggedIn,IsCourseProviderAdminOrLecturer])
 def get_batches_by_course_id(request, course_id):
     try:
         batches = BatchUseCase.get_batches_by_course_id(course_id)

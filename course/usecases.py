@@ -300,6 +300,7 @@ class BatchUseCase:
                 'title': batch.title,
                 'course_id': batch.course_id,
                 'lecturer_id': batch.lecturer_id,
+                'start_date':batch.created_at,
                 'students_count': len(batch.students.values()),  # Get student data
             }
             batches_with_students.append(batch_data)
@@ -315,7 +316,15 @@ class CourseUseCase:
     def get_courses_for_student_or_lecturer(user):
         if user.is_lecturer:
             courses = CourseRepository.get_courses_for_lecturer(user.id) 
-            return courses
+            for course in courses:
+                # Get batches for the current course
+                batches = BatchRepository.get_batches_by_course_id(course.get('id'))
+                # Filter batches to include only those for the current lecturer
+                lecturer_batches = batches.filter(lecturer_id=user.id)
+                # Count the number of batches for the lecturer
+                course['no_of_batches'] = lecturer_batches.count()
+                return courses
+
 
         elif  user.is_student:
             courses = CourseRepository.get_courses_for_student(user.id) 
