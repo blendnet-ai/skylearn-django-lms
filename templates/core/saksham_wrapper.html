@@ -19,17 +19,36 @@
 
 {% block js %}
 <script>
-    const url = window.location.href;
-    const newUrl = url.split('sakshm/')[0]
-    const currentUrl = new URL(window.location.href);
-
-    console.log(
-        {
-            url,
-            newUrl,
+    const cookies = document.cookie.split('; ');
+    function getFirebaseToken(cookies) {
+        for (const cookie of cookies) {
+            if (cookie.startsWith("firebaseToken=")) {
+                return cookie.split("firebaseToken=")[1];
+            }
         }
-    );
+        return null;
+    }
 
+    const firebaseToken = getFirebaseToken(cookies);
+    // console.log("Firebase Token: ", firebaseToken);
+
+    function sendFirebaseTokenToIframe() {
+        const iframe = document.getElementById('testIframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage(
+                {
+                    type: 'SET_FIREBASE_TOKEN',
+                    token: firebaseToken
+                },
+                '*'
+            );
+        }
+    }
+
+    // Listen for iframe load to ensure it's ready
+    document.getElementById('testIframe').addEventListener('load', sendFirebaseTokenToIframe);
+
+    // Event listener to handle messages from iframe
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'ROUTE_CHANGE') {
             const newRoute = event.data.route;
@@ -61,9 +80,6 @@
             console.log("Final URL: ", currentUrl.toString());
             window.location.href = currentUrl
         }
-
     });
-
-
 </script>
-{% endblock %}
+{% endblock js %}

@@ -60,7 +60,7 @@ class HardcodedAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         """Authenticate the request using Firebase token"""
-        user = User.objects.get(username="test-student")
+        user = User.objects.get(username="ugr-2024-2")
         # print(user)
         local.user_id = user.id
         return user, None
