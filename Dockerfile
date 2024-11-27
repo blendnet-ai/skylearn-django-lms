@@ -60,6 +60,13 @@ ENV POSTGRES_HOST=postgres \
     POSTGRES_PASSWORD=password \
     MAILJET_API_KEY=a \
     MAILJET_SECRET_KEY=a
+    ENV="build"\
+    REDIS_DB=1 \
+    REDIS_HOST=redis \
+    REDIS_PORT=6379 \
+    REDIS_USER=user \
+    REDIS_PASSWORD=dummy \
+    CACHE_ENABLED=TRUE \
 
 
 # Collect static files
