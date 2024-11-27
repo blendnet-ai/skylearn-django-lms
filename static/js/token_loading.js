@@ -7,11 +7,14 @@ auth.onAuthStateChanged((user) => {
     .getAttribute("data-next-url");
 
   if (user) {
+    const expirationDate = new Date();
+    expirationDate.setFullYear(expirationDate.getFullYear() + 10); // Set expiration to 10 years from now
+
     user
       .getIdToken()
       .then(
         (token) =>
-          (document.cookie = `firebaseToken=${token}; path=/; max-age=3600; SameSite=Strict; Secure`)
+          (document.cookie = `firebaseToken=${token}; path=/; max-age=${expirationDate.toUTCString()}; SameSite=Strict; Secure`)
       );
 
     window.location.href = nextUrl;

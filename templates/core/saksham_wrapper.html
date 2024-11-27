@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+<!-- {% extends 'base.html' %} -->
 {% load i18n %}
 {% block title %}{{ title }} | {% trans 'Learning management system' %}{% endblock title %}
 {% load static %}
@@ -11,75 +11,24 @@
         <h1>{{slug}}</h1>
         <!-- iframe embed -->
         <div class="h-100">
-            <iframe id="testIframe" class="embed-responsive-item" src="{{ path }}" width="100%" height="100%"></iframe>
+            <iframe id="sakshm-iframe" class="embed-responsive-item" src="{{ path }}" width="100%" height="100%"></iframe>
         </div>
     </div>
 </div>
 {% endblock content %}
 
-{% block js %}
 <script>
-    const cookies = document.cookie.split('; ');
-    function getFirebaseToken(cookies) {
-        for (const cookie of cookies) {
-            if (cookie.startsWith("firebaseToken=")) {
-                return cookie.split("firebaseToken=")[1];
-            }
-        }
-        return null;
-    }
-
-    const firebaseToken = getFirebaseToken(cookies);
-    // console.log("Firebase Token: ", firebaseToken);
-
-    function sendFirebaseTokenToIframe() {
-        const iframe = document.getElementById('testIframe');
-        if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage(
-                {
-                    type: 'SET_FIREBASE_TOKEN',
-                    token: firebaseToken
-                },
-                '*'
-            );
-        }
-    }
-
-    // Listen for iframe load to ensure it's ready
-    document.getElementById('testIframe').addEventListener('load', sendFirebaseTokenToIframe);
-
-    // Event listener to handle messages from iframe
-    window.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'ROUTE_CHANGE') {
-            const newRoute = event.data.route;
-            const newQueryParams = event.data.queryParams;
-            console.log(newQueryParams);
-
-            const currentUrl = new URL(window.location.href);
-            currentUrl.pathname = currentUrl.pathname.split('sakshm/')[0] + "sakshm" + newRoute
-            currentUrl.search = newQueryParams;
-
-            console.log("Final URL: ", currentUrl.toString());
-            window.history.pushState({}, '', currentUrl);
-        }
-        if (event.data && event.data.type === 'ROUTE_HOME') {
-            console.log("ROUTE_HOME", event.data);
-            const currentUrl = new URL(window.location.href);
-            currentUrl.pathname = currentUrl.pathname.split('sakshm/')[0] + event.data.route
-
-            console.log("Final URL: ", currentUrl.toString());
-            window.location.href = currentUrl;
-        }
-        if (event.data && event.data.type === 'ROUTE_CHANGE_COURSE') {
-            console.log("ROUTE_CHANGE_COURSE", event.data);
-            console.log(event.data.courseId);
-            const currentUrl = new URL(window.location.href);
-            console.log("Current URL: ", currentUrl.pathname);
-            currentUrl.pathname = "en/sakshm/" + event.data.route
-            currentUrl.search = `?courseId=${event.data.courseId}`;
-            console.log("Final URL: ", currentUrl.toString());
-            window.location.href = currentUrl
-        }
-    });
+    window.firebaseConfig = {
+        apiKey: "{{ FIREBASE_API_KEY|escapejs }}",
+        authDomain: "{{ FIREBASE_AUTH_DOMAIN|escapejs }}",
+        projectId: "{{ FIREBASE_PROJECT_ID|escapejs }}",
+        storageBucket: "{{ FIREBASE_STORAGE_BUCKET|escapejs }}",
+        messagingSenderId: "{{ FIREBASE_MESSAGING_SENDER_ID|escapejs }}",
+        appId: "{{ FIREBASE_APP_ID|escapejs }}",
+        measurementId: "{{ FIREBASE_MEASUREMENT_ID|escapejs }}"
+    };
 </script>
-{% endblock js %}
+
+{% block js %}
+<script type="module" src="{% static 'js/saksham_wrapper.js' %}"></script>
+{% endblock %}

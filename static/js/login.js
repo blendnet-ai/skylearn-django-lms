@@ -91,7 +91,10 @@ async function handleSignInCompletion(email) {
     // Get the Firebase ID token
     const token = await result.user.getIdToken();
 
-    document.cookie = `firebaseToken=${token}; path=/; max-age=3600; SameSite=Strict; Secure`;
+    const expirationDate = new Date();
+    expirationDate.setFullYear(expirationDate.getFullYear() + 10); // Set expiration to 10 years from now
+
+    document.cookie = `firebaseToken=${token}; path=/; max-age=${expirationDate.toUTCString()}; SameSite=Strict; Secure`;
 
     window.localStorage.setItem("authToken", token);
     window.localStorage.removeItem("emailForSignIn");
