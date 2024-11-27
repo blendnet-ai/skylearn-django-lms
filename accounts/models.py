@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from PIL import Image
 
-from course.models import Program
+from course.models import Batch, Program
 from .validators import ASCIIUsernameValidator
 
 
@@ -68,10 +68,12 @@ GENDERS = ((_("M"), _("Male")), (_("F"), _("Female")))
 
 
 class User(AbstractUser):
+    firebase_uid = models.CharField(max_length=150, unique=True, null=True)
     is_student = models.BooleanField(default=False)
     is_lecturer = models.BooleanField(default=False)
     is_parent = models.BooleanField(default=False)
     is_dep_head = models.BooleanField(default=False)
+    is_course_provider_admin=models.BooleanField(default=False)
     gender = models.CharField(max_length=1, choices=GENDERS, blank=True, null=True)
     phone = models.CharField(max_length=60, blank=True, null=True)
     address = models.CharField(max_length=60, blank=True, null=True)
@@ -107,7 +109,8 @@ class User(AbstractUser):
             role = _("Lecturer")
         elif self.is_parent:
             role = _("Parent")
-
+        elif self.is_course_provider_admin:
+            role = _("Course Provider Admin")
         return role
 
     def get_picture(self):
@@ -153,6 +156,7 @@ class Student(models.Model):
     # id_number = models.CharField(max_length=20, unique=True, blank=True)
     level = models.CharField(max_length=25, choices=LEVEL, null=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)
+    batches = models.ManyToManyField(Batch, blank=True)
 
     objects = StudentManager()
 
@@ -210,3 +214,28 @@ class DepartmentHead(models.Model):
 
     def __str__(self):
         return "{}".format(self.user)
+
+
+class CourseProviderAdmin(models.Model):
+    course_provider_admin = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )    
+    
+class CourseProvider(models.Model):
+    name=models.CharField(max_length=100)
+    
+    admins = models.ManyToManyField(
+        CourseProviderAdmin
+    )
+
+class Lecturer(models.Model):
+    lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
+    guid=models.CharField(max_length=50,null=False)
+    
+    @property
+    def name(self):
+        return f"{self.lecturer.first_name} {self.lecturer.last_name}"
+    
+    def presenter_details(self):
+        return {"guid":self.guid,"name":self.name}

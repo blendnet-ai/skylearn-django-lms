@@ -19,7 +19,6 @@ class SearchView(ListView):
     def get_queryset(self):
         request = self.request
         query = request.GET.get("q", None)
-
         if query is not None:
             news_events_results = NewsAndEvents.objects.search(query)
             program_results = Program.objects.search(query)

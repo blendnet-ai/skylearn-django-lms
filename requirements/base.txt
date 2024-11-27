@@ -1,6 +1,6 @@
 pytz==2022.7  # https://github.com/stub42/pytz
-Pillow==9.3.0  # https://github.com/python-pillow/Pillow        
-whitenoise==6.2.0  # https://github.com/evansd/whitenoise
+Pillow==10.3.0  # https://github.com/python-pillow/Pillow        
+whitenoise==6.5.0  # https://github.com/evansd/whitenoise
 
 # Django
 # ------------------------------------------------------------------------------
@@ -12,8 +12,9 @@ django-filter==23.5 # https://github.com/carltongibson/django-filter
 django-modeltranslation==0.18.11 # https://github.com/Buren/django-modeltranslation
 django-anymail[mailjet]==10.2
 # Django REST Framework
-djangorestframework==3.14.0  # https://github.com/encode/django-rest-framework
-django-cors-headers==3.13.0 # https://github.com/adamchainz/django-cors-headers
+djangorestframework==3.15.2  # https://github.com/encode/django-rest-framework
+django-cors-headers==4.2.0 # https://github.com/adamchainz/django-cors-headers
+
 
 # PDF generator
 reportlab==4.0.4
@@ -27,8 +28,9 @@ python-decouple==3.8
 
 # Payments
 stripe==5.5.0
-gopay==2.0.1
+gopay
 
+#Database
 psycopg==3.1.12
 psycopg[binary]==3.1.12
 
@@ -38,3 +40,79 @@ django-celery-beat==2.7.0
 
 # Redis
 django-redis==5.4.0
+#integrated requirements
+Django==4.2.16
+gunicorn[gevent]==23.0.0
+uvicorn==0.23.2
+
+django-extensions==3.2.3
+PyYAML==6.0.1
+uritemplate==4.1.1
+
+prospector==1.10.2
+python-dotenv==1.0.0
+firebase-admin==6.2.0
+azure-storage-blob==12.18.2
+praat-parselmouth==0.4.3
+azure-cognitiveservices-speech==1.32.1
+jupyter==1.0.0
+ipython==8.12.3
+notebook==6.5.6
+openai>=1.40.0
+PyMuPDF==1.24.10
+PyMuPDFb==1.24.10
+pypdf==4.0.1
+pdfminer.six==20240706
+# pydub===0.25.1
+numpy==1.26.4
+scipy==1.11.3
+matplotlib==3.8.0
+ #adding so as to avert this cyclic dependency issue of nltk, just before textblob,
+ # https://github.com/nltk/nltk/issues/3308#issuecomment-2295213972
+ # so textblob doesn't install the latest nltk
+nltk==3.9b1
+textblob==0.17.1
+replicate==0.15.4
+datadog-api-client==2.18.0
+ddtrace==2.1.4
+azure-ai-textanalytics==5.3.0
+deepgram-sdk==2.11.0
+django-anymail[mailjet]==10.2
+spacy==3.7.2
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+flower==2.0.1
+elevenlabs==0.2.27
+yt-dlp==2024.7.1
+channels==4.1.0
+daphne==4.1.0
+youtube_transcript_api==0.6.2
+sentry-sdk==2.8.0
+
+##Telegram Bot
+#pymemgpt==0.3.8
+python-telegram-bot[rate-limiter]==20.7
+
+
+google-api-python-client==2.116.0
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+
+sendgrid==6.11.0
+django-codemirror2==0.2
+litellm==1.44.15
+docstring_parser==0.16
+
+django-json-widget==2.0.1
+
+
+
+Twisted[tls,http2]==24.7.0
+langfuse==2.40.0
+
+llama-index-llms-litellm==0.2.1
+drf-spectacular == 0.27.2
+
+django-sass-processor
+libsass

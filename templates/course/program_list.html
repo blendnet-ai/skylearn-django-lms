@@ -17,7 +17,7 @@
 </div>
 {% endif %}
 
-<div class="title-1"><i class="fas fa-book-open"></i>{% trans 'Program List' %}</div>
+<div class="title-1"><i class="fas fa-book-open"></i>{% trans 'Courses List' %}</div>
 <br><br>
 
 {% include 'snippets/messages.html' %}
@@ -29,7 +29,7 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>{% trans 'Program Name' %}</th>
+                    <th>{% trans 'Course Name' %}</th>
                     <th>{% trans 'Summary' %}</th>
                     {% if request.user.is_superuser %}
                     <th>{% trans 'Action' %}</th>

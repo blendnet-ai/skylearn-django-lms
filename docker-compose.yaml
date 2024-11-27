@@ -26,12 +26,12 @@ services:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
     container_name: lms-celery
-    working_dir: appuser/code
+    working_dir: /appuser/code
     volumes:
-      - .:appuser/code
+      - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A lms worker -l debug -Q default
+    entrypoint: python -m celery -A config worker -l debug -Q default
     depends_on:
       - redis
       - postgres
@@ -44,6 +44,50 @@ services:
     command: /bin/sh -c "redis-server --requirepass ${REDIS_PASSWORD}"
     ports:
       - 6379:6379
+
+  lms-notebook-dev:
+    container_name: lms-notebook
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    entrypoint: python manage.py shell_plus --notebook -- --ip 0.0.0.0 --port 8000
+    restart: unless-stopped
+    volumes:
+      - .:/home/appuser/code
+    working_dir: /home/appuser/code
+    ports:
+      - "8888:8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_ALLOW_ASYNC_UNSAFE=true
+    depends_on:
+      - postgres
+      - redis
+
+  speechai-celery-whisper-timestamped:
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    container_name: speechai-celery-whisper-timestamped
+    working_dir: /home/appuser/code
+    volumes:
+      - .:/home/appuser/code
+    env_file:
+      - .env
+    entrypoint: python -m celery -A speechai worker -l info -Q whisper-timestamped --concurrency=1
+
+  telegram-bot:
+    container_name: telegram-bot
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    entrypoint: python manage.py run_telegram_bot
+    platform: linux/amd64
+    restart: "no"
+    working_dir: /appuser/code
+    volumes:
+      - .:/appuser/code
+    environment:
+      - DJANGO_DEBUG=FALSE
+    env_file:
+      - .env
 
 volumes:
   pgdb_lms:

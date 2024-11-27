@@ -22,12 +22,17 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
+from accounts.authentication import FirebaseAuthentication
+from accounts.permissions import IsLecturer, IsStudent, IsLoggedIn
 from core.models import Session, Semester
 from course.models import Course
 from accounts.models import Student
-from accounts.decorators import lecturer_required, student_required
 from .models import TakenCourse, Result
 
+from rest_framework.decorators import api_view
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.response import Response
+from evaluation.usecases import AssessmentUseCase
 
 CM = 2.54
 
@@ -35,8 +40,9 @@ CM = 2.54
 # ########################################################
 # Score Add & Add for
 # ########################################################
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def add_score(request):
     """
     Shows a page where a lecturer will select a course allocated
@@ -65,8 +71,9 @@ def add_score(request):
     return render(request, "result/add_score.html", context)
 
 
-@login_required
-@lecturer_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def add_score_for(request, id):
     """
     Shows a page where a lecturer will add score for students that
@@ -200,8 +207,9 @@ def add_score_for(request, id):
 # ########################################################
 
 
-@login_required
-@student_required
+@api_view(["GET", "POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
 def grade_result(request):
     student = Student.objects.get(student__pk=request.user.id)
     courses = TakenCourse.objects.filter(student__student__pk=request.user.id).filter(
@@ -256,26 +264,24 @@ def grade_result(request):
     return render(request, "result/grade_results.html", context)
 
 
-@login_required
-@student_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
 def assessment_result(request):
-    student = Student.objects.get(student__pk=request.user.id)
-    courses = TakenCourse.objects.filter(
-        student__student__pk=request.user.id, course__level=student.level
+    attempts = AssessmentUseCase.fetch_history_data(request.user.id).get(
+        "attempted_list"
     )
-    result = Result.objects.filter(student__student__pk=request.user.id)
 
     context = {
-        "courses": courses,
-        "result": result,
-        "student": student,
+        "attempts": attempts,
     }
 
     return render(request, "result/assessment_results.html", context)
 
 
-@login_required
-@lecturer_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsLecturer])
 def result_sheet_pdf_view(request, id):
     current_semester = Semester.objects.get(is_current_semester=True)
     current_session = Session.objects.get(is_current_session=True)
@@ -446,8 +452,9 @@ def result_sheet_pdf_view(request, id):
     return response
 
 
-@login_required
-@student_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
 def course_registration_form(request):
     current_session = Session.objects.get(is_current_session=True)
     courses = TakenCourse.objects.filter(student__student__id=request.user.id)

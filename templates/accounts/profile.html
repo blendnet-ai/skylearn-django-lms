@@ -23,7 +23,7 @@
     <div class="col-md-3 mx-auto">
         <div class="card  p-2">
             <div class="text-center">
-                <img src="{{ user.picture.url }}" class="w-100">
+                <img src="{{ request.user.picture}}" class="w-100">
                 <ul class="px-2 list-unstyled">
                     <li>{{ user.get_full_name|title }}</li>
                     <li><strong>{% trans 'Last login:' %} </strong>{{ user.last_login|date }}</li>

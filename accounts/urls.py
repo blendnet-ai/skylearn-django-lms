@@ -9,6 +9,8 @@ from django.urls import path, include
 #     LogoutView,
 # )
 from .views import (
+    token_loading_page,
+    enroll_students_in_batch,
     profile,
     profile_single,
     admin_panel,
@@ -28,12 +30,14 @@ from .views import (
     register,
     render_lecturer_pdf_list,  # new
     render_student_pdf_list,  # new
+    get_course_provider
 )
 
 # from .forms import EmailValidationOnForgotPassword
 
 
 urlpatterns = [
+    path("loading/", token_loading_page, name="token_loading_page"),
     path("", include("django.contrib.auth.urls")),
     path("admin_panel/", admin_panel, name="admin_panel"),
     path("profile/", profile, name="profile"),
@@ -63,6 +67,12 @@ urlpatterns = [
     path(
         "create_students_pdf_list/", render_student_pdf_list, name="student_list_pdf"
     ),  # new
+    path(
+        "enroll_students_in_batch/",
+        enroll_students_in_batch,
+        name="enroll_students_in_batch",
+    ),
+    path("get-course-provider",get_course_provider,name="get_course_provider")
     # path('add-student/', StudentAddView.as_view(), name='add_student'),
     # path('programs/course/delete/<int:pk>/', course_delete, name='delete_course'),
     # Setting urls

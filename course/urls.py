@@ -1,7 +1,6 @@
 from django.urls import path
 from . import views
 
-
 urlpatterns = [
     # Program urls
     path("", views.ProgramFilterView.as_view(), name="programs"),
@@ -74,4 +73,49 @@ urlpatterns = [
     path("course/registration/", views.course_registration, name="course_registration"),
     path("course/drop/", views.course_drop, name="course_drop"),
     path("my_courses/", views.user_course_list, name="user_course_list"),
+    path(
+        "live_classes/series/create/",
+        views.create_live_class_series,
+        name="create_live_class_series",
+    ),
+    path(
+        "live_classes/series/<int:id>/update/",
+        views.update_live_class_series,
+        name="update_live_class_series",
+    ),
+    path(
+        "live_classes/series/<int:id>/delete/",
+        views.delete_live_class_series,
+        name="delete_live_class_series",
+    ),
+    path(
+        "live_classes/class/batch/<int:batch_id>/",
+        views.get_live_classes_by_batch_id,
+        name="get_live_classes_by_batch_id",
+    ),
+    path(
+        "live_classes/class/course/<int:course_id>/",
+        views.get_live_classes_by_course_id,
+        name="get_live_classes_by_course_id",
+    ),
+    path(
+        "live_classes/class/",
+        views.get_live_classes,
+        name="get_live_classes_by_course_id",
+    ),
+    path(
+        "live_classes/class/<int:id>/update/",
+        views.update_live_class,
+        name="update_live_class",
+    ),
+    path(
+        "live_classes/class/<int:id>/delete/",
+        views.delete_live_class,
+        name="delete_live_class",
+    ),
+    path("course/<course_id>/batch/create/", views.create_batch, name="create_batch"),
+    path("course/<course_id>/get-batches/", views.get_batches_by_course_id, name="get_batches"),
+    path("course-provider/<course_provider_id>/get-courses/", views.get_courses_by_course_provider_id, name="get_batches"),
+    path("course/<course_id>/get-modules-data/", views.get_modules_and_resources_by_course_id, name="get_modules_data"),
+    path("course/user-courses-list",views.user_courses_list,name="user_courses_list")
 ]
