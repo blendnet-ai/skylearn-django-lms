@@ -25,7 +25,8 @@ class CourseRepository:
                 output_field=CharField()
             ),  
         ).values()
-    
+    def get_all_courses():
+        return Course.objects.all().values()
 
 
 class BatchRepository:

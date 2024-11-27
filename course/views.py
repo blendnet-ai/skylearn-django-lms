@@ -876,9 +876,9 @@ def get_modules_and_resources_by_course_id(request, course_id):
 @permission_classes([IsLoggedIn])
 def user_courses_list(request):
     #request.user=User.objects.get(id=4)
-    courses=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
+    courses, role=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
-        return Response({courses}, status=status.HTTP_200_OK)
+        return Response({"courses": courses, "role": role}, status=status.HTTP_200_OK)
     else:
         return Response(
             {"error": "No Courses Found For User"}, status=status.HTTP_404_NOT_FOUND
