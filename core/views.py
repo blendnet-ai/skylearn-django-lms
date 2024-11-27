@@ -17,6 +17,9 @@ from urllib.parse import urlencode
 # Saksham
 # ########################################################
 # @login_required
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def sakshm_embed_view(request, path):
     query_params = request.GET.dict()
 
@@ -31,7 +34,9 @@ def sakshm_embed_view(request, path):
         },
     )
 
-
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def sakshm_embed_view_with_slug(request, slug):
     return render(
         request,
@@ -48,8 +53,8 @@ def sakshm_embed_view_with_slug(request, slug):
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def home_view(request):
     path = "http://localhost:3000/"
     if request.user.is_student or request.user.is_lecturer:
@@ -67,8 +72,8 @@ def home_view(request):
     
 # my courses view
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def course_view(request):
     path = "http://localhost:3000/my-courses/"
     return render(

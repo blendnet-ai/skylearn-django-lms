@@ -158,7 +158,7 @@ class OnBoardingUsecase:
 
 
         if is_verified:
-            UserProfileRepository.set_mobile_verification_complete(user)
+            UserProfileRepository.set_mobile_verification_complete(user,phone_number)
             return {"otp_verified":is_verified, "message":message}
         else:
             return {"otp_verified":is_verified, "message":message}
