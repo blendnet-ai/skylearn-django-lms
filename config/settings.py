@@ -252,7 +252,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # whitenoise to serve static files
-    'custom_auth.middleware.OnboardingMiddleware',
+    #'custom_auth.middleware.OnboardingMiddleware',
 ]
 
 ROOT_URLCONF = "config.urls"

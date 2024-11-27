@@ -143,8 +143,6 @@ class OnBoardingUsecase:
     
     def handle_otp_sending(user,phone_number):
         if phone_number:
-            user.phone = phone_number
-            user.save()
             status, message = SMS2FactorService.send_otp(phone_number)
             #status,message=True,"OTP Sent Successfully"
             if status:
@@ -155,10 +153,9 @@ class OnBoardingUsecase:
             return {"otp_sent":False,"status":False,"message": "Please provide phone number"}
         
     
-    def handle_otp_verification(user,entered_otp_value):
-        phone_number = user.phone
+    def handle_otp_verification(user,phone_number,entered_otp_value):
         is_verified, message = SMS2FactorService.verify_otp(phone_number, entered_otp_value)
-        #is_verified, message = True, "Verified OTP Successfully"  # Simulated verification
+
 
         if is_verified:
             UserProfileRepository.set_mobile_verification_complete(user)

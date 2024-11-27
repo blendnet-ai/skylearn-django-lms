@@ -187,11 +187,15 @@ def send_otp(request):
 def verify_otp(request):
     user = request.user
     entered_otp_value = request.data.get('otp_value')
+    phone_number = request.data.get('phone_number')
 
     if not entered_otp_value:
         return Response({"error": "OTP value is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    onboarding_verification_result = OnBoardingUsecase.handle_otp_verification(user, entered_otp_value)
+    if not phone_number:
+        return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    onboarding_verification_result = OnBoardingUsecase.handle_otp_verification(user, phone_number,entered_otp_value)
 
     if onboarding_verification_result.get('otp_verified'):
         return Response(onboarding_verification_result, status=status.HTTP_200_OK)
