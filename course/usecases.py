@@ -5,6 +5,7 @@ from course.repositories import (
     CourseRepository,
     LiveClassSeriesBatchAllocationRepository,
     ModuleRepository,
+    RecordingsRepository,
 )
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -362,3 +363,7 @@ class CourseUseCase:
                 "assessment_generation_configs":assessment_generation_configs
             })
         return module_data
+    
+    def get_recordings_by_course_id(course_id):
+        recordings_data=RecordingsRepository.get_recordings_by_course_id(course_id)
+        return recordings_data

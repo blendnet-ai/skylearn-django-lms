@@ -859,12 +859,13 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 @permission_classes([IsLoggedIn])
 def get_modules_and_resources_by_course_id(request, course_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
+    recordings_data=CourseUseCase.get_recordings_by_course_id(course_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},
             status=status.HTTP_404_NOT_FOUND,
         )
-    return Response(module_data, status=status.HTTP_200_OK)
+    return Response({'module_data': module_data, 'recordings_data': recordings_data}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])

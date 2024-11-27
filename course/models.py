@@ -111,6 +111,11 @@ class Batch(models.Model):
     def students(self):
         return self.student_set.all()
 
+class Recordings(models.Model):
+    title = models.CharField(max_length=200)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    url=models.CharField(max_length=200)
+
 
 class LiveClassSeriesBatchAllocation(models.Model):
     """Model to handle course allocations for live classes"""
