@@ -85,99 +85,6 @@ SESSION_CACHE_ALIAS = "default"
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-
-STORAGE_ACCOUNT_NAME = os.environ.get("STORAGE_ACCOUNT_NAME", "stspeechaistage")
-STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
-
-# Firebase Settings
-FIREBASE_ENABLED = os.environ.get("FIREBASE_ENABLED") == "TRUE"
-FIREBASE_ACCOUNT_TYPE = os.environ.get("FIREBASE_ACCOUNT_TYPE")
-FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
-FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
-FIREBASE_PRIVATE_KEY = os.environ.get("FIREBASE_PRIVATE_KEY")
-FIREBASE_CLIENT_EMAIL = os.environ.get("FIREBASE_CLIENT_EMAIL")
-FIREBASE_CLIENT_ID = os.environ.get("FIREBASE_CLIENT_ID")
-FIREBASE_AUTH_URI = os.environ.get("FIREBASE_AUTH_URI")
-FIREBASE_TOKEN_URI = os.environ.get("FIREBASE_TOKEN_URI")
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
-FIREBASE_CLIENT_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
-FIREBASE_UNIVERSE_DOMAIN = os.environ.get("UNIVERSE_DOMAIN")
-
-
-### SERVICE SETTINGS
-## WHISPER-TIMESTAMP SERVICE
-WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
-WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
-    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
-]
-WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
-WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
-    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
-]
-
-## CEFR_LEVEL_SERVICE
-CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
-CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ["CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN"]
-CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
-CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ["CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN"]
-
-PRONUNCIATION_SERVICE_ENDPOINT = os.environ["PRONUNCIATION_SERVICE_ENDPOINT"]
-PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ["PRONUNCIATION_SERVICE_AUTH_TOKEN"]
-PRONUNCIATION_SERVICE_ENDPOINT = os.environ["PRONUNCIATION_SERVICE_ENDPOINT"]
-PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ["PRONUNCIATION_SERVICE_AUTH_TOKEN"]
-
-AZURE_TEXT_ANALYTICS_CLIENT_KEY = os.environ["AZURE_TEXT_ANALYTICS_CLIENT_KEY"]
-AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ[
-    "AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT"
-]
-
-DEEPGRAM_KEY = os.environ["DEEPGRAM_KEY"]
-
-ANYMAIL = {
-    "MAILJET_API_KEY": os.environ["MAILJET_API_KEY"],
-    "MAILJET_SECRET_KEY": os.environ["MAILJET_SECRET_KEY"],
-}
-
-EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
-DEFAULT_FROM_EMAIL = "speechai0@gmail.com"
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
-
-ADMINS = os.environ["ADMINS"]
-if ADMINS:
-    ADMINS = literal_eval(ADMINS)
-
-REFERRAL_URL = os.environ.get("REFERRAL_URL")
-FEEDBACK_FORM_URL = os.environ.get("FEEDBACK_FORM_URL")
-
-# Word of the day cache TTL - 1 day in seconds
-WORD_OF_DAY_CACHE_TTL = 86400
-
-
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
-
-
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "UTC"
-
-CELERY_TASK_ROUTES = {
-    "evaluation.tasks.*": {"queue": "evaluation_queue"},
-    "services.tasks.*": {"queue": "services_queue"},
-}
-
-CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
-if CELERY_USE_SSL:
-    BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
-    CELERY_d_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
-
-# change the default user models to our custom model
-AUTH_USER_MODEL = "accounts.User"
-STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
-LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
-
-
 # Application definition
 
 DJANGO_APPS = [
@@ -199,7 +106,7 @@ THIRD_PARTY_APPS = [
     "crispy_bootstrap5",
     "django_filters",
     "django_extensions",
-    #"django_celery_beat",
+    # "django_celery_beat",
     "corsheaders",
     "sass_processor",
 ]
@@ -226,7 +133,7 @@ INTEGRATED_APPS = [
     "OpenAIService",
     "practice",
     "custom_auth",
-    'telegram_bot'
+    "telegram_bot",
 ]
 
 # Combine all apps
@@ -540,27 +447,10 @@ FIREBASE_MESSAGING_SENDER_ID = os.environ["FIREBASE_MESSAGING_SENDER_ID"]
 FIREBASE_APP_ID = os.environ["FIREBASE_APP_ID"]
 FIREBASE_MEASUREMENT_ID = os.environ["FIREBASE_MEASUREMENT_ID"]
 
-if not firebase_admin._apps:
-    cred = credentials.Certificate(
-        {
-            "type": FIREBASE_ACCOUNT_TYPE,
-            "project_id": FIREBASE_PROJECT_ID,
-            "private_key_id": FIREBASE_PRIVATE_KEY_ID,
-            "private_key": FIREBASE_PRIVATE_KEY.replace("\\n", "\n"),
-            "client_email": FIREBASE_CLIENT_EMAIL,
-            "client_id": FIREBASE_CLIENT_ID,
-            "auth_uri": FIREBASE_AUTH_URI,
-            "token_uri": FIREBASE_TOKEN_URI,
-            "auth_provider_x509_cert_url": FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-            "client_x509_cert_url": FIREBASE_CLIENT_X509_CERT_URL,
-            "universe_domain": FIREBASE_UNIVERSE_DOMAIN,
-        }
-    )
-    firebase_admin.initialize_app(cred)
-
-
-TELEGRAM_BOT_NAME=os.environ.get("TELEGRAM_BOT_NAME",'Ap32_bot')
-TWO_Factor_SMS_API_KEY= os.environ.get("TWO_Factor_SMS_API_KEY","82615175-a581-11ef-8b17-0200cd936042")
+TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "Ap32_bot")
+TWO_Factor_SMS_API_KEY = os.environ.get(
+    "TWO_Factor_SMS_API_KEY", "82615175-a581-11ef-8b17-0200cd936042"
+)
 
 # Celery Configuration
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
@@ -582,7 +472,7 @@ CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
 #     'fetch-meeting-recordings-data-every-midnight': {
 #         'task': 'meetings.tasks.fetch_meetings_recordings_data',
 #         'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
-#     }   
+#     }
 # }
 
 # Task-specific settings
@@ -594,7 +484,7 @@ CELERY_TASK_RETRY_DELAY = 300  # 5 minutes
 
 # MS Teams settings
 MS_TEAMS_ACCESS_TOKEN_CACHE_KEY = "msteams_access_token"
-MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID") 
+MS_TEAMS_CLIENT_ID = config("MS_TEAMS_CLIENT_ID")
 MS_TEAMS_CLIENT_SECRET = config("MS_TEAMS_CLIENT_SECRET")
 MS_TEAMS_TENANT_ID = config("MS_TEAMS_TENANT_ID")
 # This Admin user id is needed to be given permissions to create meetings via powershell
@@ -602,3 +492,95 @@ MS_TEAMS_TENANT_ID = config("MS_TEAMS_TENANT_ID")
 MS_TEAMS_ADMIN_USER_ID = config("MS_TEAMS_ADMIN_USER_ID")
 MS_TEAMS_ADMIN_USER_NAME = config("MS_TEAMS_ADMIN_USER_NAME")
 MS_TEAMS_ADMIN_UPN = config("MS_TEAMS_ADMIN_UPN")
+
+
+STORAGE_ACCOUNT_NAME = os.environ.get("STORAGE_ACCOUNT_NAME", "stspeechaistage")
+STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
+
+# Firebase Settings
+FIREBASE_ENABLED = os.environ.get("FIREBASE_ENABLED") == "TRUE"
+FIREBASE_ACCOUNT_TYPE = os.environ.get("FIREBASE_ACCOUNT_TYPE")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
+FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
+FIREBASE_PRIVATE_KEY = os.environ.get("FIREBASE_PRIVATE_KEY")
+FIREBASE_CLIENT_EMAIL = os.environ.get("FIREBASE_CLIENT_EMAIL")
+FIREBASE_CLIENT_ID = os.environ.get("FIREBASE_CLIENT_ID")
+FIREBASE_AUTH_URI = os.environ.get("FIREBASE_AUTH_URI")
+FIREBASE_TOKEN_URI = os.environ.get("FIREBASE_TOKEN_URI")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+FIREBASE_CLIENT_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+FIREBASE_UNIVERSE_DOMAIN = os.environ.get("UNIVERSE_DOMAIN")
+
+
+### SERVICE SETTINGS
+## WHISPER-TIMESTAMP SERVICE
+WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
+WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
+    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
+]
+WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
+WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
+    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
+]
+
+## CEFR_LEVEL_SERVICE
+CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
+CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ["CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN"]
+CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
+CEFR_LEVEL_SERVICE_AUTH_TOKEN = os.environ["CEFR_LEVEL_TIMESTAMP_SERVICE_AUTH_TOKEN"]
+
+PRONUNCIATION_SERVICE_ENDPOINT = os.environ["PRONUNCIATION_SERVICE_ENDPOINT"]
+PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ["PRONUNCIATION_SERVICE_AUTH_TOKEN"]
+PRONUNCIATION_SERVICE_ENDPOINT = os.environ["PRONUNCIATION_SERVICE_ENDPOINT"]
+PRONUNCIATION_SERVICE_AUTH_TOKEN = os.environ["PRONUNCIATION_SERVICE_AUTH_TOKEN"]
+
+AZURE_TEXT_ANALYTICS_CLIENT_KEY = os.environ["AZURE_TEXT_ANALYTICS_CLIENT_KEY"]
+AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ[
+    "AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT"
+]
+
+DEEPGRAM_KEY = os.environ["DEEPGRAM_KEY"]
+
+ANYMAIL = {
+    "MAILJET_API_KEY": os.environ["MAILJET_API_KEY"],
+    "MAILJET_SECRET_KEY": os.environ["MAILJET_SECRET_KEY"],
+}
+
+EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
+DEFAULT_FROM_EMAIL = "speechai0@gmail.com"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+ADMINS = os.environ["ADMINS"]
+if ADMINS:
+    ADMINS = literal_eval(ADMINS)
+
+REFERRAL_URL = os.environ.get("REFERRAL_URL")
+FEEDBACK_FORM_URL = os.environ.get("FEEDBACK_FORM_URL")
+
+# Word of the day cache TTL - 1 day in seconds
+WORD_OF_DAY_CACHE_TTL = 86400
+
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
+
+
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+CELERY_TASK_ROUTES = {
+    "evaluation.tasks.*": {"queue": "evaluation_queue"},
+    "services.tasks.*": {"queue": "services_queue"},
+}
+
+CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
+if CELERY_USE_SSL:
+    BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+    CELERY_d_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+
+# change the default user models to our custom model
+AUTH_USER_MODEL = "accounts.User"
+STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
+LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
