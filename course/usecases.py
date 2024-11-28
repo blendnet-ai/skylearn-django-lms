@@ -349,10 +349,13 @@ class CourseUseCase:
                 # Get batches for the current course
                 batches = BatchRepository.get_batches_by_course_id(course.get("id"))
                 # Filter batches to include only those for the current lecturer
-                lecturer_batches = batches.filter(lecturer_id=user.id)
+                if user.is_lecturer:
+                    lecturer_batches = batches.filter(lecturer_id=user.id)
+                else:
+                    lecturer_batches = batches
                 # Count the number of batches for the lecturer
                 course["no_of_batches"] = lecturer_batches.count()
-                return courses, "lecturer"
+            return courses, "lecturer"
 
         elif user.is_student:
             courses = CourseRepository.get_courses_for_student(user.id)
