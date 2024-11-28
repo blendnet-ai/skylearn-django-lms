@@ -883,3 +883,21 @@ def user_courses_list(request):
         return Response(
             {"error": "No Courses Found For User"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_meeting_details(request, meeting_id):
+    #request.user=User.objects.get(id=4)
+    meeting=MeetingUsecase.get_meeting_by_id(meeting_id)
+    return Response({"data":meeting}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_live_class_details(request, series_id):
+    #request.user=User.objects.get(id=4)
+    meeting_series=MeetingSeriesUsecase.get_meeting_series(series_id)
+    return Response({"data":meeting_series}, status=status.HTTP_200_OK)

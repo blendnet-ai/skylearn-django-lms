@@ -1,6 +1,7 @@
 from telnetlib import LOGOUT
 from meetings.models import Meeting, MeetingSeries, meeting_post_save
 from meetings.repositories import MeetingRepository, MeetingSeriesRepository
+from course.serializers import LiveClassSeriesSerializer
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
@@ -236,6 +237,20 @@ class MeetingSeriesUsecase:
         meeting_series = MeetingSeriesRepository.get_meeting_series_by_id(id)
         MeetingRepository.get_meetings_by_series_id(id)
         meeting_series.delete()
+    
+    def get_meeting_series(id):
+        meeting_series = MeetingSeriesRepository.get_meeting_series_by_id(id)
+        data={
+            "title":  meeting_series.title,
+            "start_time": meeting_series.start_time,
+            "duration": meeting_series.duration,
+            "start_date": meeting_series.start_date,
+            "end_date": meeting_series.end_date,
+            "recurrence_type": meeting_series.recurrence_type,
+            "weekday_schedule": meeting_series.weekday_schedule,
+            "monthly_day": meeting_series.monthly_day
+        }
+        return data
 
 
 class MeetingUsecase:
@@ -395,3 +410,25 @@ class MeetingUsecase:
                 }
             )
         return meetings_data
+
+    def get_meeting_by_id(meeting_id):
+        meeting=MeetingRepository.get_meeting_by_id(meeting_id)
+        data={
+                    "title": meeting.series.title,
+                    "meeting_id": meeting.id,
+                    "series_id": meeting.series_id,
+                    "start_date": meeting.start_date,
+                    "link": meeting.link,
+                    "start_time": (
+                        meeting.start_time_override
+                        if meeting.start_time_override
+                        else meeting.series.start_time
+                    ),
+                    "duration": (
+                        meeting.duration_override
+                        if meeting.duration_override
+                        else meeting.series.duration
+                    ),
+            
+        }
+        return data
