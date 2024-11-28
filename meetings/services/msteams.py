@@ -109,7 +109,7 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
                                     "displayName": presenter.get('name'),
                                 },
                                 "role": "presenter",
-                                "upn": "admin@sakshm.com",
+                                "upn": presenter.get('upn'),
                             }
                         }
                     ],
