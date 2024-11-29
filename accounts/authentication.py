@@ -3,6 +3,7 @@ from rest_framework import authentication
 from rest_framework import exceptions
 from accounts.models import Student, User
 from custom_auth.repositories import UserProfileRepository
+from accounts.usecases import RoleAssignmentUsecase
 
 
 class FirebaseTokenExpired(Exception):
@@ -27,10 +28,10 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                 # Create user if not exists
                 email = decoded_token["email"]
                 user = User.objects.create(
-                    firebase_uid=uid, email=email, is_active=True, is_student=True
+                    firebase_uid=uid, email=email, is_active=True
                 )
-                student = Student.objects.create(student=user)
-            user_profile=UserProfileRepository.create_user_profile(user_id=user.id)
+                RoleAssignmentUsecase.assign_role_from_config(user)
+            user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
             return (user, None)
 
         except auth.ExpiredIdTokenError as e:
