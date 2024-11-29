@@ -39,9 +39,9 @@ RELATION_SHIP = (
 )
 
 
-class ConfigMap(models.Model):
-    tag = models.CharField(max_length=100, unique=True)
-    value = models.JSONField(max_length=100)
+class UserConfigMapping(models.Model):
+    email = models.EmailField(unique=True)
+    config = models.JSONField(max_length=100)
 
 
 class CustomUserManager(UserManager):
@@ -231,12 +231,15 @@ class CourseProvider(models.Model):
     name = models.CharField(max_length=100)
 
     admins = models.ManyToManyField(CourseProviderAdmin)
+    teams_guid = models.CharField(max_length=50, null=False)
+    teams_upn = models.CharField(max_length=100, null=False)
 
 
 class Lecturer(models.Model):
     lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
     guid = models.CharField(max_length=50, null=False)
     upn = models.CharField(max_length=100, null=False)
+    course_provider = models.ForeignKey(CourseProvider, on_delete=models.CASCADE)
 
     def name(self):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"

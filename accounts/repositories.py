@@ -1,10 +1,10 @@
 from accounts.models import (
-    ConfigMap,
     Student,
     Lecturer,
     User,
     CourseProvider,
     CourseProviderAdmin,
+    UserConfigMapping,
 )
 
 
@@ -35,6 +35,12 @@ class CourseProviderAdminRepository:
     def create_course_provider_admin(user):
         return CourseProviderAdmin.objects.create(course_provider_admin=user)
 
+    @staticmethod
+    def associate_with_course_provider(course_provider_admin, course_provider):
+        course_provider.admins.add(course_provider_admin)
+        course_provider.save()
+        return course_provider
+
 
 class CourseProviderRepository:
     @staticmethod
@@ -58,6 +64,13 @@ class CourseProviderRepository:
         except CourseProviderAdmin.DoesNotExist:
             return None
 
+    @staticmethod
+    def get_course_provider_by_id(course_provider_id):
+        try:
+            return CourseProvider.objects.get(id=course_provider_id)
+        except CourseProvider.DoesNotExist:
+            return None
+
 
 class LecturerRepository:
     @staticmethod
@@ -69,14 +82,16 @@ class LecturerRepository:
             return None
 
     @staticmethod
-    def create_lecturer(user, guid, upn):
-        return Lecturer.objects.create(lecturer=user, guid=guid, upn=upn)
+    def create_lecturer(user, guid, upn, course_provider):
+        return Lecturer.objects.create(
+            lecturer=user, guid=guid, upn=upn, course_provider=course_provider
+        )
 
 
-class ConfigMapRepository:
+class UserConfigMappingRepository:
     @staticmethod
-    def get_config_map(tag):
+    def get_user_config_mapping(email):
         try:
-            return ConfigMap.objects.get(tag=tag)
-        except ConfigMap.DoesNotExist:
+            return UserConfigMapping.objects.get(email=email)
+        except UserConfigMapping.DoesNotExist:
             return None

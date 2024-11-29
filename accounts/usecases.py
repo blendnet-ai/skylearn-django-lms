@@ -1,10 +1,10 @@
 from accounts.models import Student
 from accounts.repositories import (
-    ConfigMapRepository,
     CourseProviderAdminRepository,
     LecturerRepository,
     StudentRepository,
     CourseProviderRepository,
+    UserConfigMappingRepository,
 )
 from course.repositories import BatchRepository
 import json
@@ -57,50 +57,60 @@ class CourseProviderUsecase:
         return data
 
 
-class ConfigMapUsecase:
-    STUDENTS = "students"
-    LECTURERS = "lecturers"
-    COURSE_PROVIDER_ADMINS = "course_provider_admins"
-
+class UserConfigMappingUsecase:
     @staticmethod
-    def get_config(tag):
-        return ConfigMapRepository.get_config_map(tag)
+    def get_user_config_mapping(email):
+        return UserConfigMappingRepository.get_user_config_mapping(email).config
 
 
 class RoleAssignmentUsecase:
+    STUDENT_ROLE = "student"
+    LECTURER_ROLE = "lecturer"
+    COURSE_PROVIDER_ADMIN_ROLE = "course_provider_admin"
 
     @staticmethod
     def assign_role_from_config(user):
-        students = ConfigMapUsecase.get_config(ConfigMapUsecase.STUDENTS).value
+        config = UserConfigMappingUsecase.get_user_config_mapping(user.email)
 
-        if students is not None:
-            # students = json.loads(students)
-            if user.email in students:
-                user.is_student = True
-                user.save()
+        if config is None:
+            return
 
-                StudentRepository.create_student(user)
+        role = config.get("role")
 
-        lecturers = ConfigMapUsecase.get_config(ConfigMapUsecase.LECTURERS).value
+        if role == RoleAssignmentUsecase.STUDENT_ROLE:
+            user.is_student = True
+            user.save()
 
-        if lecturers is not None:
-            # lecturers = json.loads(lecturers)
-            if user.email in lecturers:
-                user.is_lecturer = True
-                user.save()
+            StudentRepository.create_student(user)
+        elif role == RoleAssignmentUsecase.LECTURER_ROLE:
+            user.is_lecturer = True
+            user.save()
 
-                LecturerRepository.create_lecturer(
-                    user, settings.MS_TEAMS_ADMIN_USER_ID, settings.MS_TEAMS_ADMIN_UPN
-                )
+            course_provider_id = config.get("course_provider_id")
 
-        course_provider_admins = ConfigMapUsecase.get_config(
-            ConfigMapUsecase.COURSE_PROVIDER_ADMINS
-        ).value
+            course_provider = CourseProviderRepository.get_course_provider_by_id(
+                course_provider_id
+            )
 
-        if course_provider_admins is not None:
-            # course_provider_admins = json.loads(course_provider_admins)
-            if user.email in course_provider_admins:
-                user.is_course_provider_admin = True
-                user.save()
+            LecturerRepository.create_lecturer(
+                user,
+                course_provider.teams_guid,
+                course_provider.teams_upn,
+                course_provider,
+            )
+        elif role == RoleAssignmentUsecase.COURSE_PROVIDER_ADMIN_ROLE:
+            user.is_course_provider_admin = True
+            user.save()
 
+            course_provider_id = config.get("course_provider_id")
+
+            course_provider = CourseProviderRepository.get_course_provider_by_id(
+                course_provider_id
+            )
+
+            course_provider_admin = (
                 CourseProviderAdminRepository.create_course_provider_admin(user)
+            )
+            CourseProviderAdminRepository.associate_with_course_provider(
+                course_provider_admin, course_provider
+            )
