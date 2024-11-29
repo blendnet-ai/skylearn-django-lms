@@ -143,14 +143,18 @@ class LiveClassUsecase:
         elif user.is_lecturer:
             batches = BatchRepository.get_batches_by_lecturer_id(user.id)
         elif user.is_course_provider_admin:
-            course_provider = CourseProviderRepository.get_course_provider_by_user_id(user.id).id
-            courses=CourseUseCase.get_courses_by_course_provider(course_provider)
-            batches=[]
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+                user.id
+            ).id
+            courses = CourseUseCase.get_courses_by_course_provider(course_provider)
+            batches = []
             for course in courses:
-                batch_queryset = BatchRepository.get_batches_by_course_id(course.get('id'))
+                batch_queryset = BatchRepository.get_batches_by_course_id(
+                    course.get("id")
+                )
                 if batch_queryset.exists():  # Check if there are any batches
                     for batch in batch_queryset:  # Iterate over each batch
-                        batches.append(batch) 
+                        batches.append(batch)
         else:
             # This is not in the requirements currently
             return []
@@ -344,7 +348,9 @@ class CourseUseCase:
             if user.is_lecturer:
                 courses = CourseRepository.get_courses_for_lecturer(user.id)
             else:
-                courses = CourseRepository.get_all_courses()
+                courses = CourseRepository.get_courses_for_course_provider_admin(
+                    user.id
+                )
             for course in courses:
                 # Get batches for the current course
                 batches = BatchRepository.get_batches_by_course_id(course.get("id"))
