@@ -69,8 +69,8 @@ class LecturerRepository:
             return None
 
     @staticmethod
-    def create_lecturer(user, guid):
-        return Lecturer.objects.create(lecturer=user, guid=guid)
+    def create_lecturer(user, guid, upn):
+        return Lecturer.objects.create(lecturer=user, guid=guid, upn=upn)
 
 
 class ConfigMapRepository:

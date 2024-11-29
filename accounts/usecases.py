@@ -90,7 +90,7 @@ class RoleAssignmentUsecase:
                 user.save()
 
                 LecturerRepository.create_lecturer(
-                    user, settings.MS_TEAMS_ADMIN_USER_ID
+                    user, settings.MS_TEAMS_ADMIN_USER_ID, settings.MS_TEAMS_ADMIN_UPN
                 )
 
         course_provider_admins = ConfigMapUsecase.get_config(
