@@ -60,7 +60,10 @@ class CourseProviderUsecase:
 class UserConfigMappingUsecase:
     @staticmethod
     def get_user_config_mapping(email):
-        return UserConfigMappingRepository.get_user_config_mapping(email).config
+        mapping = UserConfigMappingRepository.get_user_config_mapping(email)
+        if mapping:
+            return mapping.config
+        return None
 
 
 class RoleAssignmentUsecase:
