@@ -36,6 +36,7 @@ def sakshm_embed_view(request, path):
         },
     )
 
+
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
@@ -61,8 +62,10 @@ def home_view(request):
     path = "http://localhost:3000/"
     if request.user.is_student or request.user.is_lecturer:
         path += "home-lms"
-    else:
+    elif request.user.is_course_provider_admin:
         path += "course-provider-admin"
+    else:
+        path += "no-role"
 
     return render(
         request,

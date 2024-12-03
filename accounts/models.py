@@ -39,6 +39,11 @@ RELATION_SHIP = (
 )
 
 
+class UserConfigMapping(models.Model):
+    email = models.EmailField(unique=True)
+    config = models.JSONField(max_length=100)
+
+
 class CustomUserManager(UserManager):
     def search(self, query=None):
         queryset = self.get_queryset()
@@ -73,7 +78,7 @@ class User(AbstractUser):
     is_lecturer = models.BooleanField(default=False)
     is_parent = models.BooleanField(default=False)
     is_dep_head = models.BooleanField(default=False)
-    is_course_provider_admin=models.BooleanField(default=False)
+    is_course_provider_admin = models.BooleanField(default=False)
     gender = models.CharField(max_length=1, choices=GENDERS, blank=True, null=True)
     phone = models.CharField(max_length=60, blank=True, null=True)
     address = models.CharField(max_length=60, blank=True, null=True)
@@ -111,6 +116,8 @@ class User(AbstractUser):
             role = _("Parent")
         elif self.is_course_provider_admin:
             role = _("Course Provider Admin")
+        else:
+            role = _("User")
         return role
 
     def get_picture(self):
@@ -217,26 +224,25 @@ class DepartmentHead(models.Model):
 
 
 class CourseProviderAdmin(models.Model):
-    course_provider_admin = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE
-    )    
-    
+    course_provider_admin = models.OneToOneField(User, on_delete=models.CASCADE)
+
+
 class CourseProvider(models.Model):
-    name=models.CharField(max_length=100)
-    
-    admins = models.ManyToManyField(
-        CourseProviderAdmin
-    )
+    name = models.CharField(max_length=100)
+
+    admins = models.ManyToManyField(CourseProviderAdmin)
+    teams_guid = models.CharField(max_length=50, null=False)
+    teams_upn = models.CharField(max_length=100, null=False)
+
 
 class Lecturer(models.Model):
     lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
-    guid=models.CharField(max_length=50,null=False)
-    upn=models.CharField(max_length=100,null=False)
-    
-    @property
+    guid = models.CharField(max_length=50, null=False)
+    upn = models.CharField(max_length=100, null=False)
+    course_provider = models.ForeignKey(CourseProvider, on_delete=models.CASCADE)
+
     def name(self):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"
-    
+
     def presenter_details(self):
-        return {"guid":self.guid,"name":self.name,"upn":self.upn}
+        return {"guid": self.guid, "name": self.name, "upn": self.upn}

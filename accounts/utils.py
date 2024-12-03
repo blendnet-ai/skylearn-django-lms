@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.utils import send_html_email
+import uuid
 
 
 def generate_password():
@@ -10,17 +11,15 @@ def generate_password():
 
 
 def generate_student_id():
-    # Generate a username based on first and last name and registration date
-    registered_year = datetime.now().strftime("%Y")
-    students_count = get_user_model().objects.filter(is_student=True).count()
-    return f"{settings.STUDENT_ID_PREFIX}-{registered_year}-{students_count}"
+    # Add random UUID to ensure uniqueness
+    random_id = str(uuid.uuid4())[:8]
+    return f"{settings.STUDENT_ID_PREFIX}-{random_id}"
 
 
 def generate_lecturer_id():
     # Generate a username based on first and last name and registration date
-    registered_year = datetime.now().strftime("%Y")
-    lecturers_count = get_user_model().objects.filter(is_lecturer=True).count()
-    return f"{settings.LECTURER_ID_PREFIX}-{registered_year}-{lecturers_count}"
+    random_id = str(uuid.uuid4())[:8]
+    return f"{settings.LECTURER_ID_PREFIX}-{random_id}"
 
 
 def generate_student_credentials():

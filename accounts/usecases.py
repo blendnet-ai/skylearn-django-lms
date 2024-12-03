@@ -1,7 +1,14 @@
 from accounts.models import Student
-from accounts.repositories import StudentRepository,CourseProviderRepository
+from accounts.repositories import (
+    CourseProviderAdminRepository,
+    LecturerRepository,
+    StudentRepository,
+    CourseProviderRepository,
+    UserConfigMappingRepository,
+)
 from course.repositories import BatchRepository
 import json
+from django.conf import settings
 
 
 class BatchAllocationUsecase:
@@ -41,8 +48,72 @@ class BatchAllocationUsecase:
 
 class CourseProviderUsecase:
     def get_course_provider(user_id):
-        course_provider=CourseProviderRepository.get_course_provider_by_user_id(user_id)
-        data=None
+        course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+            user_id
+        )
+        data = None
         if course_provider is not None:
-            data={"name":course_provider.name,"id":course_provider.id}
+            data = {"name": course_provider.name, "id": course_provider.id}
         return data
+
+
+class UserConfigMappingUsecase:
+    @staticmethod
+    def get_user_config_mapping(email):
+        mapping = UserConfigMappingRepository.get_user_config_mapping(email)
+        if mapping:
+            return mapping.config
+        return None
+
+
+class RoleAssignmentUsecase:
+    STUDENT_ROLE = "student"
+    LECTURER_ROLE = "lecturer"
+    COURSE_PROVIDER_ADMIN_ROLE = "course_provider_admin"
+
+    @staticmethod
+    def assign_role_from_config(user):
+        config = UserConfigMappingUsecase.get_user_config_mapping(user.email)
+
+        if config is None:
+            return
+
+        role = config.get("role")
+
+        if role == RoleAssignmentUsecase.STUDENT_ROLE:
+            user.is_student = True
+            user.save()
+
+            StudentRepository.create_student(user)
+        elif role == RoleAssignmentUsecase.LECTURER_ROLE:
+            user.is_lecturer = True
+            user.save()
+
+            course_provider_id = config.get("course_provider_id")
+
+            course_provider = CourseProviderRepository.get_course_provider_by_id(
+                course_provider_id
+            )
+
+            LecturerRepository.create_lecturer(
+                user,
+                course_provider.teams_guid,
+                course_provider.teams_upn,
+                course_provider,
+            )
+        elif role == RoleAssignmentUsecase.COURSE_PROVIDER_ADMIN_ROLE:
+            user.is_course_provider_admin = True
+            user.save()
+
+            course_provider_id = config.get("course_provider_id")
+
+            course_provider = CourseProviderRepository.get_course_provider_by_id(
+                course_provider_id
+            )
+
+            course_provider_admin = (
+                CourseProviderAdminRepository.create_course_provider_admin(user)
+            )
+            CourseProviderAdminRepository.associate_with_course_provider(
+                course_provider_admin, course_provider
+            )
