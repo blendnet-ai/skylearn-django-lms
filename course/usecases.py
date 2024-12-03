@@ -181,14 +181,31 @@ class LiveClassSeriesPresenterAssignmentUseCase:
             )
 
             if presenter_details:
-                success = LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(
-                    live_class_series, presenter_details
+                # Convert presenter_details to a serializable format if needed
+                serializable_presenter_details = {
+                    key: value for key, value in presenter_details.items() 
+                    if not callable(value)  # Filter out any method objects
+                }
+                
+                LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(
+                    live_class_series, serializable_presenter_details
                 )
-                assignment_results[batch.id] = "True"
+                assignment_results[batch.id] = True
 
         return assignment_results
 
+    @staticmethod
     def assign_presenter(live_class_series, presenter_details):
+        # Ensure presenter_details is serializable before passing it
+        if not isinstance(presenter_details, dict):
+            presenter_details = dict(presenter_details)
+            
+        # Remove any method objects from the dictionary
+        presenter_details = {
+            key: value for key, value in presenter_details.items() 
+            if not callable(value)
+        }
+        
         MeetingSeriesRepository.add_presenter_details_to_meeting_series(
             live_class_series, presenter_details
         )
