@@ -4,13 +4,11 @@ from course.repositories import (
     BatchRepository,
     CourseRepository,
     LiveClassSeriesBatchAllocationRepository,
-    ModuleRepository,
-    RecordingsRepository,
+    ModuleRepository
 )
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from accounts.repositories import CourseProviderRepository
-
 
 class LiveClassUsecase:
     class UserNotInBatchOfCourseException(Exception):
@@ -405,7 +403,3 @@ class CourseUseCase:
                 }
             )
         return module_data
-
-    def get_recordings_by_course_id(course_id):
-        recordings_data = RecordingsRepository.get_recordings_by_course_id(course_id)
-        return recordings_data

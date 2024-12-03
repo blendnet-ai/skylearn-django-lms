@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
 
 
+
 class MeetingSeries(models.Model):
     RECURRENCE_TYPE_NOT_REPEATING = "not_repeating"
     RECURRENCE_TYPE_DAILY = "day"
@@ -59,7 +60,19 @@ class Meeting(models.Model):
     conference_metadata = models.JSONField(null=True, blank=True)
     first_notification_sent = models.BooleanField(default=False)
     second_notification_sent = models.BooleanField(default=False)
+    recording_metadata = models.JSONField(null=True, blank=True)
+    attendance_metadata = models.JSONField(null=True, blank=True)
+    blob_url=models.CharField(max_length=200,blank=True)
 
+    @property
+    def course(self):
+        """
+        Returns a list of unique courses associated with this meeting through batch allocations
+        """
+        from course.models import Course
+        return Course.objects.filter(
+            batch__enrolled_batches__live_class_series=self.series
+        ).distinct().first()
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"

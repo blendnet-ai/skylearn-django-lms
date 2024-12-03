@@ -1,4 +1,4 @@
-from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation, Module, Upload, UploadVideo, Recordings
+from course.models import Batch, Course, LiveClassSeriesBatchAllocation, CourseAllocation, Module, Upload, UploadVideo
 from evaluation.models import AssessmentGenerationConfig
 from django.db.models import Prefetch,F,CharField, Value
 from django.db.models.functions import Concat
@@ -83,8 +83,5 @@ class ModuleRepository:
         ).order_by('order_in_course') 
         return modules
     
-class RecordingsRepository:
-    def get_recordings_by_course_id(course_id):
-        recordings=Recordings.objects.filter(course_id=course_id).values()
-        return recordings
+
     

@@ -34,3 +34,11 @@ class ConferenceIDMissingError(Exception):
     """Exception raised when presenter details are missing."""
     pass
 
+
+class SeriesNotFoundError(Exception):
+    """Exception raised when series are missing."""
+    pass
+
+class NoMeetingsFoundError(Exception):
+    """Exception raised when series are missing."""
+    pass

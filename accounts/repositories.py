@@ -46,3 +46,7 @@ class LecturerRepository:
         except Lecturer.DoesNotExist:
             return None
         
+    @staticmethod
+    def get_all_unique_presenter_guids():
+        return Lecturer.objects.exclude(guid__isnull=True).values_list('guid', flat=True).distinct()
+        

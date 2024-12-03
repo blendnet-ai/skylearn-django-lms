@@ -106,7 +106,7 @@ THIRD_PARTY_APPS = [
     "crispy_bootstrap5",
     "django_filters",
     "django_extensions",
-    # "django_celery_beat",
+    "django_celery_beat",
     "corsheaders",
     "sass_processor",
 ]
@@ -462,18 +462,16 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
 
-# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-# # Celery Beat Settings (if you need scheduled tasks)
-# CELERY_BEAT_SCHEDULE = {
-#     'fetch-meeting-attendance-data-every-midnight': {
-#         'task': 'meetings.tasks.fetch_meetings_attendance_data',
-#         'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
-#     },
-#     'fetch-meeting-recordings-data-every-midnight': {
-#         'task': 'meetings.tasks.fetch_meetings_recordings_data',
-#         'schedule': crontab(hour=0, minute=0),  # Executes every day at midnight
-#     }
-# }
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+# Celery Beat Settings (if you need scheduled tasks)
+
+CELERY_BEAT_SCHEDULE = {
+    'check-for-completed-meetings-every-1-hour': {
+        'task': 'meetings.tasks.process_completed_meetings_task',
+        'schedule': crontab(hour='*/1'),  # Executes every 1 hour
+    }
+    
+}
 
 # Task-specific settings
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes timeout
@@ -584,3 +582,8 @@ if CELERY_USE_SSL:
 AUTH_USER_MODEL = "accounts.User"
 STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
 LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
+
+ 
+STORAGE_ACCOUNT_KEY="XBPCkC2aKcnHi1LdDon5I0mxiAHOYdIShEKDk7hQfBsWeslYCnfSBeELxnLWwWnpRhR891LAjwPs+AStzPwCSg=="
+STORAGE_ACCOUNT_NAME="stspeechai"
+RECORDINGS_CONTAINER_NAME="recordings"

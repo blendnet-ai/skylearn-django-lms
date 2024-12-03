@@ -862,7 +862,7 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 @permission_classes([IsLoggedIn])
 def get_modules_and_resources_by_course_id(request, course_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
-    recordings_data=CourseUseCase.get_recordings_by_course_id(course_id)
+    recordings_data=MeetingUsecase.get_recordings_by_course_id(course_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},
@@ -901,3 +901,27 @@ def get_live_class_details(request, series_id):
     #request.user=User.objects.get(id=4)
     meeting_series=MeetingSeriesUsecase.get_meeting_series(series_id)
     return Response({"data":meeting_series}, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_sas_url_for_recording(request):
+    # Get the meeting_blob_url from query parameters
+    meeting_blob_url = request.GET.get("meeting_blob_url")
+    
+    if not meeting_blob_url:
+        return Response(
+            {"error": "meeting_blob_url is required as a query parameter"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        sas_url = MeetingUsecase.get_sas_url_for_recording(meeting_blob_url)
+        return Response({"url": sas_url}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": f"Error generating SAS URL: {str(e)}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+

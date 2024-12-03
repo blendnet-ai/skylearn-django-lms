@@ -3,6 +3,10 @@ import typing
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, DatabaseError
 from datetime import datetime, timedelta, timezone
+import pytz
+
+# Define the Indian timezone
+ist = pytz.timezone('Asia/Kolkata')
 
 
 class MeetingSeriesRepository:
@@ -57,6 +61,10 @@ class MeetingSeriesRepository:
         meeting_series.presenter_details=presenter_details
         meeting_series.save()
         
+    @staticmethod
+    def get_series_by_presenter_details_guid(presenter_details_guid):
+        return MeetingSeries.objects.filter(presenter_details__guid=presenter_details_guid)
+        
 
 
 class MeetingRepository:
@@ -77,4 +85,49 @@ class MeetingRepository:
         return Meeting.objects.filter(
             start_date__range=(start_date, end_date), series_id=series_id
         ).select_related("series")
+    
+
+    @staticmethod
+    def get_meetings_completed_within_last_hour():
+        # Get current time in IST
+        now = datetime.now(ist)
+        
+        # Calculate the time threshold for one hour ago
+        one_hour_ago = now - timedelta(hours=1000)
+        
+        # Fetch potential meetings from the last 24 hours
+        potential_meetings = Meeting.objects.filter(
+            start_date__gt=now - timedelta(hours=1000)
+        ).select_related("series")
+        
+        # Filter in Python using the end_time property
+        completed_meetings = []
+        for meeting in potential_meetings:
+            meeting_end_time = meeting.end_time.astimezone(ist) if meeting.end_time.tzinfo else ist.localize(meeting.end_time)
+            
+            # Check if the meeting ended within the last hour
+            if meeting_end_time >= one_hour_ago and meeting_end_time <= now:
+                completed_meetings.append(meeting)
+                
+        return completed_meetings
+
+    @staticmethod
+    def get_meetings_by_course_id(course_id):
+        """
+        Get all meetings associated with a specific course ID
+        
+        Args:
+            course_id: The ID of the course to find meetings for
+            
+        Returns:
+            List of Meeting objects associated with the course
+        """
+        return list(Meeting.objects.filter(
+            series__in=MeetingSeries.objects.filter(
+                course_enrollments__batch__course_id=course_id
+            ),
+            blob_url__isnull=False,
+            blob_url__gt=''
+        ).distinct())
+
 
