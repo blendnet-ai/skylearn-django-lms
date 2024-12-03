@@ -1,21 +1,23 @@
 from telnetlib import LOGOUT
 from meetings.models import Meeting, MeetingSeries, meeting_post_save
+from django.conf import settings
 from meetings.repositories import MeetingRepository, MeetingSeriesRepository
 from course.serializers import LiveClassSeriesSerializer
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime,timedelta
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.db import transaction
-from .exceptions import MeetingNotFoundError,PresenterDetailsMissingError,ConferenceIDMissingError
-
+from .exceptions import MeetingNotFoundError,PresenterDetailsMissingError,ConferenceIDMissingError,SeriesNotFoundError, NoMeetingsFoundError
+import urllib
 from meetings.services.msteams import MSTeamsConferencePlatformService
 import logging
-
+from storage_service.azure_storage import AzureStorageService
 logger = logging.getLogger(__name__)
 
+storage_service = AzureStorageService()
 
 class MeetingSeriesUsecase:
     class WeekdayScheduleNotSet(Exception):
@@ -358,8 +360,141 @@ class MeetingUsecase:
                 f"Failed to create Teams meeting for meeting ID {meeting_id}: {str(e)}"
             )
             raise
-    
+        
+    def fetch_teams_meeting_recording(meeting_id: str) -> None:
+        """
+        Fetches Teams meeting recordings for a meeting
+        """
 
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        
+        if not meeting:
+            raise MeetingNotFoundError(f"Meeting with ID {meeting_id} not found")
+        
+        if not meeting.series.presenter_details:
+            raise PresenterDetailsMissingError(f"Presenter details are missing for meeting ID {meeting_id}")
+
+        if not meeting.conference_id:
+            raise ConferenceIDMissingError(f"missing conference id for meeting ID {meeting_id}")
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            
+            recording_by_thread = teams_service.get_meetings_recordings(
+                presenter=meeting.series.presenter_details,
+                meeting=meeting
+            )
+            
+            if len(recording_by_thread) == 0:
+                logger.info(f"No recordings found for meeting {meeting_id}")
+                return
+
+            meeting.recording_metadata = recording_by_thread
+            logger.info(f"Recording data saved for meeting {meeting.recording_metadata}")
+            # Temporarily disconnect signals
+            post_save.disconnect(meeting_post_save, sender=Meeting)
+
+            # Save the meeting without triggering signals
+            with transaction.atomic():
+                meeting_to_update = Meeting.objects.select_for_update().get(id=meeting_id)
+                meeting_to_update.recording_metadata = recording_by_thread
+                meeting_to_update.save()
+                        
+
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch Teams recordings for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+    
+    def upload_meeting_recording_to_storage(meeting_id: int) -> str:
+        """
+        Downloads a meeting recording from Teams and uploads it to Azure Blob Storage.
+        Creates an entry in the recordings table.
+        
+        Args:
+            meeting_id (int): The meeting ID
+            
+        Returns:
+            str: The blob URL with SAS token
+        """
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        
+        if not meeting or not meeting.recording_metadata:
+            raise MeetingNotFoundError(f"Meeting {meeting_id} not found or has no recordings")
+        
+        try:
+            # Get recording metadata
+            recording_data = meeting.recording_metadata[0]  # Get first recording
+            
+            # Download and upload using Teams service
+            teams_service = MSTeamsConferencePlatformService()
+            blob_url = teams_service.download_and_upload_recording(
+                meeting_id=meeting_id,
+                recording_metadata=recording_data,
+                container_name=settings.RECORDINGS_CONTAINER_NAME
+            )
+            
+            meeting.blob_url = blob_url
+            # Temporarily disconnect signals
+            post_save.disconnect(meeting_post_save, sender=Meeting)
+
+            # Save the meeting without triggering signals
+            with transaction.atomic():
+                meeting_to_update = Meeting.objects.select_for_update().get(id=meeting_id)
+                meeting_to_update.blob_url = blob_url
+                meeting_to_update.save()
+            
+            return blob_url
+            
+        except Exception as e:
+            logger.error(f"Error processing recording for meeting {meeting_id}: {str(e)}")
+            raise
+    
+    def fetch_teams_meeting_attendance(meeting_id: int) -> None:
+        """
+        Fetches Teams meeting attendance for a specific meeting and stores it in the database
+        """
+        meeting = MeetingRepository.get_meeting_by_id(id=meeting_id)
+        
+        if not meeting:
+            raise MeetingNotFoundError(f"Meeting with ID {meeting_id} not found")
+        
+        if not meeting.series.presenter_details:
+            raise PresenterDetailsMissingError(f"Presenter details are missing for meeting ID {meeting_id}")
+
+        if not meeting.conference_id:
+            raise ConferenceIDMissingError(f"Missing conference id for meeting ID {meeting_id}")
+
+        try:
+            teams_service = MSTeamsConferencePlatformService()
+            
+            # Get attendance data from Teams
+            attendance_data = teams_service.get_meeting_attendance(
+                presenter=meeting.series.presenter_details,
+                meeting_id=meeting.conference_id
+            )
+            
+            # Update meeting with attendance data
+            meeting.attendance_metadata = attendance_data
+            
+            # Temporarily disconnect signals
+            post_save.disconnect(meeting_post_save, sender=Meeting)
+
+            # Save the meeting without triggering signals
+            with transaction.atomic():
+                meeting_to_update = Meeting.objects.select_for_update().get(id=meeting_id)
+                meeting_to_update.attendance_metadata = attendance_data
+                meeting_to_update.save()
+                
+            logger.info(f"Attendance data saved for meeting {meeting_id}")
+
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch Teams attendance for meeting ID {meeting_id}: {str(e)}"
+            )
+            raise
+      
     @staticmethod
     def update_meeting(id, start_time_override, duration_override, start_date):
         meeting = MeetingRepository.get_meeting_by_id(id)
@@ -432,3 +567,36 @@ class MeetingUsecase:
             
         }
         return data
+    
+    def get_recordings_by_course_id(course_id):
+        meetings = MeetingRepository.get_meetings_by_course_id(course_id)
+        recordings_data = []
+        for meeting in meetings:
+            # Only include meetings that have recordings (blob_url)
+            if meeting.blob_url:
+                recordings_data.append({
+                    "name": meeting.series.title,
+                    "url": meeting.blob_url,
+                    "meeting_id": meeting.id,
+                    "date": meeting.start_date.strftime("%Y-%m-%d") if meeting.start_date else None
+                })
+        return recordings_data
+
+    def get_sas_url_for_recording(meeting_blob_url: str):
+        clean_url = meeting_blob_url.split('?')[0]
+        # Parse the URL
+        parsed_url = urllib.parse.urlparse(clean_url)
+        # Split the path and remove empty strings
+        path_parts = [p for p in parsed_url.path.split('/') if p]
+        # First part is container name, rest is blob name
+        container_name = path_parts[0]
+        blob_name = '/'.join(path_parts[1:]).replace('%20',' ')
+
+        sas_url = storage_service.generate_blob_access_url(
+            container_name, 
+            blob_name,  
+            expiry_time=datetime.now() + timedelta(hours=48), 
+            allow_read=True, 
+            allow_write=False
+        )
+        return sas_url

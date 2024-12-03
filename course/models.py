@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.models import ActivityLog, Semester
 from core.utils import unique_slug_generator
-from meetings.models import MeetingSeries
+from meetings.models import MeetingSeries,Meeting
 
 
 class ProgramManager(models.Manager):
@@ -110,11 +110,6 @@ class Batch(models.Model):
     @property
     def students(self):
         return self.student_set.all()
-
-class Recordings(models.Model):
-    title = models.CharField(max_length=200)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    url=models.CharField(max_length=200)
 
 
 class LiveClassSeriesBatchAllocation(models.Model):
