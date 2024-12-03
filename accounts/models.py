@@ -244,4 +244,4 @@ class Lecturer(models.Model):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"
 
     def presenter_details(self):
-        return {"guid": self.guid, "name": self.name, "upn": self.upn}
+        return {"guid": self.guid, "name": self.name(), "upn": self.upn}

@@ -201,6 +201,16 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
         Returns:
             List of recording details for the meeting
         """
+        # Generate a cache key using presenter guid and meeting thread_id
+        thread_id = meeting.conference_metadata.get('chatInfo', {}).get('threadId')
+        cache_key = f"teams_recordings_{presenter.get('guid')}_{thread_id}"
+        
+        # Try to get recordings from cache
+        cached_recordings = cache.get(cache_key)
+        if cached_recordings is not None:
+            logger.info(f"Returning cached recordings for {cache_key}")
+            return cached_recordings
+        
         try:
             access_token = self._get_access_token()
             headers = {
@@ -220,11 +230,13 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             
             # Filter recordings for this specific meeting
             meeting_recordings = []
-            thread_id = meeting.conference_metadata.get('chatInfo', {}).get('threadId')
             
             for recording in recordings_data.get('value', []):
                 if recording.get('source', {}).get('threadId') == thread_id:
                     meeting_recordings.append(recording)
+            
+            # Cache the recordings for 5 minutes (adjust timeout as needed)
+            cache.set(cache_key, meeting_recordings, timeout=300)
             
             return meeting_recordings
 
@@ -232,7 +244,7 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             # If authentication failed, clear cache and retry once
             if e.response and e.response.status_code == 401:
                 cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
-                return self.get_meetings_recordings(presenter, meetings_data)
+                return self.get_meetings_recordings(presenter, meeting)  # Fixed parameter name
             raise
         
 
