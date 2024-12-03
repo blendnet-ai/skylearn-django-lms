@@ -577,7 +577,7 @@ class MeetingUsecase:
             # Only include meetings that have recordings (blob_url)
             if meeting.blob_url:
                 recordings_data.append({
-                    "name": meeting.series.title,
+                    "title": meeting.series.title,
                     "url": meeting.blob_url,
                     "meeting_id": meeting.id,
                     "date": meeting.start_date.strftime("%Y-%m-%d") if meeting.start_date else None
