@@ -716,13 +716,29 @@ class AssessmentUseCase:
             assessment_name = item.get(
                 "assessment_generation_config_id__assessment_display_name"
             )
+            
+            # Get module and course info through the reverse relationship
+            assessment_config_id = item.get("assessment_generation_config_id")
+            module = None
+            course_code = None
+            
+            # Get first module that has this assessment config
+            from course.models import Module
+            module_info = Module.objects.filter(
+                assignment_configs__assessment_generation_id=assessment_config_id
+            ).select_related('course').first()
+            
+            if module_info:
+                module_name = module_info.title
+                course_code = module_info.course.code
+
             if eval_data:
                 percentage = eval_data.get("percentage")
                 short_description = eval_data.get("short_description")
-                total_correct = eval_data.get("additional_data").get("correct") or 0
-                total_incorrect = eval_data.get("additional_data").get("incorrect") or 0
+                total_correct = eval_data.get("additional_data", {}).get("correct") or 0
+                total_incorrect = eval_data.get("additional_data", {}).get("incorrect") or 0
                 total_not_attempted = (
-                    eval_data.get("additional_data").get("not_attempted") or 0
+                    eval_data.get("additional_data", {}).get("not_attempted") or 0
                 )
 
             resp_data.append(
@@ -738,6 +754,8 @@ class AssessmentUseCase:
                     "total_not_attempted": total_not_attempted,
                     "total": total_correct + total_incorrect + total_not_attempted,
                     "assessment_name": assessment_name,
+                    "module_name": module_name,
+                    "course_code": course_code
                 }
             )
         return {"filter_options": filter_options, "attempted_list": resp_data}

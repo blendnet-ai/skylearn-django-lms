@@ -542,6 +542,8 @@ class MeetingUsecase:
                         if meeting.duration_override
                         else meeting.series.duration
                     ),
+                    "batch": meeting.batch.title if meeting.batch else None,
+                    "course": meeting.course.title if meeting.course else None,
                 }
             )
         return meetings_data

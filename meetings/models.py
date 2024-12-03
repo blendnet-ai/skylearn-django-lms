@@ -73,6 +73,16 @@ class Meeting(models.Model):
         return Course.objects.filter(
             batch__enrolled_batches__live_class_series=self.series
         ).distinct().first()
+        
+    @property
+    def batch(self):
+        """
+        Returns the first batch associated with this meeting through batch allocations
+        """
+        from course.models import Batch
+        return Batch.objects.filter(
+            enrolled_batches__live_class_series=self.series
+        ).distinct().first()
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"
