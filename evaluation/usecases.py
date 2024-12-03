@@ -688,77 +688,81 @@ class AssessmentUseCase:
     def fetch_history_data(user_id):
         available_assessments = AssessmentAttemptRepository.fetch_assessment_configs()
 
-        resp_data = []
+        # Initialize response containers
         filter_options = []
+        resp_data = []
+
+        # Build filter options in one pass
         for assessment in available_assessments:
-            if (
-                assessment.assessment_generation_id
-                == int(AssessmentAttempt.Type.CODING) + 1
-                and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED
-            ):
+            if (assessment.assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1 
+                and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED):
                 continue
-            filter_options.append(
-                {
-                    "name": assessment.assessment_display_name,
-                    "type": assessment.kwargs.get("category"),
-                    "shortForm": "".join(
-                        word[0].upper()
-                        for word in (assessment.assessment_display_name).split()
-                    ),
-                }
-            )
+                
+            filter_options.append({
+                "name": assessment.assessment_display_name,
+                "type": assessment.kwargs.get("category"), 
+                "shortForm": "".join(word[0].upper() for word in assessment.assessment_display_name.split())
+            })
+
+        # Fetch history with all needed fields in one query
         history = AssessmentAttemptRepository.fetch_user_assessment_history(user_id)
+
+        # Process history items efficiently
         for item in history:
-            type = item.get("type")
-            eval_data = item.get("eval_data")
-            percentage = None
-            short_description = None
-            assessment_name = item.get(
-                "assessment_generation_config_id__assessment_display_name"
-            )
-            
-            # Get module and course info through the reverse relationship
-            assessment_config_id = item.get("assessment_generation_config_id")
-            module = None
+            eval_data = item.get("eval_data", {})
+            additional_data = eval_data.get("additional_data", {})
+
+            # Get counts with defaults
+            total_correct = additional_data.get("correct", 0)
+            total_incorrect = additional_data.get("incorrect", 0) 
+            total_not_attempted = additional_data.get("not_attempted", 0)
+
+            # Calculate totals
+            total = total_correct + total_incorrect + total_not_attempted
+            total_marks_obtained = total_correct * 3
+            total_marks_lost = total_incorrect * 1
+            total_obtained = total_marks_obtained - total_marks_lost
+            grand_total = total * 3
+
+            # Get module info efficiently with select_related
+            module_name = None
             course_code = None
+            assessment_config_id = item.get("assessment_generation_config_id")
             
-            # Get first module that has this assessment config
             from course.models import Module
             module_info = Module.objects.filter(
                 assignment_configs__assessment_generation_id=assessment_config_id
-            ).select_related('course').first()
-            
+            ).select_related('course').only('title', 'course__code').first()
+
             if module_info:
                 module_name = module_info.title
                 course_code = module_info.course.code
 
-            if eval_data:
-                percentage = eval_data.get("percentage")
-                short_description = eval_data.get("short_description")
-                total_correct = eval_data.get("additional_data", {}).get("correct") or 0
-                total_incorrect = eval_data.get("additional_data", {}).get("incorrect") or 0
-                total_not_attempted = (
-                    eval_data.get("additional_data", {}).get("not_attempted") or 0
-                )
+            # Build response object
+            resp_data.append({
+                "last_attempted": item.get("start_time"),
+                "assessment_id": item.get("assessment_id"),
+                "type": item.get("type"),
+                "status": item.get("status"),
+                "percentage": eval_data.get("percentage"),
+                "short_description": eval_data.get("short_description"),
+                "total_correct": total_correct,
+                "total_marks_obtained": total_marks_obtained,
+                "total_marks_lost": total_marks_lost,
+                "total_obtained": total_obtained,
+                "grand_total": grand_total,
+                "total_incorrect": total_incorrect,
+                "total_not_attempted": total_not_attempted,
+                "total": total,
+                "assessment_name": item.get("assessment_generation_config_id__assessment_display_name"),
+                "module_name": module_name,
+                "course_code": course_code
+            })
 
-            resp_data.append(
-                {
-                    "last_attempted": item.get("start_time"),
-                    "assessment_id": item.get("assessment_id"),
-                    "type": type,
-                    "status": item.get("status"),
-                    "percentage": percentage,
-                    "short_description": short_description,
-                    "total_correct": total_correct,
-                    "total_incorrect": total_incorrect,
-                    "total_not_attempted": total_not_attempted,
-                    "total": total_correct + total_incorrect + total_not_attempted,
-                    "assessment_name": assessment_name,
-                    "module_name": module_name,
-                    "course_code": course_code
-                }
-            )
-        return {"filter_options": filter_options, "attempted_list": resp_data}
+        return {
+            "filter_options": filter_options,
+            "attempted_list": resp_data
+        }
 
 
 class EvaluationUseCase:
