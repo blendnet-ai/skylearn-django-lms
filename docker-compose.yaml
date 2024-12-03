@@ -87,7 +87,7 @@ services:
       - .:/home/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A lms worker -l info -Q whisper-timestamped --concurrency=1
+    entrypoint: python -m celery -A config worker -l info -Q whisper-timestamped --concurrency=1
 
   telegram-bot:
     container_name: telegram-bot
