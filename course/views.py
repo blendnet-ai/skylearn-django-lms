@@ -88,7 +88,7 @@ class ProgramFilterView(FilterView):
         return context
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def program_add(request):
@@ -147,7 +147,7 @@ def program_edit(request, pk):
     )
 
 
-@api_view(["GET"])
+@api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def program_delete(request, pk):
@@ -208,7 +208,7 @@ def course_add(request, pk):
     )
 
 
-@api_view(["GET", ""])
+@api_view(["GET", "POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def course_edit(request, slug):
