@@ -239,7 +239,6 @@ class Lecturer(models.Model):
     lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
     guid = models.CharField(max_length=50, null=False)
     upn = models.CharField(max_length=100, null=False)
-    course_provider = models.ForeignKey(CourseProvider, on_delete=models.CASCADE)
 
     def name(self):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"
