@@ -64,16 +64,30 @@ services:
       - postgres
       - redis
 
-  speechai-celery-whisper-timestamped:
+        
+  lms-celery-beat-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
-    container_name: speechai-celery-whisper-timestamped
+    container_name: lms-celery-beat-dev
     working_dir: /home/appuser/code
     volumes:
       - .:/home/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A speechai worker -l info -Q whisper-timestamped --concurrency=1
+    entrypoint: python -m celery -A config beat -l debug --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - lms-celery-dev
+      
+  lms-celery-whisper-timestamped:
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    container_name: lms-celery-whisper-timestamped
+    working_dir: /home/appuser/code
+    volumes:
+      - .:/home/appuser/code
+    env_file:
+      - .env
+    entrypoint: python -m celery -A lms worker -l info -Q whisper-timestamped --concurrency=1
 
   telegram-bot:
     container_name: telegram-bot
