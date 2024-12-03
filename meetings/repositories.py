@@ -93,11 +93,11 @@ class MeetingRepository:
         now = datetime.now(ist)
         
         # Calculate the time threshold for one hour ago
-        one_hour_ago = now - timedelta(hours=1000)
+        one_hour_ago = now - timedelta(hours=1)
         
         # Fetch potential meetings from the last 24 hours
         potential_meetings = Meeting.objects.filter(
-            start_date__gt=now - timedelta(hours=1000)
+            start_date__gt=now - timedelta(hours=24)
         ).select_related("series")
         
         # Filter in Python using the end_time property
