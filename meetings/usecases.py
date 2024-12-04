@@ -570,8 +570,8 @@ class MeetingUsecase:
         }
         return data
     
-    def get_recordings_by_course_id(course_id):
-        meetings = MeetingRepository.get_meetings_by_course_id(course_id)
+    def get_recordings_by_course_id_and_batch_id(course_id,batch_id):
+        meetings = MeetingRepository.get_meetings_by_course_id_and_batch_id(course_id,batch_id)
         recordings_data = []
         for meeting in meetings:
             # Only include meetings that have recordings (blob_url)
@@ -597,7 +597,7 @@ class MeetingUsecase:
         sas_url = storage_service.generate_blob_access_url(
             container_name, 
             blob_name,  
-            expiry_time=datetime.now() + timedelta(hours=48), 
+            expiry_time=datetime.now() + timedelta(hours=24), 
             allow_read=True, 
             allow_write=False
         )

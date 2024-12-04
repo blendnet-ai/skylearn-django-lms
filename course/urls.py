@@ -116,7 +116,7 @@ urlpatterns = [
     path("course/<course_id>/batch/create/", views.create_batch, name="create_batch"),
     path("course/<course_id>/get-batches/", views.get_batches_by_course_id, name="get_batches"),
     path("course-provider/<course_provider_id>/get-courses/", views.get_courses_by_course_provider_id, name="get_batches"),
-    path("course/<course_id>/get-modules-data/", views.get_modules_and_resources_by_course_id, name="get_modules_data"),
+    path("course/<course_id>/batch/<batch_id>/get-modules-data/", views.get_modules_and_resources_by_course_id_and_batch_id, name="get_modules_data"),
     path("course/recordings/get-sas-url/", views.get_sas_url_for_recording, name="get_sas_url_for_recording"),
     path("course/user-courses-list",views.user_courses_list,name="user_courses_list"),
     path(

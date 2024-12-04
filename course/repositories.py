@@ -39,6 +39,7 @@ class CourseRepository:
                 F("batch__lecturer__last_name"),
                 output_field=CharField(),
             ),
+            batch_id=F("batch__id")
         )
         .values()
     )

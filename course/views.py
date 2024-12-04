@@ -860,9 +860,9 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
-def get_modules_and_resources_by_course_id(request, course_id):
+def get_modules_and_resources_by_course_id_and_batch_id(request, course_id,batch_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
-    recordings_data=MeetingUsecase.get_recordings_by_course_id(course_id)
+    recordings_data=MeetingUsecase.get_recordings_by_course_id_and_batch_id(course_id,batch_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},

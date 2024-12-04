@@ -112,7 +112,7 @@ class MeetingRepository:
         return completed_meetings
 
     @staticmethod
-    def get_meetings_by_course_id(course_id):
+    def get_meetings_by_course_id_and_batch_id(course_id,batch_id):
         """
         Get all meetings associated with a specific course ID
         
@@ -124,7 +124,8 @@ class MeetingRepository:
         """
         return list(Meeting.objects.filter(
             series__in=MeetingSeries.objects.filter(
-                course_enrollments__batch__course_id=course_id
+                course_enrollments__batch__course_id=course_id,
+                course_enrollments__batch__id=batch_id
             ),
             blob_url__isnull=False,
             blob_url__gt=''
