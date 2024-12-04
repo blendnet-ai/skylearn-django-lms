@@ -468,7 +468,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_BEAT_SCHEDULE = {
     'check-for-completed-meetings-every-1-hour': {
         'task': 'meetings.tasks.process_completed_meetings_task',
-        'schedule': crontab(hour='*/1'),  # Executes every 1 hour
+        'schedule': crontab(hour='*', minute=0),  # Executes every 1 hour
     }
     
 }
