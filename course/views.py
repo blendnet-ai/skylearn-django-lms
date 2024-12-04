@@ -905,18 +905,18 @@ def get_live_class_details(request, series_id):
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
-def get_sas_url_for_recording(request):
+def get_sas_url(request):
     # Get the meeting_blob_url from query parameters
-    meeting_blob_url = request.GET.get("meeting_blob_url")
+    blob_url = request.GET.get("blob_url")
     
-    if not meeting_blob_url:
+    if not blob_url:
         return Response(
-            {"error": "meeting_blob_url is required as a query parameter"}, 
+            {"error": "blob_url is required as a query parameter"}, 
             status=status.HTTP_400_BAD_REQUEST
         )
     
     try:
-        sas_url = MeetingUsecase.get_sas_url_for_recording(meeting_blob_url)
+        sas_url = MeetingUsecase.get_sas_url_for_recording(blob_url)
         return Response({"url": sas_url}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
