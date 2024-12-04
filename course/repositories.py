@@ -25,7 +25,8 @@ class CourseRepository:
 
     def get_courses_for_student(user_id):
         return (
-            Course.objects.filter(taken_courses__student__student_id=user_id)
+            #Course.objects.filter(taken_courses__student__student_id=user_id)
+            Course.objects.filter(batch__student__student_id=user_id)
             .prefetch_related(
                 Prefetch(
                     "allocated_course",
@@ -35,7 +36,7 @@ class CourseRepository:
             .annotate(
                 lecturer_full_name=Concat(
                     F("allocated_course__lecturer__first_name"),
-                    Value(" "),  # Adding a space between first and last name
+                    Value(" "),
                     F("allocated_course__lecturer__last_name"),
                     output_field=CharField(),
                 ),
