@@ -169,28 +169,30 @@ class Upload(models.Model):
     title = models.CharField(max_length=100)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='uploads', null=True, blank=True)  # New field
-    file = models.FileField(
-        upload_to="course_files/",
-        help_text=_(
-            "Valid Files: pdf, docx, doc, xls, xlsx, ppt, pptx, zip, rar, 7zip"
-        ),
-        validators=[
-            FileExtensionValidator(
-                [
-                    "pdf",
-                    "docx",
-                    "doc",
-                    "xls",
-                    "xlsx",
-                    "ppt",
-                    "pptx",
-                    "zip",
-                    "rar",
-                    "7zip",
-                ]
-            )
-        ],
-    )
+    # file = models.FileField(
+    #     upload_to="course_files/",
+    #     help_text=_(
+    #         "Valid Files: pdf, docx, doc, xls, xlsx, ppt, pptx, zip, rar, 7zip"
+    #     ),
+    #     validators=[
+    #         FileExtensionValidator(
+    #             [
+    #                 "pdf",
+    #                 "docx",
+    #                 "doc",
+    #                 "xls",
+    #                 "xlsx",
+    #                 "ppt",
+    #                 "pptx",
+    #                 "zip",
+    #                 "rar",
+    #                 "7zip",
+    #             ]
+    #         )
+    #     ],
+    #     null=True
+    # )
+    blob_url = models.CharField(max_length=255, blank=True)
     updated_date = models.DateTimeField(auto_now=True)
     upload_time = models.DateTimeField(auto_now_add=True)
 
@@ -243,13 +245,16 @@ class UploadVideo(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='video_uploads', null=True, blank=True)  # New field
-    video = models.FileField(
-        upload_to="course_videos/",
-        help_text=_("Valid video formats: mp4, mkv, wmv, 3gp, f4v, avi, mp3"),
-        validators=[
-            FileExtensionValidator(["mp4", "mkv", "wmv", "3gp", "f4v", "avi", "mp3"])
-        ],
-    )
+    # video = models.FileField(
+    #     upload_to="course_videos/",
+    #     help_text=_("Valid video formats: mp4, mkv, wmv, 3gp, f4v, avi, mp3"),
+    #     validators=[
+    #         FileExtensionValidator(["mp4", "mkv", "wmv", "3gp", "f4v", "avi", "mp3"])
+    #     ],
+    #     max_length=255,
+    #     null=True
+    # )
+    blob_url = models.CharField(max_length=255, blank=True)
     summary = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 

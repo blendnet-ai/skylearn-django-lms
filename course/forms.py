@@ -77,31 +77,31 @@ class EditCourseAllocationForm(forms.ModelForm):
         self.fields["lecturer"].queryset = User.objects.filter(is_lecturer=True)
 
 
-# Upload files to specific course
-class UploadFormFile(forms.ModelForm):
-    class Meta:
-        model = Upload
-        fields = (
-            "title",
-            "file",
-        )
+# # Upload files to specific course
+# class UploadFormFile(forms.ModelForm):
+#     class Meta:
+#         model = Upload
+#         fields = (
+#             "title",
+#             "file",
+#         )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["title"].widget.attrs.update({"class": "form-control"})
-        self.fields["file"].widget.attrs.update({"class": "form-control"})
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields["title"].widget.attrs.update({"class": "form-control"})
+#         self.fields["file"].widget.attrs.update({"class": "form-control"})
 
 
-# Upload video to specific course
-class UploadFormVideo(forms.ModelForm):
-    class Meta:
-        model = UploadVideo
-        fields = (
-            "title",
-            "video",
-        )
+# # Upload video to specific course
+# class UploadFormVideo(forms.ModelForm):
+#     class Meta:
+#         model = UploadVideo
+#         fields = (
+#             "title",
+#             "video",
+#         )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["title"].widget.attrs.update({"class": "form-control"})
-        self.fields["video"].widget.attrs.update({"class": "form-control"})
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields["title"].widget.attrs.update({"class": "form-control"})
+#         self.fields["video"].widget.attrs.update({"class": "form-control"})

@@ -32,38 +32,38 @@ urlpatterns = [
     path(
         "course/<int:pk>/deallocate/", views.deallocate_course, name="course_deallocate"
     ),
-    # File uploads urls
-    path(
-        "course/<slug>/documentations/upload/",
-        views.handle_file_upload,
-        name="upload_file_view",
-    ),
-    path(
-        "course/<slug>/documentations/<int:file_id>/edit/",
-        views.handle_file_edit,
-        name="upload_file_edit",
-    ),
+    # # File uploads urls
+    # path(
+    #     "course/<slug>/documentations/upload/",
+    #     views.handle_file_upload,
+    #     name="upload_file_view",
+    # ),
+    # path(
+    #     "course/<slug>/documentations/<int:file_id>/edit/",
+    #     views.handle_file_edit,
+    #     name="upload_file_edit",
+    # ),
     path(
         "course/<slug>/documentations/<int:file_id>/delete/",
         views.handle_file_delete,
         name="upload_file_delete",
     ),
     # Video uploads urls
-    path(
-        "course/<slug>/video_tutorials/upload/",
-        views.handle_video_upload,
-        name="upload_video",
-    ),
+    # path(
+    #     "course/<slug>/video_tutorials/upload/",
+    #     views.handle_video_upload,
+    #     name="upload_video",
+    # ),
     path(
         "course/<slug>/video_tutorials/<video_slug>/detail/",
         views.handle_video_single,
         name="video_single",
     ),
-    path(
-        "course/<slug>/video_tutorials/<video_slug>/edit/",
-        views.handle_video_edit,
-        name="upload_video_edit",
-    ),
+    # path(
+    #     "course/<slug>/video_tutorials/<video_slug>/edit/",
+    #     views.handle_video_edit,
+    #     name="upload_video_edit",
+    # ),
     path(
         "course/<slug>/video_tutorials/<video_slug>/delete/",
         views.handle_video_delete,

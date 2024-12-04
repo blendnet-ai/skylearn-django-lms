@@ -28,8 +28,8 @@ from course.forms import (
     CourseAllocationForm,
     EditCourseAllocationForm,
     ProgramForm,
-    UploadFormFile,
-    UploadFormVideo,
+    # UploadFormFile,
+    # UploadFormVideo,
 )
 from course.models import Course, CourseAllocation, Program, Upload, UploadVideo, Module
 from course.serializers import (
@@ -315,49 +315,49 @@ def deallocate_course(request, pk):
 # ########################################################
 
 
-@api_view(["GET", "POST"])
-@authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
-def handle_file_upload(request, slug):
-    course = get_object_or_404(Course, slug=slug)
-    if request.method == "POST":
-        form = UploadFormFile(request.POST, request.FILES)
-        if form.is_valid():
-            upload = form.save(commit=False)
-            upload.course = course
-            upload.save()
-            messages.success(request, f"{upload.title} has been uploaded.")
-            return redirect("course_detail", slug=slug)
-        messages.error(request, "Correct the error(s) below.")
-    else:
-        form = UploadFormFile()
-    return render(
-        request,
-        "upload/upload_file_form.html",
-        {"title": "File Upload", "form": form, "course": course},
-    )
+# @api_view(["GET", "POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+# def handle_file_upload(request, slug):
+#     course = get_object_or_404(Course, slug=slug)
+#     if request.method == "POST":
+#         form = UploadFormFile(request.POST, request.FILES)
+#         if form.is_valid():
+#             upload = form.save(commit=False)
+#             upload.course = course
+#             upload.save()
+#             messages.success(request, f"{upload.title} has been uploaded.")
+#             return redirect("course_detail", slug=slug)
+#         messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = UploadFormFile()
+#     return render(
+#         request,
+#         "upload/upload_file_form.html",
+#         {"title": "File Upload", "form": form, "course": course},
+#     )
 
 
-@api_view(["GET", "POST"])
-@authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
-def handle_file_edit(request, slug, file_id):
-    course = get_object_or_404(Course, slug=slug)
-    upload = get_object_or_404(Upload, pk=file_id)
-    if request.method == "POST":
-        form = UploadFormFile(request.POST, request.FILES, instance=upload)
-        if form.is_valid():
-            upload = form.save()
-            messages.success(request, f"{upload.title} has been updated.")
-            return redirect("course_detail", slug=slug)
-        messages.error(request, "Correct the error(s) below.")
-    else:
-        form = UploadFormFile(instance=upload)
-    return render(
-        request,
-        "upload/upload_file_form.html",
-        {"title": "Edit File", "form": form, "course": course},
-    )
+# @api_view(["GET", "POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+# def handle_file_edit(request, slug, file_id):
+#     course = get_object_or_404(Course, slug=slug)
+#     upload = get_object_or_404(Upload, pk=file_id)
+#     if request.method == "POST":
+#         form = UploadFormFile(request.POST, request.FILES, instance=upload)
+#         if form.is_valid():
+#             upload = form.save()
+#             messages.success(request, f"{upload.title} has been updated.")
+#             return redirect("course_detail", slug=slug)
+#         messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = UploadFormFile(instance=upload)
+#     return render(
+#         request,
+#         "upload/upload_file_form.html",
+#         {"title": "Edit File", "form": form, "course": course},
+#     )
 
 
 @api_view(["DELETE"])
@@ -376,27 +376,27 @@ def handle_file_delete(request, slug, file_id):
 # ########################################################
 
 
-@api_view(["GET", "POST"])
-@authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
-def handle_video_upload(request, slug):
-    course = get_object_or_404(Course, slug=slug)
-    if request.method == "POST":
-        form = UploadFormVideo(request.POST, request.FILES)
-        if form.is_valid():
-            video = form.save(commit=False)
-            video.course = course
-            video.save()
-            messages.success(request, f"{video.title} has been uploaded.")
-            return redirect("course_detail", slug=slug)
-        messages.error(request, "Correct the error(s) below.")
-    else:
-        form = UploadFormVideo()
-    return render(
-        request,
-        "upload/upload_video_form.html",
-        {"title": "Video Upload", "form": form, "course": course},
-    )
+# @api_view(["GET", "POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+# def handle_video_upload(request, slug):
+#     course = get_object_or_404(Course, slug=slug)
+#     if request.method == "POST":
+#         form = UploadFormVideo(request.POST, request.FILES)
+#         if form.is_valid():
+#             video = form.save(commit=False)
+#             video.course = course
+#             video.save()
+#             messages.success(request, f"{video.title} has been uploaded.")
+#             return redirect("course_detail", slug=slug)
+#         messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = UploadFormVideo()
+#     return render(
+#         request,
+#         "upload/upload_video_form.html",
+#         {"title": "Video Upload", "form": form, "course": course},
+#     )
 
 
 @api_view(["GET"])
@@ -412,26 +412,26 @@ def handle_video_single(request, slug, video_slug):
     )
 
 
-@api_view(["GET", "POST"])
-@authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
-def handle_video_edit(request, slug, video_slug):
-    course = get_object_or_404(Course, slug=slug)
-    video = get_object_or_404(UploadVideo, slug=video_slug)
-    if request.method == "POST":
-        form = UploadFormVideo(request.POST, request.FILES, instance=video)
-        if form.is_valid():
-            video = form.save()
-            messages.success(request, f"{video.title} has been updated.")
-            return redirect("course_detail", slug=slug)
-        messages.error(request, "Correct the error(s) below.")
-    else:
-        form = UploadFormVideo(instance=video)
-    return render(
-        request,
-        "upload/upload_video_form.html",
-        {"title": "Edit Video", "form": form, "course": course},
-    )
+# @api_view(["GET", "POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+# def handle_video_edit(request, slug, video_slug):
+#     course = get_object_or_404(Course, slug=slug)
+#     video = get_object_or_404(UploadVideo, slug=video_slug)
+#     if request.method == "POST":
+#         form = UploadFormVideo(request.POST, request.FILES, instance=video)
+#         if form.is_valid():
+#             video = form.save()
+#             messages.success(request, f"{video.title} has been updated.")
+#             return redirect("course_detail", slug=slug)
+#         messages.error(request, "Correct the error(s) below.")
+#     else:
+#         form = UploadFormVideo(instance=video)
+#     return render(
+#         request,
+#         "upload/upload_video_form.html",
+#         {"title": "Edit Video", "form": form, "course": course},
+#     )
 
 
 @api_view(["DELETE"])

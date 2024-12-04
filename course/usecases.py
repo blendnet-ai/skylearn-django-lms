@@ -399,7 +399,7 @@ class CourseUseCase:
                     "type": "reading",
                     "id": resource.id,
                     "title": resource.title,
-                    "url": resource.file.url,
+                    "url":resource.blob_url
                 }
                 for resource in module.uploads.all()
             ]
@@ -410,7 +410,7 @@ class CourseUseCase:
                     "type": "video",
                     "id": resource.id,
                     "title": resource.title,
-                    "url": resource.video.url,
+                    "url": resource.blob_url,
                 }
                 for resource in module.video_uploads.all()
             ]
