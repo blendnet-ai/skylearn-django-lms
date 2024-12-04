@@ -25,24 +25,23 @@ class CourseRepository:
 
     def get_courses_for_student(user_id):
         return (
-            #Course.objects.filter(taken_courses__student__student_id=user_id)
-            Course.objects.filter(batch__student__student_id=user_id)
-            .prefetch_related(
-                Prefetch(
-                    "allocated_course",
-                    queryset=CourseAllocation.objects.select_related("lecturer"),
-                )
+        Course.objects.filter(batch__student__student_id=user_id)
+        .prefetch_related(
+            Prefetch(
+                "allocated_course",
+                queryset=CourseAllocation.objects.select_related("lecturer"),
             )
-            .annotate(
-                lecturer_full_name=Concat(
-                    F("allocated_course__lecturer__first_name"),
-                    Value(" "),
-                    F("allocated_course__lecturer__last_name"),
-                    output_field=CharField(),
-                ),
-            )
-            .values()
         )
+        .annotate(
+            lecturer_full_name=Concat(
+                F("batch__lecturer__first_name"),  # Use batch's lecturer
+                Value(" "),
+                F("batch__lecturer__last_name"),
+                output_field=CharField(),
+            ),
+        )
+        .values()
+    )
 
     def get_all_courses():
         return Course.objects.all().values()
