@@ -7,14 +7,9 @@ from accounts.usecases import RoleAssignmentUsecase
 from accounts.utils import generate_password
 
 
-class FirebaseTokenExpired(Exception):
-    def __init__(self):
-        super().__init__("Firebase token expired")
-
-
 class FirebaseAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        id_token = request.COOKIES.get("firebaseToken")
+        id_token = request.headers.get("Authorization", "").replace("Bearer ", "")
 
         if not id_token or id_token == "":
             return None
@@ -40,9 +35,6 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
             return (user, None)
 
-        except auth.ExpiredIdTokenError as e:
-            print(str(e))
-            raise FirebaseTokenExpired()
         except Exception as e:
             print(str(e))
             raise exceptions.AuthenticationFailed("Invalid token")

@@ -5,7 +5,7 @@ from datetime import timedelta
 import logging
 import firebase_admin
 
-#from InstituteConfiguration.repositories import InstituteRepository
+# from InstituteConfiguration.repositories import InstituteRepository
 from custom_auth.repositories import UserProfileRepository
 from custom_auth.services.custom_auth_service import CustomAuth
 from custom_auth.services.sendgrid_service import SendgridService
@@ -14,7 +14,8 @@ from data_repo.repositories import ConfigMapRepository
 from evaluation.management.register.utils import Utils
 from evaluation.repositories import AssessmentAttemptRepository
 from config.settings import TELEGRAM_BOT_NAME, TWO_Factor_SMS_API_KEY
-#from DoubtSolving.usecases import UserMappingUseCase
+
+# from DoubtSolving.usecases import UserMappingUseCase
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from services.sms_service import SMS2FactorService
 import re
@@ -23,23 +24,26 @@ import datetime
 import pytz
 
 logger = logging.getLogger(__name__)
-SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)#2
-#GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)  # 2
+# GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+
 
 class BetaUserlistUsecase:
     @staticmethod
     def mark_onboarding_complete_for_user_if_not(*, email: str, user_id: str):
         existing_profile = UserProfileRepository.fetch_user_data(user_id)
-        if not existing_profile.get('onboarding_status'):
+        if not existing_profile.get("onboarding_status"):
             UserProfileRepository.set_onboarding_complete(user_id)
-    
+
     @staticmethod
     def mark_onboarding_complete_if_whitelisted_user(*, email: str, user_id: str):
         whitelisted_user_emails = ConfigMapRepository.get_config_by_tag(
-            tag=ConfigMapRepository.WHITELISTED_USER_EMAILS)
+            tag=ConfigMapRepository.WHITELISTED_USER_EMAILS
+        )
         if email in whitelisted_user_emails:
             logger.info(
-                f"Marking user email - {email},id={user_id} as on-boarding completed.")
+                f"Marking user email - {email},id={user_id} as on-boarding completed."
+            )
             UserProfileRepository.set_onboarding_complete(user_id)
 
     # @staticmethod
@@ -71,11 +75,13 @@ class ActivityDataUseCase:
     def get_and_update_activity_data(user_id: str):
         today = timezone.now().date()
 
-        yesterday = (today - timedelta(days=1))
+        yesterday = today - timedelta(days=1)
 
         user_profile = UserProfileRepository.get(user_id=user_id)
 
-        if not AssessmentAttemptRepository.does_attempts_exist_for_date(today) and not AssessmentAttemptRepository.does_attempts_exist_for_date(yesterday):
+        if not AssessmentAttemptRepository.does_attempts_exist_for_date(
+            today
+        ) and not AssessmentAttemptRepository.does_attempts_exist_for_date(yesterday):
             # if there are not attempts completed on Today or Yesterday, then break the steak
             user_profile.daily_streak = 0
             user_profile.save()
@@ -98,11 +104,12 @@ class ActivityDataUseCase:
         current_streak = user_profile.daily_streak
 
         activity_data = {
-            'longest_streak': longest_streak,
-            'current_streak': current_streak,
-            'activity_status': activity_status
+            "longest_streak": longest_streak,
+            "current_streak": current_streak,
+            "activity_status": activity_status,
         }
         return activity_data
+
 
 class SignUpUsecase:
 
@@ -125,53 +132,80 @@ class SignUpUsecase:
 class OnBoardingUsecase:
     @staticmethod
     def get_onboaring_status(user):
+        role = "no_role"
         if user.is_student:
-            onboarding_status=UserProfileRepository.get_onboarding_status_details(user.id)
-            onboarding_status['telegram_url']=f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
-            return onboarding_status   
+            role = "student"
+        elif user.is_lecturer:
+            role = "lecturer"
+        elif user.is_course_provider_admin:
+            role = "course_provider_admin"
+
+        if user.is_student:
+            onboarding_status = UserProfileRepository.get_onboarding_status_details(
+                user.id
+            )
+            onboarding_status["telegram_url"] = (
+                f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
+            )
+            onboarding_status["role"] = role
+            return onboarding_status
         else:
             return {
                 "telegram_status": True,
                 "mobile_verification_status": True,
                 "onboarding_status": True,
                 "otp": "000000",
+                "role": role,
             }
-    
+
     @staticmethod
     def determine_onboarding_step(user_id):
-        onboarding_details=UserProfileRepository.get_onboarding_status_details(user_id)
-        if not onboarding_details['mobile_verification_status']:
-            return 'mobile_verification'
-        
-        elif onboarding_details['mobile_verification_status'] and not onboarding_details['onboarding_status']:
-            return 'onboarding_form'
-                
-        elif onboarding_details['mobile_verification_status'] and onboarding_details['onboarding_status'] and not onboarding_details['telegram_status']:
-            return 'telegram_onboarding'
-    
-    def handle_otp_sending(user,phone_number):
+        onboarding_details = UserProfileRepository.get_onboarding_status_details(
+            user_id
+        )
+        if not onboarding_details["mobile_verification_status"]:
+            return "mobile_verification"
+
+        elif (
+            onboarding_details["mobile_verification_status"]
+            and not onboarding_details["onboarding_status"]
+        ):
+            return "onboarding_form"
+
+        elif (
+            onboarding_details["mobile_verification_status"]
+            and onboarding_details["onboarding_status"]
+            and not onboarding_details["telegram_status"]
+        ):
+            return "telegram_onboarding"
+
+    def handle_otp_sending(user, phone_number):
         if phone_number:
             status, message = SMS2FactorService.send_otp(phone_number)
-            #status,message=True,"OTP Sent Successfully"
+            # status,message=True,"OTP Sent Successfully"
             if status:
-                return {"otp_sent":True,"status":status,"message":message}
+                return {"otp_sent": True, "status": status, "message": message}
             else:
-                return {"otp_sent":False,"status":status,"message":message}
+                return {"otp_sent": False, "status": status, "message": message}
         else:
-            return {"otp_sent":False,"status":False,"message": "Please provide phone number"}
-        
-    
-    def handle_otp_verification(user,phone_number,entered_otp_value):
-        is_verified, message = SMS2FactorService.verify_otp(phone_number, entered_otp_value)
+            return {
+                "otp_sent": False,
+                "status": False,
+                "message": "Please provide phone number",
+            }
 
+    def handle_otp_verification(user, phone_number, entered_otp_value):
+        is_verified, message = SMS2FactorService.verify_otp(
+            phone_number, entered_otp_value
+        )
 
         if is_verified:
-            UserProfileRepository.set_mobile_verification_complete(user,phone_number)
-            return {"otp_verified":is_verified, "message":message}
+            UserProfileRepository.set_mobile_verification_complete(user, phone_number)
+            return {"otp_verified": is_verified, "message": message}
         else:
-            return {"otp_verified":is_verified, "message":message}
-        
-    #def handle_fetching_filled_data( user):
+            return {"otp_verified": is_verified, "message": message}
+
+    # def handle_fetching_filled_data( user):
     #     data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
     #     if data is not None:
     #         UserProfileRepository.set_user_profile_user_data(user, data)
@@ -179,7 +213,8 @@ class OnBoardingUsecase:
     #         return {'onboarding_data_fetched':True,'data':data}
     #     else:
     #         return {'onboarding_data_fetched':False,'data':data}
-        
+
+
 # class DoubtSolvingTokenUseCase():
 #     @staticmethod
 #     def create_or_get_token(user_id,api_key):
@@ -200,5 +235,3 @@ class OnBoardingUsecase:
 #                 return token_data
 #             else:
 #                 return None
-            
-            
