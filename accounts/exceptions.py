@@ -3,8 +3,6 @@ from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.http import JsonResponse
 
-from accounts.authentication import FirebaseTokenExpired
-
 
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first
@@ -25,9 +23,5 @@ def custom_exception_handler(exc, context):
                 },
                 status=403,
             )
-
-    if isinstance(exc, FirebaseTokenExpired):
-        next_url = request.path
-        return redirect(f"/accounts/loading/?next={next_url}")
 
     return response

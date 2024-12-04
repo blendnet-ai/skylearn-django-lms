@@ -64,8 +64,8 @@
 			{% endif %}
 
 			{% if request.user.is_lecturer or request.user.is_student or request.user.is_course_provider_admin %}
-			<li class="{% if request.path == '/en/sakshm/my-courses' %}active{% endif %}">
-				<a href="{% url 'sakshm_embed' path='my-courses' %}"><i class="fas fa-book"></i>
+			<li class="{% if request.path == '/en/sakshm/courses' %}active{% endif %}">
+				<a href="{% url 'sakshm_embed' path='courses' %}"><i class="fas fa-book"></i>
 					{% if request.user.is_student %}{% trans 'My Courses' %}{% else %}{% trans 'Courses' %}{% endif %}
 				</a>
 			</li>
