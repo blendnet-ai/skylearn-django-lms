@@ -570,18 +570,35 @@ class MeetingUsecase:
         }
         return data
     
-    def get_recordings_by_course_id_and_batch_id(course_id,batch_id):
-        meetings = MeetingRepository.get_meetings_by_course_id_and_batch_id(course_id,batch_id)
+    def get_recordings_by_user_role(user_id: int, role: str):
+        """
+        Get recordings based on user role and permissions
+        
+        Args:
+            user_id (int): ID of the user requesting recordings
+            role (str): Role of the user (user/lecturer/course_provider_admin)
+            
+        Returns:
+            list: List of recordings with metadata
+        """
+        meetings = MeetingRepository.get_meetings_with_recordings_by_role(user_id, role)
+        
         recordings_data = []
         for meeting in meetings:
-            # Only include meetings that have recordings (blob_url)
-            if meeting.blob_url:
-                recordings_data.append({
-                    "title": meeting.series.title,
-                    "url": meeting.blob_url,
-                    "meeting_id": meeting.id,
-                    "date": meeting.start_date.strftime("%Y-%m-%d") if meeting.start_date else None
-                })
+            recordings_data.append({
+                "meeting_id": meeting.id,
+                "meeting_title": meeting.series.title,
+                "meeting_date": meeting.start_date.strftime("%Y-%m-%d") if meeting.start_date else None,
+                "course_id": meeting.course.id if meeting.course else None,
+                "course_name": meeting.course.title if meeting.course else None,
+                "batch_id": meeting.batch.id if meeting.batch else None,
+                "batch_name": meeting.batch.title if meeting.batch else None,
+                "blob_url": meeting.blob_url
+            })
+        
+        if not recordings_data:
+            return []
+        
         return recordings_data
 
     def get_sas_url_for_recording(meeting_blob_url: str):
