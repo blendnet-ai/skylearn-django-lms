@@ -369,6 +369,45 @@ class BatchUseCase:
 
         return batches_with_students
 
+    @staticmethod
+    def get_students_for_lecturer_or_provider(user):
+        students_data = []
+
+        if user.is_lecturer:
+            # Get all batches where user is the lecturer
+            batches = BatchRepository.get_batches_by_lecturer_id(user.id)
+        elif user.is_course_provider_admin:
+            # Get course provider ID
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(user.id)
+            # Get all courses for this provider
+            courses = CourseRepository.get_courses_by_course_provider(course_provider.id)
+            # Get all batches for these courses
+            batches = []
+            for course in courses:
+                batch_queryset = BatchRepository.get_batches_by_course_id(course.id)
+                batches.extend(batch_queryset)
+        else:
+            return []
+
+        # Process each batch to get student information
+        for batch in batches:
+            for student in batch.students.all():
+                student_data = {
+                    "id": student.id,
+                    "name": f"{student.student.first_name} {student.student.last_name}",
+                    "email": student.student.email,
+                    "batch_id": batch.id,
+                    "batch_title": batch.title,
+                    "course_id": batch.course.id,
+                    "course_title": batch.course.title,
+                    "enrollment_date": batch.created_at
+                }
+                students_data.append(student_data)
+
+        # Remove duplicates based on student ID
+        unique_students = {student["id"]: student for student in students_data}.values()
+        return list(unique_students)
+
 
 class CourseUseCase:
     def get_courses_by_course_provider(course_provider_id):
@@ -412,19 +451,19 @@ class CourseUseCase:
                 for config in module.assignment_configs.all()
             ]
 
-            # Collect reading resources
-            resource_data_reading = [
+            # Collect reading resources and sort by title
+            resource_data_reading = sorted([
                 {
                     "type": "reading",
                     "id": resource.id,
                     "title": resource.title,
-                    "url":resource.blob_url
+                    "url": resource.blob_url
                 }
                 for resource in module.uploads.all()
-            ]
+            ], key=lambda x: x["title"])
 
-            # Collect video resources
-            resource_data_video = [
+            # Collect video resources and sort by title
+            resource_data_video = sorted([
                 {
                     "type": "video",
                     "id": resource.id,
@@ -432,7 +471,7 @@ class CourseUseCase:
                     "url": resource.blob_url,
                 }
                 for resource in module.video_uploads.all()
-            ]
+            ], key=lambda x: x["title"])
 
             module_data.append(
                 {
