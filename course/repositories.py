@@ -52,6 +52,8 @@ class CourseRepository:
             course_provider__admins__course_provider_admin_id=course_provider_admin_id
         ).values()
 
+    def get_course_by_code(course_code):
+        return Course.objects.filter(code=course_code).first()
 
 class BatchRepository:
     @staticmethod
@@ -99,6 +101,15 @@ class LiveClassSeriesBatchAllocationRepository:
 
 
 class ModuleRepository:
+    @staticmethod
+    def get_or_create_module(course, title, order_in_course):
+        return Module.objects.get_or_create(
+            course=course,
+            title=title,
+            order_in_course=order_in_course
+        )
+        
+    @staticmethod
     def get_module_details_by_course_id(course_id):
         modules = (
             Module.objects.filter(course_id=course_id)
@@ -113,3 +124,40 @@ class ModuleRepository:
             .order_by("order_in_course")
         )
         return modules
+
+
+class UploadRepository:
+    @staticmethod
+    def get_existing_upload(file_name, course, module):
+        return Upload.objects.filter(
+            title=file_name,
+            course=course,
+            module=module
+        ).first()
+
+    @staticmethod
+    def create_upload(title, course, module, blob_url):
+        return Upload.objects.create(
+            title=title,
+            course=course,
+            module=module,
+            blob_url=blob_url
+        )
+
+class UploadVideoRepository:
+    @staticmethod
+    def get_existing_upload(file_name, course, module):
+        return UploadVideo.objects.filter(
+            title=file_name,
+            course=course,
+            module=module
+        ).first()
+
+    @staticmethod
+    def create_upload(title, course, module, blob_url):
+        return UploadVideo.objects.create(
+            title=title,
+            course=course,
+            module=module,
+            blob_url=blob_url
+        )

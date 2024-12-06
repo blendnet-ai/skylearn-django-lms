@@ -76,13 +76,13 @@ class Course(models.Model):
     code = models.CharField(max_length=200, unique=True)
     credit = models.IntegerField(default=0)
     summary = models.TextField(max_length=200, blank=True)
-    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     level = models.CharField(max_length=25, choices=settings.LEVEL_CHOICES)
     year = models.IntegerField(choices=settings.YEARS, default=1)
     semester = models.CharField(choices=settings.SEMESTER_CHOICES, max_length=200)
     is_elective = models.BooleanField(default=False)
     assessment_generation_ids = models.JSONField(blank=True, default=list)
     course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
+    drive_folder_link = models.CharField(max_length=255, blank=True)
 
     objects = CourseManager()
 
