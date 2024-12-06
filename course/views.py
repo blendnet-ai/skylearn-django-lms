@@ -858,32 +858,24 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
-def get_modules_and_resources_by_course_id(request, course_id):
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_modules_and_resources_by_course_id_and_batch_id(request, course_id,batch_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
+    recordings_data=MeetingUsecase.get_recordings_by_course_id_and_batch_id(course_id,batch_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},
             status=status.HTTP_404_NOT_FOUND,
         )
-    return Response({'module_data': module_data}, status=status.HTTP_200_OK)
-
-def get_recordings_by_user(request):
-    module_data = CourseUseCase.get_modules_by_course_id(course_id)
-    if not module_data:
-        return Response(
-            {"error": "No modules found for the given course ID."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-    return Response({'module_data': module_data}, status=status.HTTP_200_OK)
+    return Response({'module_data': module_data, 'recordings_data': recordings_data}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def user_courses_list(request):
-    request.user=User.objects.get(id=30)
+    #request.user=User.objects.get(id=4)
     courses, role=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
         return Response({"courses": courses, "role": role}, status=status.HTTP_200_OK)
@@ -911,8 +903,8 @@ def get_live_class_details(request, series_id):
     return Response({"data":meeting_series}, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
 def get_sas_url(request):
     # Get the meeting_blob_url from query parameters
     blob_url = request.GET.get("blob_url")
@@ -933,18 +925,3 @@ def get_sas_url(request):
         )
 
 
-@api_view(['GET'])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn])
-def get_recordings(request):
-        user_id = request.user.id
-        if request.user.is_student:
-            role = 'student'
-        elif request.user.is_lecturer:
-            role = 'lecturer'
-        elif request.user.is_course_provider_admin:
-            role = 'course_provider_admin'
-            
-        recordings = MeetingUsecase.get_recordings_by_user_role(user_id, role)
-        return Response(recordings, status=status.HTTP_200_OK)
-        
