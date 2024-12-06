@@ -4,11 +4,30 @@ from course.repositories import (
     BatchRepository,
     CourseRepository,
     LiveClassSeriesBatchAllocationRepository,
-    ModuleRepository
+    ModuleRepository,
+    UploadRepository,
+    UploadVideoRepository
 )
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from accounts.repositories import CourseProviderRepository
+from .exceptions import CourseContentDriveException
+
+import os
+import logging
+import re
+from urllib.parse import urlparse
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+import io
+from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
+from course.models import Course, Module, Upload, UploadVideo
+from storage_service.azure_storage import AzureStorageService
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class LiveClassUsecase:
     class UserNotInBatchOfCourseException(Exception):
@@ -426,3 +445,252 @@ class CourseUseCase:
                 }
             )
         return module_data
+    
+    
+
+
+class CourseContentDriveUsecase:
+    def __init__(self):
+        self.storage_service = AzureStorageService()
+        self.logger = logging.getLogger(__name__)
+
+    def sync_course_content(self, course_id):
+        """Syncs content for a specific course from Drive to blob storage"""
+        self.logger.info(f"Starting content sync for course ID: {course_id}")
+        try:
+            course = CourseRepository.get_course_by_id(course_id)
+            self.logger.info(f"Found course: {course.code} - Starting sync process")
+            
+            if not course.drive_folder_link:
+                self.logger.error(f"No drive folder link found for course {course_id}")
+                raise CourseContentDriveException.DriveInitializationException("No drive folder link found for course")
+
+            folder_id = self._extract_folder_id_from_url(course.drive_folder_link)
+            self.logger.info(f"Extracted folder ID: {folder_id} from drive link")
+            
+            drive_service = self._initialize_drive_service()
+            self.logger.info("Successfully initialized Google Drive service")
+            
+            result = self._process_course_folder(drive_service, folder_id, course)
+            self.logger.info(f"Successfully completed sync for course {course_id}")
+            return result
+            
+        except CourseContentDriveException as e:
+            self.logger.error(f"Drive content sync failed for course {course_id}: {str(e)}", exc_info=True)
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error during content sync for course {course_id}: {str(e)}", exc_info=True)
+            raise CourseContentDriveException.DriveAPIException("sync_course_content", e)
+
+    def _initialize_drive_service(self):
+        """Initialize Google Drive API client"""
+        try:
+            scopes = [
+                "https://www.googleapis.com/auth/drive.file",
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive.readonly"
+            ]
+            current_directory = os.getcwd()
+            config_file_path = os.path.join(current_directory, "gd_config.json")
+            
+            credentials = Credentials.from_service_account_file(config_file_path, scopes=scopes)
+            return build('drive', 'v3', credentials=credentials)
+        except Exception as e:
+            raise CourseContentDriveException.DriveInitializationException(e)
+
+    def _process_course_folder(self, drive_service, folder_id, course):
+        """Processes all modules within a course folder"""
+        self.logger.info(f"Processing course folder for course: {course.code}")
+        try:
+            module_folders = self._list_folders(drive_service, folder_id)
+            self.logger.info(f"Found {len(module_folders)} module folders")
+        except Exception as e:
+            self.logger.error(f"Failed to list folders: {str(e)}", exc_info=True)
+            raise CourseContentDriveException.DriveAPIException("list_folders", e)
+
+        module_results = []
+        for index, module_folder in enumerate(module_folders, 1):
+            self.logger.info(f"Processing module {index}/{len(module_folders)}: {module_folder['name']}")
+            try:
+                module_order, module_name = self._parse_module_folder_name(module_folder['name'])
+                self.logger.debug(f"Parsed module name: {module_name}, order: {module_order}")
+                
+                module,created = ModuleRepository.get_or_create_module(
+                    course=course,
+                    title=module_name,
+                    order_in_course=module_order
+                )
+                
+                if created:
+                    self.logger.info(f"Created module: {module.title} (ID: {module.id})")
+                else:
+                    self.logger.info(f"Retrieved module: {module.title} (ID: {module.id})")
+                
+                module_content = {
+                    'module_id': module.id,
+                    'module_name': module_name,
+                    'resources': self._process_module_resources(
+                        drive_service,
+                        module_folder['id'],
+                        f"{course.code}/{module_folder['name']}",
+                        course,
+                        module
+                    )
+                }
+                module_results.append(module_content)
+                self.logger.info(f"Successfully processed module: {module_name}")
+                
+            except Exception as e:
+                self.logger.error(f"Failed to process module {module_folder['name']}: {str(e)}", exc_info=True)
+                module_results.append({
+                    'module_name': module_folder['name'],
+                    'status': 'failed',
+                    'error': str(e)
+                })
+                
+        return module_results
+
+    def _process_module_resources(self, drive_service, module_folder_id, module_path, course, module):
+        """Processes both video and reading resources in a module"""
+        self.logger.info(f"Processing resources for module: {module.title}")
+        resources = {
+            'video': [],
+            'reading': []
+        }
+        
+        resource_folders = self._list_folders(drive_service, module_folder_id)
+        self.logger.info(f"Found {len(resource_folders)} resource folders")
+        
+        for folder in resource_folders:
+            resource_path = os.path.join(module_path, folder['name'])
+            self.logger.info(f"Processing resource folder: {folder['name']}")
+            
+            if folder['name'] == 'Video Resources':
+                self.logger.info("Processing video resources")
+                resources['video'] = self._process_resource_folder(
+                    drive_service, folder['id'], 'video', resource_path, course, module
+                )
+                self.logger.info(f"Processed {len(resources['video'])} video resources")
+                
+            elif folder['name'] == 'Reading Resources':
+                self.logger.info("Processing reading resources")
+                resources['reading'] = self._process_resource_folder(
+                    drive_service, folder['id'], 'reading', resource_path, course, module
+                )
+                self.logger.info(f"Processed {len(resources['reading'])} reading resources")
+                
+        return resources
+
+    def _process_resource_folder(self, drive_service, folder_id, resource_type, resource_path, course, module):
+        """Downloads and uploads all files in a resource folder"""
+        self.logger.info(f"Processing {resource_type} resources at path: {resource_path}")
+        processed_files = []
+        
+        try:
+            query = f"'{folder_id}' in parents and mimeType!='application/vnd.google-apps.folder'"
+            files = drive_service.files().list(q=query).execute().get('files', [])
+            self.logger.info(f"Found {len(files)} files to process")
+        except Exception as e:
+            self.logger.error(f"Failed to list files: {str(e)}", exc_info=True)
+            raise CourseContentDriveException.DriveAPIException("list_files", e)
+        
+        for index, file in enumerate(files, 1):
+            file_path = os.path.join(resource_path, file['name'])
+            self.logger.info(f"Processing file {index}/{len(files)}: {file['name']}")
+            
+            try:
+                repository = UploadRepository if resource_type == 'reading' else UploadVideoRepository
+                existing_upload = repository.get_existing_upload(file['name'], course, module)
+
+                if existing_upload:
+                    self.logger.info(f"File already exists: {file['name']}")
+                    processed_files.append({
+                        'name': file['name'],
+                        'type': resource_type,
+                        'url': f"https://drive.google.com/file/d/{file['id']}/view",
+                        'status': 'existing'
+                    })
+                    continue
+                    
+                self.logger.info(f"Downloading and uploading file: {file['name']}")
+                blob_url = self._download_and_upload_file(drive_service, file, file_path)
+                
+                repository.create_upload(
+                    title=file['name'],
+                    course=course,
+                    module=module,
+                    blob_url=blob_url
+                )
+                self.logger.info(f"Successfully processed file: {file['name']}")
+                
+                processed_files.append({
+                    'name': file['name'],
+                    'type': resource_type,
+                    'url': f"https://drive.google.com/file/d/{file['id']}/view",
+                    'status': 'success'
+                })
+                
+            except Exception as e:
+                self.logger.error(f"Failed to process file {file['name']}: {str(e)}", exc_info=True)
+                raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
+                
+        return processed_files
+
+    def _download_and_upload_file(self, drive_service, file, file_path):
+        """Helper method to download from Drive and upload to blob storage"""
+        try:
+            request = drive_service.files().get_media(fileId=file['id'])
+            file_content = io.BytesIO()
+            downloader = MediaIoBaseDownload(file_content, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            
+            return self._upload_to_blob(file_content, file['name'], file_path)
+        except Exception as e:
+            raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
+
+    def _parse_module_folder_name(self, folder_name):
+        """Extract order and name from module folder name (e.g., "1_Module Name")"""
+        match = re.match(r'^(\d+)_(.+)$', folder_name)
+        if not match:
+            raise CourseContentDriveException.InvalidFolderFormatException(
+                f"Invalid module folder name format: {folder_name}. Expected format: 'ORDER_NAME'"
+            )
+        return int(match.group(1)), match.group(2)
+
+    def _extract_folder_id_from_url(self, url):
+        """Extract folder ID from Google Drive URL"""
+        patterns = [
+            r'folders/([a-zA-Z0-9-_]+)',  # Standard folder URL
+            r'id=([a-zA-Z0-9-_]+)',       # Alternate format
+            r'/d/([a-zA-Z0-9-_]+)'        # Short format
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+                
+        raise CourseContentDriveException.DriveInitializationException(
+            f"Could not extract folder ID from URL: {url}"
+        )
+        
+    def _list_folders(self, drive_service, parent_id):
+        """List all folders within a parent folder"""
+        query = f"'{parent_id}' in parents and mimeType='application/vnd.google-apps.folder'"
+        results = drive_service.files().list(q=query).execute()
+        return results.get('files', [])
+        
+    def _upload_to_blob(self, file_content, filename, blob_path):
+        """Upload file to Azure Blob Storage"""
+        logging.info(f"Uploading file to blob storage: {blob_path}")
+        blob_url = self.storage_service.upload_blob(
+            container_name="course-materials",
+            blob_name=blob_path,
+            content=file_content,
+            overwrite=True
+        )
+        logging.info(f"Uploaded file to blob storage: {blob_url}")
+        return blob_url
+    
