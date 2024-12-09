@@ -1,4 +1,5 @@
 from accounts.repositories import StudentRepository, UserRepository, LecturerRepository
+from config import settings
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
     BatchRepository,
@@ -686,7 +687,7 @@ class CourseContentDriveUsecase:
         """Upload file to Azure Blob Storage"""
         logging.info(f"Uploading file to blob storage: {blob_path}")
         blob_url = self.storage_service.upload_blob(
-            container_name="course-materials",
+            container_name=settings.AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME,
             blob_name=blob_path,
             content=file_content,
             overwrite=True
