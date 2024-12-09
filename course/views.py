@@ -860,15 +860,14 @@ def get_courses_by_course_provider_id(request, course_provider_id):
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
-def get_modules_and_resources_by_course_id_and_batch_id(request, course_id,batch_id):
+def get_modules_and_resources_by_course_id(request, course_id):
     module_data = CourseUseCase.get_modules_by_course_id(course_id)
-    recordings_data=MeetingUsecase.get_recordings_by_course_id_and_batch_id(course_id,batch_id)
     if not module_data:
         return Response(
             {"error": "No modules found for the given course ID."},
             status=status.HTTP_404_NOT_FOUND,
         )
-    return Response({'module_data': module_data, 'recordings_data': recordings_data}, status=status.HTTP_200_OK)
+    return Response({'module_data': module_data}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
@@ -925,3 +924,34 @@ def get_sas_url(request):
         )
 
 
+@api_view(['GET'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_recordings(request):
+        user_id = request.user.id
+        if request.user.is_student:
+            role = 'student'
+        elif request.user.is_lecturer:
+            role = 'lecturer'
+        elif request.user.is_course_provider_admin:
+            role = 'course_provider_admin'
+           
+        recordings = MeetingUsecase.get_recordings_by_user_role(user_id, role)
+        return Response(recordings, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def get_students_list(request):
+    """
+    Get list of students for lecturer or course provider admin
+    """
+
+    students = BatchUseCase.get_students_for_lecturer_or_provider(request.user)
+    return Response(
+        {
+            "students": students,
+            "total_count": len(students)
+        }, 
+        status=status.HTTP_200_OK
+    )
