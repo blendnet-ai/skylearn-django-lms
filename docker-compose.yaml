@@ -22,6 +22,18 @@ services:
     ports:
       - 5432:5432
 
+
+  lms-celery:
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    container_name: lms-celery
+    working_dir: /appuser/code
+    volumes:
+      - .:/appuser/code
+    env_file:
+      - .env
+    entrypoint: python -m celery -A config worker -l debug -Q default, meeting_queue
+
   lms-celery-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
@@ -31,7 +43,7 @@ services:
       - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A config worker -l debug -Q default
+    entrypoint: python -m celery -A config worker -l debug -Q default, meeting_queue
     depends_on:
       - redis
       - postgres
@@ -44,6 +56,22 @@ services:
     command: /bin/sh -c "redis-server --requirepass ${REDIS_PASSWORD}"
     ports:
       - 6379:6379
+
+  lms-notebook:
+    container_name: lms-notebook
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    entrypoint: python manage.py shell_plus --notebook -- --ip 0.0.0.0 --port 8000
+    restart: unless-stopped
+    volumes:
+      - .:/home/appuser/code
+    working_dir: /home/appuser/code
+    ports:
+      - "8888:8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_ALLOW_ASYNC_UNSAFE=true
 
   lms-notebook-dev:
     container_name: lms-notebook
@@ -63,6 +91,19 @@ services:
     depends_on:
       - postgres
       - redis
+
+  lms-celery-beat:
+    image: ghcr.io/blendnet-ai/django-lms:latest
+    platform: linux/amd64
+    container_name: lms-celery-beat-dev
+    working_dir: /home/appuser/code
+    volumes:
+      - .:/home/appuser/code
+    env_file:
+      - .env
+    entrypoint: python -m celery -A config beat -l debug --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - lms-celery
 
         
   lms-celery-beat-dev:
