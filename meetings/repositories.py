@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, DatabaseError
 from datetime import datetime, timedelta, timezone
 import pytz
+from django.db.models import Q
 
 # Define the Indian timezone
 ist = pytz.timezone('Asia/Kolkata')
@@ -131,4 +132,36 @@ class MeetingRepository:
             blob_url__gt=''
         ).distinct())
 
+    def get_meetings_with_recordings_by_role(user_id: int, role:str):
+        """
+        Get meetings with recordings based on user role
+
+        Args:
+            user_id (int): ID of the user requesting recordings
+            role (str): Role of the user (student/lecturer/course_provider_admin)
+
+        Returns:
+            QuerySet: Filtered meetings with recordings
+        """
+        # Base query - only get meetings that have recordings
+        base_query = Meeting.objects.filter(blob_url__isnull=False).exclude(blob_url='')
+
+        if role == 'student':
+            # Get recordings for courses where student is enrolled in a batch
+            return base_query.filter(
+                series__course_enrollments__batch__student__student_id=user_id
+            ).distinct()
+
+        elif role == 'lecturer':
+            # Get recordings for all batches where user is the lecturer
+            return base_query.filter(
+                Q(series__course_enrollments__batch__lecturer_id=user_id)
+            ).distinct()
+
+        elif role == 'course_provider_admin':
+            return base_query.filter(
+                series__course_enrollments__batch__course__course_provider__admins__course_provider_admin_id=user_id
+            ).distinct()
+
+        return Meeting.objects.none()
 
