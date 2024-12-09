@@ -277,6 +277,7 @@ SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+VERSION = os.environ.get('VERSION', 'VERSION:local-or-error!')
 
 SENTRY_TRACES_SAMPLE_RATE=int(os.environ.get("SENTRY_TRACES_SAMPLE_RATE",0))
 
