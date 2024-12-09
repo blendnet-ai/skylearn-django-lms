@@ -25,7 +25,7 @@ COMMON_TASK_CONFIG = {
     'default_retry_delay': 300,  # 5 minutes
     'autoretry_for': (ConferencePlatformError,),
     'retry_backoff': True,
-    'queue': 'default',
+    'queue': 'meeting_queue',
 }
 
 def handle_meeting_exceptions(task_func: Callable) -> Callable:

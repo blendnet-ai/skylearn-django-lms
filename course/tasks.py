@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=3,queue='default')
+@shared_task(bind=True, max_retries=3,queue='course_queue')
 def sync_course_content_task(self, course_id):
     """Celery task to sync course content from Drive"""
     usecase = CourseContentDriveUsecase()
