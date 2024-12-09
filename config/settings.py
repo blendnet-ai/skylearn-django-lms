@@ -277,6 +277,30 @@ SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+
+SENTRY_TRACES_SAMPLE_RATE=int(os.environ.get("SENTRY_TRACES_SAMPLE_RATE",0))
+
+if ENV != "local":
+    import sentry_sdk, logging
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+
+    sentry_logging = LoggingIntegration(
+        level=logging.INFO,  # Capture info and above as breadcrumbs
+        event_level=logging.ERROR  # Send ERROR and above as events
+    )
+
+    sentry_sdk.init(
+        dsn=os.environ.get("SENTRY_DSN", ""),
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        integrations=[sentry_logging, DjangoIntegration(), CeleryIntegration(), RedisIntegration()],
+        send_default_pii=True,
+        environment=ENV,
+        release=VERSION,
+    )
+
 # -----------------------------------
 # E-mail configuration
 
@@ -308,6 +332,19 @@ STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
 # https://docs.djangoproject.com/en/dev/ref/settings/#logging
 # See https://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
+
+if True:
+    logging_format = "{asctime}:|{request_id}|user_id={user_id}|{levelname}|{filename}|{lineno}|{message}"
+    if DEBUG:
+        logging_level = "DEBUG"
+    else:
+        logging_level = "INFO"
+else:
+    logging_format = (
+        '%(levelname)s [%(request_id)s] user_id=%(user_id)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s'
+        '%(filename)s %(lineno)d %(message)s')
+    logging_level = "INFO"
+    
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -570,8 +607,8 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
 CELERY_TASK_ROUTES = {
-    "evaluation.tasks.*": {"queue": "evaluation_queue"},
-    "services.tasks.*": {"queue": "services_queue"},
+    "meetings.tasks.*": {"queue": "meeting_queue"},
+    "course.tasks.*": {"queue": "course_queue"},
 }
 
 CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
