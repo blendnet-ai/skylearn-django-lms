@@ -5,6 +5,7 @@ from accounts.models import Student, User
 from custom_auth.repositories import UserProfileRepository
 from accounts.usecases import RoleAssignmentUsecase
 from accounts.utils import generate_password
+from django.contrib.auth.models import update_last_login
 
 
 class FirebaseAuthentication(authentication.BaseAuthentication):
@@ -23,16 +24,21 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             except User.DoesNotExist:
                 # Create user if not exists
                 email = decoded_token["email"]
+                first_name = decoded_token.get("name", "").split()[0] if decoded_token.get("name") else ""
+                last_name = " ".join(decoded_token.get("name", "").split()[1:]) if decoded_token.get("name") else ""
                 user = User.objects.create(
                     firebase_uid=uid,
                     email=email,
                     is_active=True,
                     username=uid,
+                    first_name=first_name,
+                    last_name=last_name
                 )
                 user.set_password(generate_password())
                 user.save()
                 RoleAssignmentUsecase.assign_role_from_config(user)
             user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
+            update_last_login(None, user)
             return (user, None)
 
         except Exception as e:
