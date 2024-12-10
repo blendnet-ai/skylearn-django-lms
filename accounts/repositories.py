@@ -90,8 +90,19 @@ class LecturerRepository:
 
 class UserConfigMappingRepository:
     @staticmethod
-    def get_user_config_mapping(email):
+    def create_user_config_mapping(email: str, config: dict):
+        return UserConfigMapping.objects.create(
+            email=email,
+            config=config
+        )
+    
+    @staticmethod
+    def get_user_config_mapping(email: str):
         try:
             return UserConfigMapping.objects.get(email=email)
         except UserConfigMapping.DoesNotExist:
             return None
+
+    @staticmethod
+    def bulk_create_user_config_mappings(config_mappings: list):
+        return UserConfigMapping.objects.bulk_create(config_mappings)

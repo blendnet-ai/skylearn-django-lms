@@ -72,6 +72,13 @@ class BatchRepository:
     def get_batches_by_lecturer_id(lecturer_id):
         return Batch.objects.filter(lecturer_id=lecturer_id)
 
+    @staticmethod
+    def set_batch_lecturer(batch_id, lecturer):
+        batch = Batch.objects.get(id=batch_id)
+        batch.lecturer = lecturer
+        batch.save()
+        return batch
+
 
 class LiveClassSeriesBatchAllocationRepository:
     @staticmethod
