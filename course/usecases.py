@@ -680,12 +680,15 @@ class CourseContentDriveUsecase:
         """Helper method to download from Drive and upload to blob storage"""
         try:
             request = drive_service.files().get_media(fileId=file['id'])
-            file_content = io.BytesIO()
+            file_content = io.BytesIO()  # Create a BytesIO object to store the file content
             downloader = MediaIoBaseDownload(file_content, request)
+            
             done = False
             while not done:
                 _, done = downloader.next_chunk()
             
+            # Reset the pointer to the beginning of the BytesIO object
+            file_content.seek(0)
             return self._upload_to_blob(file_content, file['name'], file_path)
         except Exception as e:
             raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
