@@ -394,7 +394,7 @@ class BatchUseCase:
         for batch in batches:
             for student in batch.students.all():
                 student_data = {
-                    "id": student.id,
+                    "id": student.student.id,
                     "name": f"{student.student.first_name} {student.student.last_name}",
                     "email": student.student.email,
                     "batch_id": batch.id,
