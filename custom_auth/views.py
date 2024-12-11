@@ -231,6 +231,20 @@ def verify_otp(request):
             onboarding_verification_result, status=status.HTTP_400_BAD_REQUEST
         )
 
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def cv_upload(request):
+    cv_link = request.data.get("link")
+
+    if not cv_link:
+        return Response(
+            {"error": "Cv link is required."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    cv_upload_result = OnBoardingUsecase.add_cv_upload_link(request.user, cv_link)
+
+    return Response(cv_upload_result, status=status.HTTP_200_OK)
 
 # @csrf_exempt
 # @api_view(['POST'])

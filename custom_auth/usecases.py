@@ -205,6 +205,10 @@ class OnBoardingUsecase:
         else:
             return {"otp_verified": is_verified, "message": message}
 
+    def add_cv_upload_link(user, link):
+        UserProfileRepository.set_cv_data(user, link)
+        return {"cv_link_added": True}
+    
     # def handle_fetching_filled_data( user):
     #     data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
     #     if data is not None:

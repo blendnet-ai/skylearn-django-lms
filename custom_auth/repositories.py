@@ -185,6 +185,13 @@ class UserProfileRepository:
         user_profile.user_data = user_data
         user_profile.save()
 
+    def set_cv_data(user: str, link):
+        user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.cv_details = {
+            "blob_url": link,
+        }
+        user_profile.save()
+        
     # @staticmethod
     # def update_doubt_solving_token(user_id, doubt_solving_uuid,doubt_solving_mapping_created,doubt_solving_token,token_expiration_time):
     #     user_profile=UserProfileRepository.get(user_id=user_id)
