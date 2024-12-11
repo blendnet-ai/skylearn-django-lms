@@ -178,6 +178,14 @@ class OnBoardingUsecase:
             and not onboarding_details["telegram_status"]
         ):
             return "telegram_onboarding"
+        
+        elif (
+            onboarding_details["mobile_verification_status"]
+            and onboarding_details["onboarding_status"]
+            and onboarding_details["telegram_status"]
+            and not onboarding_details["onboarding_cv_status"]
+        ):
+            return "cv_upload"
 
     def handle_otp_sending(user, phone_number):
         if phone_number:
@@ -205,6 +213,10 @@ class OnBoardingUsecase:
         else:
             return {"otp_verified": is_verified, "message": message}
 
+    def add_cv_upload_link(user, link, linked_in_link, status):
+        UserProfileRepository.set_cv_data(user, link, linked_in_link, status)
+        return {"cv_link_added": True}
+    
     # def handle_fetching_filled_data( user):
     #     data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
     #     if data is not None:

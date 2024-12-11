@@ -158,10 +158,13 @@ class UserProfileRepository:
             mobile_status=user_profile.is_mobile_verified
             onboarding_status =user_profile.onboarding_complete
             otp = user_profile.otp
+            cv_status = user_profile.cv_details.get("status") if user_profile.cv_details else None
+            onboarding_cv_status = cv_status in ["filled", "skipped"]
             return {
                 "telegram_status": telegram_status,
                 "mobile_verification_status": mobile_status,
                 "onboarding_status": onboarding_status,
+                "onboarding_cv_status": onboarding_cv_status,
                 "otp": otp,
             }
         except UserProfile.DoesNotExist:
@@ -185,6 +188,15 @@ class UserProfileRepository:
         user_profile.user_data = user_data
         user_profile.save()
 
+    def set_cv_data(user: str, link, linked_in_link, status):
+        user_profile = UserProfile.objects.get(user_id=user)
+        user_profile.cv_details = {
+            "blob_url": link,
+            "linked_in_link":linked_in_link,
+            "status": status,
+        }
+        user_profile.save()
+        
     # @staticmethod
     # def update_doubt_solving_token(user_id, doubt_solving_uuid,doubt_solving_mapping_created,doubt_solving_token,token_expiration_time):
     #     user_profile=UserProfileRepository.get(user_id=user_id)
