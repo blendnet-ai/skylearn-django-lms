@@ -154,6 +154,7 @@ class OnBoardingUsecase:
                 "telegram_status": True,
                 "mobile_verification_status": True,
                 "onboarding_status": True,
+                "onboarding_cv_status": True,
                 "otp": "000000",
                 "role": role,
             }
