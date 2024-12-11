@@ -236,13 +236,15 @@ def verify_otp(request):
 @permission_classes([IsLoggedIn])
 def cv_upload(request):
     cv_link = request.data.get("link")
+    linkedin_link = request.data.get("linkedin_link")
+    upload_status = request.data.get("status")
 
-    if not cv_link:
+    if not cv_link and not linkedin_link and upload_status == "filled":
         return Response(
-            {"error": "Cv link is required."}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "Either Upload resume or linkedin Link is missing "}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    cv_upload_result = OnBoardingUsecase.add_cv_upload_link(request.user, cv_link)
+    cv_upload_result = OnBoardingUsecase.add_cv_upload_link(request.user, cv_link, linkedin_link, upload_status)
 
     return Response(cv_upload_result, status=status.HTTP_200_OK)
 
