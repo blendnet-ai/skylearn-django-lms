@@ -70,6 +70,7 @@ from rest_framework.response import Response
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import ListModelMixin
+from accounts.usecases import StudentProfileUsecase
 
 # ########################################################
 # Program Views
@@ -955,3 +956,20 @@ def get_students_list(request):
         }, 
         status=status.HTTP_200_OK
     )
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def get_student_details(request, student_id):
+    """
+    Get details of a student for lecturer or course provider admin
+    """
+    try:
+        student_profile = StudentProfileUsecase.get_student_profile(student_id)
+        return Response(student_profile, status=status.HTTP_200_OK)
+    except ValueError as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_404_NOT_FOUND
+        )
