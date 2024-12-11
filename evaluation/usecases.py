@@ -756,7 +756,8 @@ class AssessmentUseCase:
                 "total": total,
                 "assessment_name": item.get("assessment_generation_config_id__assessment_display_name"),
                 "module_name": module_name,
-                "course_code": course_code
+                "course_code": course_code,
+                "assessment_config_id": item.get("assessment_generation_config_id")
             })
 
         return {

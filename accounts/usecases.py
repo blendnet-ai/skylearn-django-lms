@@ -6,11 +6,14 @@ from accounts.repositories import (
     CourseProviderRepository,
     UserConfigMappingRepository,
 )
-from course.repositories import BatchRepository
+from course.repositories import BatchRepository, CourseRepository
 from course.models import Course, CourseAllocation
 import json
 from django.conf import settings
-
+from evaluation.models import AssessmentAttempt
+from evaluation.usecases import AssessmentUseCase
+from course.repositories import UploadVideoRepository
+from custom_auth.repositories import UserProfileRepository
 
 class BatchAllocationUsecase:
     @staticmethod
@@ -144,3 +147,72 @@ class RoleAssignmentUsecase:
                 course_provider_admin,
                 course_provider
             )
+
+
+class StudentProfileUsecase:
+    @staticmethod
+    def get_student_profile(student_id):
+        try:
+            # Get student and user info
+            student = StudentRepository.get_student_by_student_id(student_id)
+            user = student.student
+            
+            # Get student batches and course info
+            student_batches = StudentRepository.get_batches_by_student_id(student_id)
+            
+            # Get assessment data
+            assessment_data = AssessmentUseCase.fetch_history_data(student_id)
+            # Build courses enrolled data
+            courses_enrolled = []
+            for batch in student_batches:
+                course = batch.course
+                
+                # Get video stats
+                total_videos = UploadVideoRepository.get_video_count_by_course(course.id)
+                videos_watched = 2 #TODO: Implement actual video watched logic
+                
+                # Get assessment stats for the course
+                course_assessments = set()
+                for a in assessment_data.get('attempted_list', []):
+                    if a.get('course_code') == course.code and int(a.get('status')) == int(AssessmentAttempt.Status.COMPLETED):
+                        course_assessments.add((a.get('module_name'), a.get('course_code'), a.get('assessment_config_id')))
+                
+                total_assessments = CourseRepository.get_assessment_count_by_course_id(course.id)
+                
+                # Calculate attendance (placeholder - implement actual attendance logic)
+                attendance = 78  #TODO: Implement actual attendance calculation
+                
+                courses_enrolled.append({
+                    "course_id": course.code,
+                    "course_name": course.title,
+                    "batch_id": batch.title,
+                    "attendance": attendance,
+                    "videos_watched": videos_watched,
+                    "total_videos": total_videos,
+                    "assessments_attempted": len(course_assessments),
+                    "total_assessments": total_assessments
+                })
+
+            # Get last login info from user profile
+            user_profile = UserProfileRepository.get(user.id)
+            
+            return {
+                "user_stats": {
+                    "user_id": user.id,
+                    "name": f"{user.first_name} {user.last_name}",
+                    "age": user_profile.age if user_profile else None,
+                    "gender": user_profile.gender if user_profile else None,
+                    "college": "college",
+                    "email": user.email,
+                    "phone": user_profile.phone if user_profile else None
+                },
+                "engagement_stats": {
+                    "last_login_date": user.last_login.date() if user.last_login else None,
+                    "last_login_time": user.last_login.time() if user.last_login else None,
+                    "total_learning_time": "20"
+                },
+                "courses_enrolled": courses_enrolled
+            }
+            
+        except Student.DoesNotExist:
+            raise ValueError("Student not found")

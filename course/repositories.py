@@ -17,12 +17,15 @@ class CourseRepository:
     def get_course_by_id(course_id):
         return Course.objects.get(id=course_id)
 
+    @staticmethod
     def get_courses_by_course_provider(course_provider_id):
         return Course.objects.filter(course_provider_id=course_provider_id)
 
+    @staticmethod
     def get_courses_for_lecturer(user_id):
         return Course.objects.filter(allocated_course__lecturer__pk=user_id).values()
 
+    @staticmethod
     def get_courses_for_student(user_id):
         return (
         Course.objects.filter(batch__student__student_id=user_id)
@@ -44,16 +47,25 @@ class CourseRepository:
         .values()
     )
 
+    @staticmethod
     def get_all_courses():
         return Course.objects.all().values()
 
+    @staticmethod
     def get_courses_for_course_provider_admin(course_provider_admin_id):
         return Course.objects.filter(
             course_provider__admins__course_provider_admin_id=course_provider_admin_id
         ).values()
 
+    @staticmethod
     def get_course_by_code(course_code):
         return Course.objects.filter(code=course_code).first()
+
+    @staticmethod
+    def get_assessment_count_by_course_id(course_id):
+        return AssessmentGenerationConfig.objects.filter(
+            modules__course_id=course_id
+        ).count()
 
 class BatchRepository:
     @staticmethod
@@ -168,3 +180,10 @@ class UploadVideoRepository:
             module=module,
             blob_url=blob_url
         )
+
+    @staticmethod
+    def get_video_count_by_course(course_id):
+        videos = UploadVideo.objects.filter(course_id=course_id)
+        return videos.count()
+
+
