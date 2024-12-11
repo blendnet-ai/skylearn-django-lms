@@ -200,8 +200,8 @@ class StudentProfileUsecase:
                 "user_stats": {
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
-                    "age": user_profile.age if user_profile else None,
-                    "gender": user_profile.gender if user_profile else None,
+                    "age": user_profile.user_data.get('age') if user_profile.user_data.get('age') is not None else 'No Information Available',
+                    "gender": user_profile.user_data.get('gender') if user_profile.user_data.get('gender') is not None else 'No Information Available',
                     "college": "college",
                     "email": user.email,
                     "phone": user_profile.phone if user_profile else None
