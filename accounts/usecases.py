@@ -14,6 +14,7 @@ from evaluation.models import AssessmentAttempt
 from evaluation.usecases import AssessmentUseCase
 from course.repositories import UploadVideoRepository
 from custom_auth.repositories import UserProfileRepository
+from datetime import datetime
 
 class BatchAllocationUsecase:
     @staticmethod
@@ -196,11 +197,33 @@ class StudentProfileUsecase:
             # Get last login info from user profile
             user_profile = UserProfileRepository.get(user.id)
             
+            def calculate_age(user_data):
+                try:
+                    if not user_data or 'sections' not in user_data:
+                        return 'No Information Available'
+                    
+                    # Find dob field in the sections
+                    for section in user_data['sections']:
+                        for field in section.get('fields', []):
+                            if field.get('name') == 'dob':
+                                dob_str = field.get('value')
+                                if not dob_str:
+                                    return 'No Information Available'
+                                
+                                dob = datetime.strptime(dob_str, '%Y-%m-%d')
+                                today = datetime.now()
+                                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                                return str(age)
+                                
+                    return 'No Information Available'
+                except (ValueError, TypeError):
+                    return 'No Information Available'
+
             return {
                 "user_stats": {
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
-                    "age": user_profile.user_data.get('age') if user_profile and user_profile.user_data else 'No Information Available',
+                    "age": calculate_age(user_profile.user_data),
                     "gender": user_profile.user_data.get('gender') if user_profile and user_profile.user_data else 'No Information Available',
                     "college": "college",
                     "email": user.email,
