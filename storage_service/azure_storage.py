@@ -69,11 +69,14 @@ class AzureStorageService(StorageServiceInterface):
         """
         blob_client = self.blob_service_client.get_blob_client(container_name, blob_name)
         
-        # Set content type if provided using ContentSettings
+        # Only set content type if it's provided AND different from current
         if content_type:
-            blob_client.set_http_headers(
-                content_settings=ContentSettings(content_type=content_type)
-            )
+            blob_properties = blob_client.get_blob_properties()
+            current_content_type = blob_properties.content_settings.content_type
+            if current_content_type != content_type:
+                blob_client.set_http_headers(
+                    content_settings=ContentSettings(content_type=content_type)
+                )
             
         sas_token = generate_blob_sas(
             account_name=blob_client.account_name,
