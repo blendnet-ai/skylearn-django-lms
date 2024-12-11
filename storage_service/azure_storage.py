@@ -2,7 +2,7 @@ import datetime
 
 from django.conf import settings
 
-from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions, ContentSettings
 
 from storage_service.interface import StorageServiceInterface
 
@@ -52,7 +52,7 @@ class AzureStorageService(StorageServiceInterface):
         with open(file_path, "wb") as fil:
             fil.write(self.read_blob(container_name, blob_name))
 
-    def _generate_sas_url(self, container_name, blob_name, expiry_time, allow_read, allow_write):
+    def _generate_sas_url(self, container_name, blob_name, expiry_time, allow_read, allow_write, content_type=None):
         """
         Generate a SAS URL for a blob.
 
@@ -60,33 +60,39 @@ class AzureStorageService(StorageServiceInterface):
             container_name (str): The name of the container.
             blob_name (str): The name of the blob.
             expiry_time (datetime): The expiry time of the SAS URL.
+            allow_read (bool): Whether to allow read access.
+            allow_write (bool): Whether to allow write access.
+            content_type (str, optional): The content type of the blob.
 
         Returns:
             str: The SAS URL for the blob.
         """
         blob_client = self.blob_service_client.get_blob_client(container_name, blob_name)
-
-        blob_account_name = blob_client.account_name
-        blob_container_name = blob_client.container_name
-
+        
+        # Set content type if provided using ContentSettings
+        if content_type:
+            blob_client.set_http_headers(
+                content_settings=ContentSettings(content_type=content_type)
+            )
+            
         sas_token = generate_blob_sas(
-            account_name=blob_account_name,
-            container_name=blob_container_name,
-            blob_name=blob_name,
+            account_name=blob_client.account_name,
+            container_name=blob_client.container_name,
+            blob_name=blob_client.blob_name,
             account_key=settings.STORAGE_ACCOUNT_KEY,
             permission=BlobSasPermissions(read=allow_read,
-                                          write=allow_write),
+                                        write=allow_write),
             expiry=expiry_time
         )
-
-        return f"https://{blob_account_name}.blob.core.windows.net/{blob_container_name}/{blob_name}?{sas_token}"
+        
+        return f"https://{blob_client.account_name}.blob.core.windows.net/{blob_client.container_name}/{blob_name}?{sas_token}"
 
     def generate_quick_read_url(self, *, container_name, blob_name, expiry_in_seconds=300):
         return self.generate_blob_access_url(container_name,blob_name,
                                       expiry_time=datetime.datetime.now()+datetime.timedelta(minutes=expiry_in_seconds*60),allow_read=True,
                                       allow_write=False)
 
-    def generate_blob_access_url(self, container_name, blob_name, expiry_time, allow_read, allow_write):
+    def generate_blob_access_url(self, container_name, blob_name, expiry_time, allow_read, allow_write, content_type=None):
         """
         Generate a access url for a blob.
 
@@ -94,11 +100,14 @@ class AzureStorageService(StorageServiceInterface):
             container_name (str): The name of the container.
             blob_name (str): The name of the blob.
             expiry_time (datetime): The expiry time of the SAS URL.
+            allow_read (bool): Whether to allow read access.
+            allow_write (bool): Whether to allow write access.
+            content_type (str, optional): The content type of the blob.
 
         Returns:
             str: The SAS URL for the blob.
         """
-        return self._generate_sas_url(container_name, blob_name, expiry_time, allow_read, allow_write)
+        return self._generate_sas_url(container_name, blob_name, expiry_time, allow_read, allow_write, content_type)
 
     def create_container(self, container_name):
         """

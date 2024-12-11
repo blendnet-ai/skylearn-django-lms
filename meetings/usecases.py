@@ -611,11 +611,34 @@ class MeetingUsecase:
         container_name = path_parts[0]
         blob_name = '/'.join(path_parts[1:]).replace('%20',' ')
 
+        # Determine content type based on file extension
+        content_type = None
+        file_extension = blob_name.lower().split('.')[-1] if '.' in blob_name else ''
+        
+        content_types = {
+            'pdf': 'application/pdf',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls': 'application/vnd.ms-excel',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif'
+        }
+        
+        content_type = content_types.get(file_extension, 'application/octet-stream')
+
         sas_url = storage_service.generate_blob_access_url(
             container_name, 
             blob_name,  
             expiry_time=datetime.now() + timedelta(hours=24), 
             allow_read=True, 
-            allow_write=False
+            allow_write=False,
+            content_type=content_type
         )
         return sas_url
