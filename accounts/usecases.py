@@ -224,7 +224,7 @@ class StudentProfileUsecase:
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
                     "age": calculate_age(user_profile.user_data),
-                    "gender": user_profile.user_data.get('gender') if user_profile and user_profile.user_data else 'No Information Available',
+                    "gender": user_profile.user_data.get('gender') if user_profile and user_profile.user_data and user_profile.user_data.get('gender') else 'No Information Available',
                     "college": "college",
                     "email": user.email,
                     "phone": user_profile.phone if user_profile else None
