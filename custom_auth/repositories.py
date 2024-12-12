@@ -151,22 +151,34 @@ class UserProfileRepository:
         return UserProfile.objects.all()
 
     @staticmethod
+            
     def get_onboarding_status_details(user_id):
         try:
+            user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.get(user_id__id=user_id)
             telegram_status=user_profile.is_telegram_connected
             mobile_status=user_profile.is_mobile_verified
             onboarding_status =user_profile.onboarding_complete
             otp = user_profile.otp
             cv_status = user_profile.cv_details.get("status") if user_profile.cv_details else None
-            onboarding_cv_status = cv_status in ["filled", "skipped"]
-            return {
-                "telegram_status": telegram_status,
-                "mobile_verification_status": mobile_status,
-                "onboarding_status": onboarding_status,
-                "onboarding_cv_status": onboarding_cv_status,
-                "otp": otp,
-            }
+            onboarding_cv_status = cv_status in ["filled", "skipped"]     
+
+            if user.is_lecturer:
+                return {
+                    "telegram_status": telegram_status,
+                    "mobile_verification_status": True,
+                    "onboarding_status": True,
+                    "onboarding_cv_status": True,
+                    "otp": otp,
+                }
+            else:            
+                return {
+                    "telegram_status": telegram_status,
+                    "mobile_verification_status": mobile_status,
+                    "onboarding_status": onboarding_status,
+                    "onboarding_cv_status": onboarding_cv_status,
+                    "otp": otp,
+                }
         except UserProfile.DoesNotExist:
             return None
 

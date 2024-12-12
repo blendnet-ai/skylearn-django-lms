@@ -149,6 +149,15 @@ class OnBoardingUsecase:
             )
             onboarding_status["role"] = role
             return onboarding_status
+        elif user.is_lecturer:
+            onboarding_status = UserProfileRepository.get_onboarding_status_details(
+                user.id
+            )
+            onboarding_status["telegram_url"] = (
+                f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
+            )
+            onboarding_status["role"] = role
+            return onboarding_status
         else:
             return {
                 "telegram_status": True,
