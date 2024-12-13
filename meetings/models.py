@@ -116,6 +116,22 @@ class Meeting(models.Model):
         Get the effective title, considering overrides
         """
         return self.title_override or self.series.title
+    
+    def get_participants(self):
+        """Get all participants (students and lecturer) for the meeting"""
+        participants = set()
+        
+        # Get all students from associated batches
+        batch_allocations = self.series.course_enrollments.all()
+        for allocation in batch_allocations:
+            students = allocation.batch.students.all()
+            participants.update([student.student for student in students])
+            
+        # Add the lecturer
+        if allocation.batch.lecturer:
+            participants.add(allocation.batch.lecturer)
+        
+        return participants
 
     class Meta:
         verbose_name = "Live Class"

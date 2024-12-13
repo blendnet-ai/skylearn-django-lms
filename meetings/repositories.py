@@ -165,3 +165,7 @@ class MeetingRepository:
 
         return Meeting.objects.none()
 
+    @staticmethod
+    def get_meetings_in_time_range(start_time, end_time):
+        return Meeting.objects.filter(start_date__range=(start_time, end_time)).select_related("series")
+
