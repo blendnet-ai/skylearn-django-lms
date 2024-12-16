@@ -121,6 +121,8 @@ PROJECT_APPS = [
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
     "meetings.apps.MeetingsConfig",
+    "reports.apps.ReportsConfig",
+    "events_logger.apps.EventsLoggerConfig"
 ]
 
 # apps from speechai

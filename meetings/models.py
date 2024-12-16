@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from django.db.models.signals import post_save,pre_delete
 from django.dispatch import receiver
 from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
-
+import uuid
+from django.conf import settings
 
 
 class MeetingSeries(models.Model):
@@ -116,10 +117,40 @@ class Meeting(models.Model):
         Get the effective title, considering overrides
         """
         return self.title_override or self.series.title
+    
+    @property
+    def get_participants(self):
+        """Get all participants (students and lecturer) for the meeting"""
+        participants = set()
+        
+        # Get all students from associated batches
+        batch_allocations = self.series.course_enrollments.all()
+        for allocation in batch_allocations:
+            students = allocation.batch.students.all()
+            print(students)
+            participants.update([student.student for student in students])
+            
+            # Add the lecturer
+            if allocation.batch.lecturer:
+                participants.add(allocation.batch.lecturer)
+        
+        return participants
 
     class Meta:
         verbose_name = "Live Class"
         verbose_name_plural = "Live Classes"
+
+
+class AttendanceRecord(models.Model):
+    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    attendance_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE)
+    attendance = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Attendance Record"
+        verbose_name_plural = "Attendance Records"
+        unique_together = (('user_id', 'meeting'))
 
 
 @receiver(post_save, sender=Meeting)

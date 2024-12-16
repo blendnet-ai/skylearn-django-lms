@@ -162,6 +162,10 @@ class UploadRepository:
             module=module,
             blob_url=blob_url
         )
+    
+    def get_reading_resource_by_id(resource_id):
+        resource=Upload.objects.filter(id=resource_id).first()
+        return resource
 
 class UploadVideoRepository:
     @staticmethod
@@ -185,5 +189,10 @@ class UploadVideoRepository:
     def get_video_count_by_course(course_id):
         videos = UploadVideo.objects.filter(course_id=course_id)
         return videos.count()
+    
+    def get_video_resource_by_id(resource_id):
+        resource=UploadVideo.objects.filter(id=resource_id).first()
+        return resource
+        
 
 

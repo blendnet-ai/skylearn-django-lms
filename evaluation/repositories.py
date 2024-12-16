@@ -307,6 +307,63 @@ class AssessmentAttemptRepository:
             logging.info(
                 f"No AssessmentAttempt found with assessment_id {assessment_id} and type {Question.Category.DSA_PRACTICE}"
             )
+    
+    @staticmethod
+    def get_total_assessment_duration_by_course_and_user(course_id, user_id):
+        """
+        Get total duration of all assessments completed by a user for a course
+        
+        Args:
+            course_id: The ID of the course
+            user_id: The ID of the user
+            
+        Returns:
+            dict: Contains:
+                - total_duration: Total duration of all assessments (timedelta)
+                - completed_count: Number of completed assessments
+                - total_count: Total number of assessments in course
+                - assessment_details: List of assessment details with durations
+        """
+        # Get all assessment configs linked to modules in this course
+        assessment_configs = AssessmentGenerationConfig.objects.filter(
+            modules__course_id=course_id,
+            enabled=True
+        ).distinct()
+
+        total_duration = timedelta()
+        completed_count = 0
+        assessment_details = []
+
+        for config in assessment_configs:
+            # Get completed assessment attempt for this config and user
+            assessment_attempt = AssessmentAttempt.objects.filter(
+                assessment_generation_config_id=config.assessment_generation_id,
+                user_id=user_id,
+                status=AssessmentAttempt.Status.COMPLETED
+            ).first()
+
+            if assessment_attempt:
+                # If there's a completed attempt, add test duration directly
+                test_duration = config.test_duration
+                
+                total_duration += test_duration
+                completed_count += 1
+                
+                assessment_details.append({
+                    'assessment_id': assessment_attempt.assessment_id,
+                    'assessment_name': config.assessment_display_name,
+                    'duration': test_duration,
+                    'start_time': assessment_attempt.start_time,
+                    'completion_time': assessment_attempt.updated_at,
+                    'status': 'completed'
+                })
+
+        return {
+            'total_duration': total_duration,
+            'completed_count': completed_count,
+            'total_count': assessment_configs.count(),
+            'assessment_details': assessment_details
+        }
 
 
 class UserEvalQuestionAttemptRepository:
