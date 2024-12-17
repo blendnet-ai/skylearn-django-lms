@@ -3,7 +3,7 @@ from django.utils import timezone
 import logging  # {{ edit_1 }}
 from .usecases import GenerateUserCourseReportsUseCase,DailyAggregationUsecase
 from django.contrib.auth import get_user_model
-from datetime import datetime
+from datetime import datetime, timedelta
 # {{ edit_2 }}
 logger = logging.getLogger(__name__)  # Setup logger
 User = get_user_model()
@@ -17,7 +17,7 @@ def process_reports():
 @shared_task(queue='notification_queue') 
 def generate_student_report(user_id):
     current_date = datetime.now().date()
-    GenerateUserCourseReportsUseCase.generate_report(user_id,current_date)
+    GenerateUserCourseReportsUseCase.generate_report(user_id)
     logger.info(f"started daily report creation for user {user_id}")
     
 

@@ -161,7 +161,6 @@ class StudentProfileUsecase:
             
             # Find dob field in the sections
             user_dob=UserProfileRepository.fetch_value_from_form('dob',user_data)
-            print('ads',user_dob)
             dob = datetime.strptime(user_dob, '%Y-%m-%d')
             today = datetime.now()
             age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))

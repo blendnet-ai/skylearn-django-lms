@@ -15,7 +15,7 @@ User = get_user_model()
 
 class GenerateUserCourseReportsUseCase:
     @staticmethod
-    def generate_report(user_id,date):
+    def generate_report(user_id):
         """
         Generate or update UserCourseReport records for all courses associated with a user.
         
@@ -34,8 +34,8 @@ class GenerateUserCourseReportsUseCase:
         courses = GenerateUserCourseReportsUseCase._get_user_courses(user_id)
         
         for course in courses:
-            daily_activites = DailyAggregationRepository.get_aggregations_by_user_daywise(user_id,date,course.id)
-            report=GenerateUserCourseReportsUseCase._create_or_update_course_report(user,daily_activites,course)
+            activites = DailyAggregationRepository.get_aggregations_by_user(user_id,course.id)
+            report=GenerateUserCourseReportsUseCase._create_or_update_course_report(user,activites,course)
             reports.append(report)
 
         return reports
@@ -50,17 +50,22 @@ class GenerateUserCourseReportsUseCase:
 
     def _create_or_update_course_report(user, daily_activites,course):
         assessment_time=timedelta(0)
-        resource_time=timedelta(0)
+        resource_reading_time=timedelta(0)
+        resource_video_time=timedelta(0)
+        time_spent_live_classes=timedelta(0)
         total_classes=0
         total_classes_attended=0
         
         for activity in daily_activites:
             if activity.type_of_aggregation=="assessment":
                 assessment_time+=assessment_time+activity.time_spent
-            elif activity.type_of_aggregation=="resource":
-                resource_time+=resource_time+activity.time_spent
+            elif activity.type_of_aggregation=="resource_reading":
+                resource_reading_time+=resource_reading_time+activity.time_spent
+            elif activity.type_of_aggregation=="resource_video":
+                resource_video_time+=resource_video_time+activity.time_spent
             elif activity.type_of_aggregation=="live_class":
                 if activity.time_spent != timedelta(0):
+                    time_spent_live_classes+=time_spent_live_classes+activity.time_spent
                     total_classes_attended+=1;
                     total_classes+=1;
                 else:
@@ -70,10 +75,12 @@ class GenerateUserCourseReportsUseCase:
 
         defaults = {
             'assessment_time': assessment_time,
-            'resource_time': resource_time,
+            'resource_time_reading': resource_reading_time,
+            'resource_time_video':resource_video_time,
             'total_classes': total_classes,
             'classes_attended': total_classes_attended,
-            'total_time_spent': assessment_time + resource_time
+            'time_spent_in_live_classes':time_spent_live_classes,
+            'total_time_spent': time_spent_live_classes + resource_reading_time+resource_video_time
         }
 
         return UserCourseReportRepository.get_or_create(
@@ -120,11 +127,14 @@ class DailyAggregationUsecase:
     @staticmethod
     def _aggregate_resources(user_id, course_id, date):
         resources = PageEventRepository.get_daily_resources_consumption_by_date_course_user(user_id=user_id, course_id=course_id, date=date)
+        
         for resource in resources:
+            type_of_aggregation = 'resource_reading' if resource.pdf_id is not None else 'resource_video'
+
             DailyAggregationRepository.get_or_create_daily_aggregation(
                 user_id=user_id,
                 date=date,
                 course_id=course_id,
-                type_of_aggregation='resource',
+                type_of_aggregation=type_of_aggregation,
                 time_spent=resource.time_spent
             )

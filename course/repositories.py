@@ -50,7 +50,7 @@ class CourseRepository:
     @staticmethod
     def get_all_courses():
         return Course.objects.all().values()
-
+    
     @staticmethod
     def get_courses_for_course_provider_admin(course_provider_admin_id):
         return Course.objects.filter(
@@ -90,6 +90,9 @@ class BatchRepository:
         batch.lecturer = lecturer
         batch.save()
         return batch
+    
+    def get_all_batches():
+        return Batch.objects.all()
 
 
 class LiveClassSeriesBatchAllocationRepository:
