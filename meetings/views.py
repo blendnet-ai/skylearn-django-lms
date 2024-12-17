@@ -27,8 +27,8 @@ class MarkAttendanceAndRedirect(APIView):
         return redirect(meeting_link)
 
 class GetJoiningUrl(APIView):
-    # permission_classes = [IsLoggedIn]
-    # authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
     def get(self, request):
         # user_id=request.user.id
         # meeting_id=request.data.get('meeting_id',None)
