@@ -17,15 +17,14 @@ from datetime import datetime
 
 
 class logEvent(APIView):
-    # permission_classes = [IsLoggedIn]
-    # authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
     
     def post(self, request):
         content_id = request.data.get('content_id')
         content_type=request.data.get('content_type')
         time_spent=request.data.get('time_spent')
         current_date = datetime.now().date()
-        user=User.objects.get(id=46)
 
         if not content_id or not content_type:
             return Response({"error": "content_id and content_type are required."}, status=status.HTTP_400_BAD_REQUEST)

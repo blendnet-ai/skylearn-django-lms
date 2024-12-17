@@ -30,10 +30,10 @@ class GetJoiningUrl(APIView):
     permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
     def get(self, request):
-        # user_id=request.user.id
-        # meeting_id=request.data.get('meeting_id',None)
-        user_id=46
-        meeting_id=117
+        user_id=request.user.id
+        meeting_id=request.data.get('meeting_id',None)
+        # user_id=46
+        # meeting_id=117
         if meeting_id is None:
             return Response({'error':'meeting_id required'},status=status.HTTP_400_BAD_REQUEST)
         joining_url=MeetingAttendanceUseCase.get_joining_url(user_id=user_id,meeting_id=meeting_id)
