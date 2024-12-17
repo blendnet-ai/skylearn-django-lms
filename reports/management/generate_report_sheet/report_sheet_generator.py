@@ -170,31 +170,7 @@ def populate_sheet_6(data):
         })
     return final_data
 
-# Fetch all data once
-all_data = fetch_all_required_data()
 
-# Call functions to populate data for each sheet
-BN_Users_data = populate_sheet_1(all_data)
-BN_Courses_data = populate_sheet_2(all_data)
-BN_Batches_data = populate_sheet_3(all_data)
-BN_Enrollments_data = populate_sheet_4(all_data)
-AFH_data = populate_sheet_5(all_data)
-Orbit_data = populate_sheet_6(all_data)
-
-gd_wrapper = GDWrapper('1Xr6k01UA_LLZoOhVDoaVu276pCL7pw0xwBdFStzREOM')
-gd_wrapper.update_sheet('BN_Users',BN_Users_data)
-gd_wrapper.update_sheet('BN_Courses',BN_Courses_data)
-gd_wrapper.update_sheet('BN_Batches',BN_Batches_data)
-gd_wrapper.update_sheet('BN_Enrollments',BN_Enrollments_data)
-gd_wrapper.update_sheet('AFH',AFH_data)
-gd_wrapper.update_sheet('Orbit',Orbit_data)
-
-new_spreadsheet_name = (
-    f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
-)
-gd_wrapper.rename_spreadsheet(new_spreadsheet_name)
-
-# You can now proceed to update the sheets with the corresponding data
 
 
 def report_sheet_generator():
