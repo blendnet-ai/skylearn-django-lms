@@ -246,3 +246,34 @@ class AttendaceRecordRepository:
             'total_classes': total_classes,
             'attendance_percentage': attendance_percentage
         }
+        
+    
+    def get_attended_meetings_for_user_on_day(user_id: int, course_id:int, date: datetime) -> list:
+        """
+        Get all meetings attended by a user on a specific day.
+
+        Args:
+            user_id (int): ID of the user
+            date (datetime): Date for which to fetch attended meetings
+
+        Returns:
+            list: List of meetings attended by the user on the specified date
+        """
+        # Filter attendance records for the user on the specified date
+        attended_meetings = AttendanceRecord.objects.filter(
+            user_id=user_id,
+            meeting__start_date=date,
+            meeting__series__course_enrollments__batch__course_id=course_id
+        )
+
+        # Convert the QuerySet to a list of dictionaries containing meeting details
+        meetings_list = []
+        for record in attended_meetings:
+            meeting = record.meeting
+            meetings_list.append({
+                'meeting_id': meeting.id,
+                'course': meeting.course.id if meeting.course else None,
+                'duration':meeting.duration if record.attendance else timedelta(0)
+            })
+
+        return meetings_list

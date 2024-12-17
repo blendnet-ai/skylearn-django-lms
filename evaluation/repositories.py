@@ -364,6 +364,43 @@ class AssessmentAttemptRepository:
             'total_count': assessment_configs.count(),
             'assessment_details': assessment_details
         }
+    
+    def fetch_daily_assessments_with_time_spent(user_id, date, course_id):
+        """
+        Fetch daily assessments for a user along with the time spent on each assessment for a specific course.
+
+        Args:
+            user_id: The ID of the user
+            date: The date for which to fetch assessments (should be a datetime.date object)
+            course_id: The ID of the course
+
+        Returns:
+            list: A list of dictionaries containing assessment details and time spent
+        """
+        assessments = AssessmentAttempt.objects.filter(
+            user_id_id=user_id,
+            updated_at__date=date,
+            assessment_generation_config_id__modules__course_id=course_id, 
+            status=AssessmentAttempt.Status.COMPLETED
+        ).values(
+            'assessment_id',
+            'start_time',
+            'updated_at',
+            'test_duration'
+        )
+
+        daily_assessments = []
+        for assessment in assessments:
+            time_spent = (assessment['updated_at'] - assessment['start_time']).total_seconds() if assessment['start_time'] else 0
+            daily_assessments.append({
+                'assessment_id': assessment['assessment_id'],
+                'time_spent': time_spent,
+                'start_time': assessment['start_time'],
+                'updated_at': assessment['updated_at'],
+                'test_duration': assessment['test_duration'],
+            })
+
+        return daily_assessments
 
 
 class UserEvalQuestionAttemptRepository:

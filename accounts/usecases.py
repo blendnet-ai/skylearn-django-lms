@@ -14,7 +14,10 @@ from evaluation.models import AssessmentAttempt
 from evaluation.usecases import AssessmentUseCase
 from course.repositories import UploadVideoRepository
 from custom_auth.repositories import UserProfileRepository
-from datetime import datetime
+from datetime import datetime,timedelta
+from evaluation.repositories import AssessmentAttemptRepository
+from meetings.repositories import AttendaceRecordRepository
+from events_logger.repositories import PageEventRepository
 
 class BatchAllocationUsecase:
     @staticmethod
@@ -151,38 +154,46 @@ class RoleAssignmentUsecase:
 
 
 class StudentProfileUsecase:
+    def _calculate_age(user_data):
+        try:
+            if not user_data or 'sections' not in user_data:
+                return 'No Information Available'
+            
+            # Find dob field in the sections
+            user_dob=UserProfileRepository.fetch_value_from_form('dob',user_data)
+            print('ads',user_dob)
+            dob = datetime.strptime(user_dob, '%Y-%m-%d')
+            today = datetime.now()
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            return str(age)
+                        
+        except (ValueError, TypeError):
+            return 'No Information Available'
     @staticmethod
     def get_student_profile(student_id):
         try:
             # Get student and user info
             student = StudentRepository.get_student_by_student_id(student_id)
             user = student.student
-            
             # Get student batches and course info
             student_batches = StudentRepository.get_batches_by_student_id(student_id)
             
             # Get assessment data
-            assessment_data = AssessmentUseCase.fetch_history_data(student_id)
             # Build courses enrolled data
+            learning_time = timedelta(seconds=0)
             courses_enrolled = []
             for batch in student_batches:
                 course = batch.course
-                
+                total_time_spent_on_resources = PageEventRepository.get_total_time_spent_by_user_on_resources_in_course(user, course.id)
+                attendance_data = AttendaceRecordRepository.get_total_classes_attended_by_user_for_course(user.id, course.id)
+                assessments_data = AssessmentAttemptRepository.get_total_assessment_duration_by_course_and_user(course.id, user.id)
                 # Get video stats
                 total_videos = UploadVideoRepository.get_video_count_by_course(course.id)
-                videos_watched = 2 #TODO: Implement actual video watched logic
-                
-                # Get assessment stats for the course
-                course_assessments = set()
-                for a in assessment_data.get('attempted_list', []):
-                    if a.get('course_code') == course.code and int(a.get('status')) == int(AssessmentAttempt.Status.COMPLETED):
-                        course_assessments.add((a.get('module_name'), a.get('course_code'), a.get('assessment_config_id')))
-                
-                total_assessments = CourseRepository.get_assessment_count_by_course_id(course.id)
-                
-                # Calculate attendance (placeholder - implement actual attendance logic)
-                attendance = 78  #TODO: Implement actual attendance calculation
-                
+                videos_watched = PageEventRepository.get_total_videos_watched_by_user_in_course(user, course)
+                total_assessments = assessments_data.get('total_count')
+                completed_count = assessments_data.get('completed_count')
+                attendance = attendance_data.get('attendance_percentage')
+                learning_time += (total_time_spent_on_resources + assessments_data.get('total_duration'))  # Convert seconds to hours
                 courses_enrolled.append({
                     "course_id": course.code,
                     "course_name": course.title,
@@ -190,49 +201,28 @@ class StudentProfileUsecase:
                     "attendance": attendance,
                     "videos_watched": videos_watched,
                     "total_videos": total_videos,
-                    "assessments_attempted": len(course_assessments),
+                    "assessments_attempted": completed_count,
                     "total_assessments": total_assessments
                 })
 
             # Get last login info from user profile
             user_profile = UserProfileRepository.get(user.id)
             
-            def calculate_age(user_data):
-                try:
-                    if not user_data or 'sections' not in user_data:
-                        return 'No Information Available'
-                    
-                    # Find dob field in the sections
-                    for section in user_data['sections']:
-                        for field in section.get('fields', []):
-                            if field.get('name') == 'dob':
-                                dob_str = field.get('value')
-                                if not dob_str:
-                                    return 'No Information Available'
-                                
-                                dob = datetime.strptime(dob_str, '%Y-%m-%d')
-                                today = datetime.now()
-                                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                                return str(age)
-                                
-                    return 'No Information Available'
-                except (ValueError, TypeError):
-                    return 'No Information Available'
 
             return {
                 "user_stats": {
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
-                    "age": calculate_age(user_profile.user_data),
+                    "age": StudentProfileUsecase._calculate_age(user_profile.user_data),
                     "gender": user_profile.user_data.get('gender') if user_profile and user_profile.user_data and user_profile.user_data.get('gender') else 'No Information Available',
                     "college": "college",
                     "email": user.email,
-                    "phone": user_profile.phone if user_profile else None
+                    "phone": user_profile.phone if user_profile.phone else "No Information available"
                 },
                 "engagement_stats": {
                     "last_login_date": user.last_login.date() if user.last_login else None,
                     "last_login_time": user.last_login.time() if user.last_login else None,
-                    "total_learning_time": "20"
+                    "total_learning_time": learning_time / 3600
                 },
                 "courses_enrolled": courses_enrolled
             }
