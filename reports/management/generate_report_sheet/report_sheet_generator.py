@@ -88,10 +88,9 @@ def populate_sheet_2(data):
     course_data = []
     for course_id, course in data['course_map'].items():
         course_data.append({
-            "name": course.get('title'),
-            "id": course.get('id'),
-            "duration": course.get('duration'),
-            "code": course.get('code')
+            "Course Name": course.get('title'),
+            "Course ID": course.get('id'),
+            "Course Duration (in hours)": course.get('duration')
         })
     return course_data
 
@@ -100,9 +99,9 @@ def populate_sheet_3(data):
     batch_data = []
     for batch_id, batch in data['batch_map'].items():
         batch_data.append({
-            "batch id": batch.id,
-            "course_id": batch.course_id,
-            "start date": batch.created_at.date()
+            "Batch ID": batch.id,
+            "Course ID": batch.course_id,
+            "Start Date": batch.created_at.date()
         })
     return batch_data
 
@@ -115,11 +114,11 @@ def populate_sheet_4(data):
         if student_profile:
             for course_batch in courses_batches:
                 student_batch_data.append({
-                    "student id": student_id,
-                    "batch id": course_batch['batch_id'],
-                    "course name":course_batch['course_name'],
-                    "enrollment date":  course_batch['enrolled date'],
-                    "section": None
+                    "StudentID": student_id,
+                    "BatchID": course_batch['batch_id'],
+                    "Course Name":course_batch['course_name'],
+                    "Enrollment Date":  course_batch['enrolled date'],
+                    "Section": None
                 })
 
     return student_batch_data
@@ -161,26 +160,28 @@ def populate_sheet_6(data):
         course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), None)
         user = report.user  # User object is accessible directly from the report
         final_data.append({
-            'id': report.id,
-            'first name': user.first_name,  # From User model
-            'last name': user.last_name,  # From User model
-            'gender': UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
-            'dob': UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
-            'email': user.email,  # From User model
-            'state': UserProfileRepository.fetch_value_from_form('state', user_profile.user_data),
-            'district': UserProfileRepository.fetch_value_from_form('district', user_profile.user_data),
-            'department': UserProfileRepository.fetch_value_from_form('department', user_profile.user_data),
-            'project': UserProfileRepository.fetch_value_from_form('project', user_profile.user_data),
-            'phone': user_profile.phone,  # From UserProfile
-            'course_name': course_info.get("course_name"),
-            'batch id': course_info.get("batch_id"),
-            'total time spent on videos': report.resource_time_video,
-            'total time spent on reading': report.resource_time_reading,
-            'total time spent in live classes': report.time_spent_in_live_classes,
-            'total_learning_time': report.total_time_spent,
-            'number of classes attended': report.classes_attended,
-            'number of classes missed': report.total_classes - report.classes_attended,
-            'attendance_percentage': (report.classes_attended / (report.classes_attended + (report.total_classes - report.classes_attended))) * 100 if report.total_classes else 0
+            'Student ID': user.id,
+            'First Name': user.first_name,  # From User model
+            'Last Name': user.last_name,  # From User model
+            'Project': UserProfileRepository.fetch_value_from_form('project', user_profile.user_data),
+            'DOB': UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
+            'Gender': UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
+            'Email': user.email,  # From User model
+            'Phone Number': user_profile.phone,  # From UserProfile
+            'Department': UserProfileRepository.fetch_value_from_form('department', user_profile.user_data),
+            'State': UserProfileRepository.fetch_value_from_form('state', user_profile.user_data),
+            'District': UserProfileRepository.fetch_value_from_form('district', user_profile.user_data),
+            'Course Name': course_info.get("course_name"),
+            'Batch ID': course_info.get("batch_id"),
+
+           
+            'Time Spent on Videos (in mins)': report.resource_time_video,
+            'Time Spent on Reading ': report.resource_time_reading,
+            'Time Spent in Live Classes': report.time_spent_in_live_classes,
+            'Total Learning Time': report.total_time_spent,
+            'Number of classes attended': report.classes_attended,
+            'Number of classes missed': report.total_classes - report.classes_attended,
+            'Attendance %': (report.classes_attended / (report.classes_attended + (report.total_classes - report.classes_attended))) * 100 if report.total_classes else 0
         })
     return final_data
 
