@@ -37,13 +37,22 @@ def fetch_all_required_data():
     # Create a map of user_id to course_name and batch_id for each student
     user_course_batch_map = {}
     for student in students:
-        batches = list(student.batches.all())  # Fetch all related batches
-        batch_id = batches[0].id if batches else None
-        course_name = batch_map.get(batch_id).course.title if batch_id else None
-        user_course_batch_map[student.student.id] = {
-            "course_name": course_name,
-            "batch_id": batch_id
-        }
+        # Fetch all related batches
+        batches = list(student.batches.all())  
+        user_course_batch_map[student.student.id] = []
+
+        for batch in batches:
+            batch_id = batch.id
+            course_name,course_id = batch_map.get(batch_id).course.title,batch_map.get(batch_id).course.id if batch_id in batch_map else None
+
+            # Add batch details to the student's list of batches
+            user_course_batch_map[student.student.id].append({
+                "course_name": course_name,
+                "batch_id": batch_id,
+                "course_id":course_id,
+                "enrolled date":batch.created_at.date()
+            })
+
 
     # Return all the data as a dictionary for easy passing
     return {
@@ -93,22 +102,26 @@ def populate_sheet_3(data):
         batch_data.append({
             "batch id": batch.id,
             "course_id": batch.course_id,
-            "start date": batch.created_at
+            "start date": batch.created_at.date()
         })
     return batch_data
 
 # Function for Sheet 4 - Populate student batch association
 def populate_sheet_4(data):
     student_batch_data = []
-    for student in data['students']:
-        batches = list(student.batches.all())  # Fetch all related batches
-        batch_id = batches[0].id if batches else None
-        student_batch_data.append({
-            "student id": student.student.id,
-            "batch id": batch_id,
-            "enrollment date": student.student.date_joined,
-            "section": None
-        })
+
+    for student_id, courses_batches in data['user_course_batch_map'].items():
+        student_profile = data['user_profiles_map'].get(student_id)
+        if student_profile:
+            for course_batch in courses_batches:
+                student_batch_data.append({
+                    "student id": student_id,
+                    "batch id": course_batch['batch_id'],
+                    "course name":course_batch['course_name'],
+                    "enrollment date":  course_batch['enrolled date'],
+                    "section": None
+                })
+
     return student_batch_data
 
 # Function for Sheet 5 - Populate user profile and additional data
@@ -144,7 +157,8 @@ def populate_sheet_6(data):
 
     for report in reports_data:
         user_profile = data['user_profiles_map'].get(report.user_id)
-        course_info = data['user_course_batch_map'].get(report.user_id)
+        course_info_list = data['user_course_batch_map'].get(report.user_id, [])
+        course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), None)
         user = report.user  # User object is accessible directly from the report
         final_data.append({
             'id': report.id,
