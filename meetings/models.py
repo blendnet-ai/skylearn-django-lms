@@ -159,8 +159,7 @@ def meeting_post_save(sender, instance, created, **kwargs):
     Signal handler to create Teams meeting when a new meeting is created
     """
     if created:
-       # create_teams_meeting_task.delay(instance.id)
-       pass
+       create_teams_meeting_task.delay(instance.id)
     elif not created:
         #in case of update created is false
         update_teams_meeting_task.delay(instance.id)
