@@ -25,13 +25,13 @@ class UserCourseReportRepository:
     
 class DailyAggregationRepository:
     @staticmethod
-    def get_or_create_daily_aggregation(user_id,course_id, date, type_of_aggregation, time_spent):
+    def get_or_create_daily_aggregation(user_id,course_id, date, type_of_aggregation, time_spent,reference_id):
         aggregation, created = DailyAggregation.objects.get_or_create(
             user_id=user_id,
             course_id=course_id,
             date=date,
             type_of_aggregation=type_of_aggregation,
-            defaults={'time_spent': time_spent}
+            defaults={'time_spent': time_spent,'reference_id':reference_id}
         )
         
         if not created:

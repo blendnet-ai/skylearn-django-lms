@@ -58,14 +58,14 @@ class GenerateUserCourseReportsUseCase:
         
         for activity in daily_activites:
             if activity.type_of_aggregation=="assessment":
-                assessment_time+=assessment_time+activity.time_spent
+                assessment_time=assessment_time+activity.time_spent
             elif activity.type_of_aggregation=="resource_reading":
-                resource_reading_time+=resource_reading_time+activity.time_spent
+                resource_reading_time=resource_reading_time+activity.time_spent
             elif activity.type_of_aggregation=="resource_video":
-                resource_video_time+=resource_video_time+activity.time_spent
+                resource_video_time=resource_video_time+activity.time_spent
             elif activity.type_of_aggregation=="live_class":
                 if activity.time_spent != timedelta(0):
-                    time_spent_live_classes+=time_spent_live_classes+activity.time_spent
+                    time_spent_live_classes=time_spent_live_classes+activity.time_spent
                     total_classes_attended+=1;
                     total_classes+=1;
                 else:
@@ -109,7 +109,8 @@ class DailyAggregationUsecase:
                 date=date,
                 course_id=course_id,
                 type_of_aggregation='assessment',
-                time_spent=attempt.get('test_duration')
+                time_spent=attempt.get('test_duration'),
+                reference_id=attempt.get('assessment_id')
             )
 
     @staticmethod
@@ -121,7 +122,8 @@ class DailyAggregationUsecase:
                 date=date,
                 course_id=course_id,
                 type_of_aggregation='live_class',
-                time_spent=meeting.get('duration') 
+                time_spent=meeting.get('duration'),
+                reference_id=meeting.get('meeting_id')
             )
 
     @staticmethod
@@ -130,11 +132,13 @@ class DailyAggregationUsecase:
         
         for resource in resources:
             type_of_aggregation = 'resource_reading' if resource.pdf_id is not None else 'resource_video'
+            reference_id=resource.pdf_id if resource.pdf_id else resource.video_id
 
             DailyAggregationRepository.get_or_create_daily_aggregation(
                 user_id=user_id,
                 date=date,
                 course_id=course_id,
                 type_of_aggregation=type_of_aggregation,
-                time_spent=resource.time_spent
+                time_spent=resource.time_spent,
+                reference_id=reference_id
             )
