@@ -17,6 +17,7 @@ class UserCourseReport(models.Model):
     resource_time_video = models.DurationField(default=timedelta())
     resource_time_reading=models.DurationField(default=timedelta())
     time_spent_in_live_classes=models.DurationField(default=timedelta())
+    time_spent_in_recording_classes=models.DurationField(default=timedelta())
     # Classes attended data
     total_classes = models.IntegerField(default=0)
     classes_attended = models.IntegerField(default=0)

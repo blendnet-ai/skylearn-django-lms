@@ -3,15 +3,19 @@ from django.utils import timezone
 from datetime import timedelta
 from datetime import time, datetime, timedelta
 from django.db import models
+from django.db.models import Sum, DurationField, ExpressionWrapper, F
+from datetime import timedelta
+
 
 class PageEventRepository:
     @staticmethod
-    def get_or_create_page_event(user, date, watched, time_spent, upload=None, upload_video=None):
+    def get_or_create_page_event(user, date, watched, time_spent, upload=None, upload_video=None, recording=None):
         page_event, created = PageEvent.objects.get_or_create(
             user=user,
             date=date,
             pdf=upload,
             video=upload_video,
+            recording=recording,
             defaults={
                 'watched': watched,
                 'time_spent': time_spent
@@ -19,25 +23,9 @@ class PageEventRepository:
         )
         return page_event, created
     @staticmethod
-    def add_time_to_user_time(page_event,time_to_add):
-        # Convert time_to_add string to timedelta
-        if isinstance(time_to_add, str):
-            time_parts = list(map(int, time_to_add.split(':')))
-            time_to_add = timedelta(hours=time_parts[0], minutes=time_parts[1], seconds=time_parts[2])
-        
-        # Add the new time
-        total_seconds = page_event.time_spent.hour * 3600 + page_event.time_spent.minute * 60 + page_event.time_spent.second
-        time_to_add_seconds = time_to_add.seconds
-        
-        new_total_seconds = total_seconds + time_to_add_seconds
-        
-        # Convert back to hours, minutes, seconds
-        hours = new_total_seconds // 3600
-        minutes = (new_total_seconds % 3600) // 60
-        seconds = new_total_seconds % 60
-        page_event.watched=True
-        # Create a new time object
-        page_event.time_spent = time(hour=hours, minute=minutes, second=seconds)
+    def add_time_to_user_time(page_event, time_to_add):        
+        page_event.time_spent += time_to_add
+        page_event.watched = True
         page_event.save()
         
         return page_event
@@ -61,17 +49,20 @@ class PageEventRepository:
         ).filter(
             # Filter for either uploads or upload_videos that belong to the course
             models.Q(pdf__course=course) | 
-            models.Q(video__course=course)
+            models.Q(video__course=course)|
+            models.Q(recording__series__course_enrollments__batch__course=course)
         )
 
-        total_seconds = 0
-        for event in page_events:
-            if event.time_spent:
-                # Convert time_spent to total seconds directly
-                total_seconds += event.time_spent.total_seconds()  # Updated line
-
-        # Convert total seconds to timedelta
-        return timedelta(seconds=total_seconds)
+        # Sum the time_spent field
+        total_time_spent = page_events.aggregate(
+            total_time=Sum(ExpressionWrapper(F('time_spent'), output_field=DurationField()))
+        )['total_time']
+        
+        # Ensure total_time_spent is not None
+        if total_time_spent is None:
+            total_time_spent = timedelta(0)
+        
+        return total_time_spent
     
 
     @staticmethod
@@ -116,7 +107,8 @@ class PageEventRepository:
         ).filter(
             # Filter for either uploads or upload_videos that belong to the course
             models.Q(pdf__course__id=course_id) | 
-            models.Q(video__course__id=course_id)
+            models.Q(video__course__id=course_id)|
+            models.Q(recording__series__course_enrollments__batch__course_id=course_id)
         )
         
         return daily_resources

@@ -53,6 +53,7 @@ class GenerateUserCourseReportsUseCase:
         resource_reading_time=timedelta(0)
         resource_video_time=timedelta(0)
         time_spent_live_classes=timedelta(0)
+        time_spent_recording_classes=timedelta(0)
         total_classes=0
         total_classes_attended=0
         
@@ -70,6 +71,8 @@ class GenerateUserCourseReportsUseCase:
                     total_classes+=1;
                 else:
                     total_classes+=1;
+            elif activity.type_of_aggregation=="resource_recording":
+                time_spent_recording_classes=time_spent_recording_classes+activity.time_spent
                     
             
 
@@ -80,7 +83,8 @@ class GenerateUserCourseReportsUseCase:
             'total_classes': total_classes,
             'classes_attended': total_classes_attended,
             'time_spent_in_live_classes':time_spent_live_classes,
-            'total_time_spent': time_spent_live_classes + resource_reading_time+resource_video_time
+            'time_spent_in_recording_classes':time_spent_recording_classes,
+            'total_time_spent': time_spent_live_classes + resource_reading_time+resource_video_time+time_spent_recording_classes
         }
 
         return UserCourseReportRepository.get_or_create(
@@ -131,8 +135,17 @@ class DailyAggregationUsecase:
         resources = PageEventRepository.get_daily_resources_consumption_by_date_course_user(user_id=user_id, course_id=course_id, date=date)
         
         for resource in resources:
-            type_of_aggregation = 'resource_reading' if resource.pdf_id is not None else 'resource_video'
-            reference_id=resource.pdf_id if resource.pdf_id else resource.video_id
+            if resource.pdf_id is not None:
+                type_of_aggregation = 'resource_reading'
+                reference_id = resource.pdf_id
+            elif resource.video_id is not None:
+                type_of_aggregation = 'resource_video'
+                reference_id = resource.video_id
+            elif resource.recording_id is not None:
+                type_of_aggregation = 'resource_recording'
+                reference_id = resource.recording_id
+            else:
+                raise ValueError("Resource must have either a pdf_id, video_id, or recording_id")
 
             DailyAggregationRepository.get_or_create_daily_aggregation(
                 user_id=user_id,
