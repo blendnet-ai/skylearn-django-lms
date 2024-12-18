@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from django.db.models.signals import post_save,pre_delete
 from django.dispatch import receiver
 from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
-
+import uuid
+from django.conf import settings
 
 
 class MeetingSeries(models.Model):
@@ -117,6 +118,7 @@ class Meeting(models.Model):
         """
         return self.title_override or self.series.title
     
+    @property
     def get_participants(self):
         """Get all participants (students and lecturer) for the meeting"""
         participants = set()
@@ -125,11 +127,12 @@ class Meeting(models.Model):
         batch_allocations = self.series.course_enrollments.all()
         for allocation in batch_allocations:
             students = allocation.batch.students.all()
+            print(students)
             participants.update([student.student for student in students])
             
-        # Add the lecturer
-        if allocation.batch.lecturer:
-            participants.add(allocation.batch.lecturer)
+            # Add the lecturer
+            if allocation.batch.lecturer:
+                participants.add(allocation.batch.lecturer)
         
         return participants
 
@@ -138,13 +141,25 @@ class Meeting(models.Model):
         verbose_name_plural = "Live Classes"
 
 
+class AttendanceRecord(models.Model):
+    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    attendance_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE)
+    attendance = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Attendance Record"
+        verbose_name_plural = "Attendance Records"
+        unique_together = (('user_id', 'meeting'))
+
+
 @receiver(post_save, sender=Meeting)
 def meeting_post_save(sender, instance, created, **kwargs):
     """
     Signal handler to create Teams meeting when a new meeting is created
     """
     if created:
-        create_teams_meeting_task.delay(instance.id)
+       create_teams_meeting_task.delay(instance.id)
     elif not created:
         #in case of update created is false
         update_teams_meeting_task.delay(instance.id)

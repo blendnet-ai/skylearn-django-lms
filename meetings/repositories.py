@@ -1,10 +1,10 @@
-from meetings.models import Meeting, MeetingSeries
+from meetings.models import Meeting, MeetingSeries,AttendanceRecord
 import typing
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, DatabaseError
 from datetime import datetime, timedelta, timezone
 import pytz
-from django.db.models import Q
+from django.db.models import Q,Count
 
 # Define the Indian timezone
 ist = pytz.timezone('Asia/Kolkata')
@@ -164,8 +164,143 @@ class MeetingRepository:
             ).distinct()
 
         return Meeting.objects.none()
+    
+    @staticmethod
+    def get_completed_meetings_in_past_24_hours_with_recordings():
+        """
+        Get meetings that:
+        1. Have ended (based on start_time + duration)
+        2. Have recording_metadata
+        3. Haven't sent absent notifications yet
+        """
+        now = datetime.now(ist)
+        potential_meetings = Meeting.objects.filter(
+            start_date__gte=now - timedelta(hours=24),
+            blob_url__isnull=False,  
+            blob_url__gt=''
+        ).select_related("series")
+        return potential_meetings
+
+class AttendaceRecordRepository:
+    @staticmethod
+    def create_attendance_records(meeting, participants):
+        """
+        Create attendance records for all participants for a given meeting.
+        
+        :param meeting: The Meeting instance for which attendance records are created.
+        :param participants: A list of dictionaries containing participant details, 
+                            each with a 'user_id' key.
+        """
+        attendance_records = []
+        print("asdd",participants)
+        for participant in participants:
+            attendance_record = AttendanceRecord(
+                meeting=meeting,
+                user_id=participant,
+                attendance=False
+            )
+            attendance_records.append(attendance_record)
+        
+        # Bulk create attendance records to optimize database operations
+        AttendanceRecord.objects.bulk_create(attendance_records)
+    
+    @staticmethod
+    def get_attendance_record(attendance_id):
+        return AttendanceRecord.objects.filter(attendance_id=attendance_id).first()
 
     @staticmethod
-    def get_meetings_in_time_range(start_time, end_time):
-        return Meeting.objects.filter(start_date__range=(start_time, end_time)).select_related("series")
+    def mark_attendance(attendance_record):
+        attendance_record.attendance = True
+        attendance_record.save()
+        return attendance_record
 
+    @staticmethod
+    def get_or_create_attendance_record(user_id, meeting_id):
+        return AttendanceRecord.objects.get_or_create(
+            user_id=user_id,
+            meeting_id=meeting_id
+        )
+        
+    @staticmethod
+    def get_total_classes_attended_by_user_for_course(user_id: int, course_id: int) -> dict:
+        """
+        Get total classes attended by a user for a specific course.
+        
+        Args:
+            user_id (int): ID of the user
+            course_id (int): ID of the course
+            
+        Returns:
+            dict: Contains total classes attended and total classes held
+            Example: {
+                'classes_attended': 10,
+                'total_classes': 15,
+                'attendance_percentage': 66.67
+            }
+        """
+        
+        # Get all attendance records for meetings in this course's batches
+        total_classes = AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__batch__course_id=course_id,
+            user_id=user_id
+        ).count()
+        
+        # Get count of attended classes
+        attended_classes = AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__batch__course_id=course_id,
+            user_id=user_id,
+            attendance=True
+        ).count()
+        
+        # Calculate attendance percentage
+        attendance_percentage = 0
+        if total_classes > 0:
+            attendance_percentage = round((attended_classes / total_classes) * 100, 2)
+            
+        return {
+            'classes_attended': attended_classes,
+            'total_classes': total_classes,
+            'attendance_percentage': attendance_percentage
+        }
+        
+    
+    def get_attended_meetings_for_user_on_day(user_id: int, course_id:int, date: datetime) -> list:
+        """
+        Get all meetings attended by a user on a specific day.
+
+        Args:
+            user_id (int): ID of the user
+            date (datetime): Date for which to fetch attended meetings
+
+        Returns:
+            list: List of meetings attended by the user on the specified date
+        """
+        # Filter attendance records for the user on the specified date
+        attended_meetings = AttendanceRecord.objects.filter(
+            user_id=user_id,
+            meeting__start_date=date,
+            meeting__series__course_enrollments__batch__course_id=course_id
+        )
+
+        # Convert the QuerySet to a list of dictionaries containing meeting details
+        meetings_list = []
+        for record in attended_meetings:
+            meeting = record.meeting
+            meetings_list.append({
+                'meeting_id': meeting.id,
+                'course': meeting.course.id if meeting.course else None,
+                'duration':meeting.duration if record.attendance else timedelta(0)
+            })
+
+        return meetings_list
+    
+    
+    @staticmethod
+    def get_absent_users_for_meeting(meeting_id):
+        """Get all users who were absent for a specific meeting with their full names"""
+        absent_records = AttendanceRecord.objects.filter(
+            meeting_id=meeting_id,
+            attendance=False
+        ).prefetch_related('user_id')
+
+        return absent_records

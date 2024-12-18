@@ -121,6 +121,8 @@ PROJECT_APPS = [
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
     "meetings.apps.MeetingsConfig",
+    "notifications_manager.apps.NotificationsManagerConfig",
+    "notifications.apps.NotificationsConfig"
 ]
 
 # apps from speechai
@@ -486,6 +488,7 @@ FIREBASE_APP_ID = os.environ["FIREBASE_APP_ID"]
 FIREBASE_MEASUREMENT_ID = os.environ["FIREBASE_MEASUREMENT_ID"]
 
 TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "Ap32_bot")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN","7292221420:AAG1mm1YUXXi0arBIHCAjDMPrX-hIfK4DtA")
 TWO_Factor_SMS_API_KEY = os.environ.get(
     "TWO_Factor_SMS_API_KEY", "82615175-a581-11ef-8b17-0200cd936042"
 )

@@ -29,6 +29,13 @@ class UserRepository:
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
 
+    @staticmethod
+    def get_inactive_users(days: int):
+        from django.utils import timezone
+        from datetime import timedelta
+
+        threshold_date = timezone.now() - timedelta(days=days)
+        return User.objects.filter(last_login__lt=threshold_date,is_student=True)
 
 class CourseProviderAdminRepository:
     @staticmethod

@@ -172,10 +172,21 @@ class AssessmentUseCase:
             display_data = assessment.display_data
             name = assessment.assessment_display_name
             max_attempts = assessment.number_of_attempts
+            start_date=assessment.start_date
+            end_date=assessment.end_date
+            due_date=assessment.due_date
             number_of_attempts = AssessmentAttemptRepository.number_of_attempts_expired(
                 assessment_generation_config_id=assessment_generation_id,
                 user_id=user_id,
             )
+            
+            # Check if the assessment should be locked
+            current_date = timezone.now()
+            if start_date is not None and end_date is not None:
+                is_locked = not (start_date <= current_date <= end_date)
+            else:
+                is_locked = False
+            
             resp_obj = {
                 "assessment_generation_id": assessment_generation_id,
                 "test": {
@@ -197,6 +208,12 @@ class AssessmentUseCase:
                 "max_attempts": max_attempts,
                 "user_attempts": number_of_attempts,
                 "user_id": user_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "due_date":due_date,
+                "is_locked": is_locked
+ 
+                
             }
 
             resp_data.append(resp_obj)
@@ -575,6 +592,14 @@ class AssessmentUseCase:
         current_attempt_count = AssessmentAttemptRepository.number_of_attempts_expired(
             assessment_generation_config_id=assessment_generation_id, user_id=user.id
         )
+        
+        if assessment_generation_class_data.start_date is not None and assessment_generation_class_data.end_date is not None:
+            is_locked = not (assessment_generation_class_data.start_date <= timezone.now() <= assessment_generation_class_data.end_date)
+        else:
+            is_locked=False
+        
+        if is_locked:
+            raise ValueError("Assessment is locked")
 
         if current_attempt_count >= number_of_total_attempts:
             raise ValueError("Maximum number of attempts reached")

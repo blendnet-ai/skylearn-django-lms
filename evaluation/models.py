@@ -386,6 +386,9 @@ class AssessmentGenerationConfig(models.Model):
     number_of_attempts = models.IntegerField(default=2)
     test_duration = models.DurationField()
     display_data = models.JSONField(default=dict)
+    start_date = models.DateTimeField(blank=True, null=True)
+    end_date=models.DateTimeField(blank=True,null=True)
+    due_date=models.DateTimeField(blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -420,5 +423,4 @@ class QuestionIssues(models.Model):
 class DSASheetsConfig(models.Model):
     name=models.CharField(blank=False, null=False,unique=True)
     question_ids = models.JSONField(default=list)
-
 
