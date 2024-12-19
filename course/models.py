@@ -83,7 +83,6 @@ class Course(models.Model):
     assessment_generation_ids = models.JSONField(blank=True, default=list)
     course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
     drive_folder_link = models.CharField(max_length=255, blank=True)
-    duration=models.DurationField()
 
     objects = CourseManager()
 

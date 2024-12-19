@@ -272,8 +272,38 @@ class AttendaceRecordRepository:
             meeting = record.meeting
             meetings_list.append({
                 'meeting_id': meeting.id,
+                'meeting_title':meeting.title,
                 'course': meeting.course.id if meeting.course else None,
                 'duration':meeting.duration if record.attendance else timedelta(0)
             })
 
         return meetings_list
+
+    @staticmethod
+    def get_all_attendance_records_data():
+        """
+        Get all attendance records with associated meeting and batch information.
+        
+        Returns:
+            QuerySet of AttendanceRecord instances with related Meeting and Series.
+        """
+        return AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__isnull=False  # Only records for enrolled courses
+        ).select_related('meeting', 'meeting__series').distinct()
+        
+    @staticmethod
+    def get_attendance_records_by_date(target_date):
+        """
+        Get attendance records for a specific date with associated meeting and batch information.
+        
+        Args:
+            target_date (date): The date to filter attendance records for
+                
+        Returns:
+            QuerySet of AttendanceRecord instances with related Meeting and Series.
+        """
+        return AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__isnull=False,
+            meeting__start_date__date=target_date
+        ).select_related('meeting', 'meeting__series').distinct()
+

@@ -47,7 +47,7 @@ class DailyAggregation(models.Model):
     type_of_aggregation = models.CharField(max_length=100)  # Adjust max_length as needed
     time_spent = models.DurationField(default=timedelta())
     reference_id = models.IntegerField(null=True)
-
+    resource_name=models.CharField(max_length=500,null=True)
     class Meta:
         unique_together = ('user', 'date', 'type_of_aggregation', 'course')
         indexes = [

@@ -114,7 +114,8 @@ class DailyAggregationUsecase:
                 course_id=course_id,
                 type_of_aggregation='assessment',
                 time_spent=attempt.get('test_duration'),
-                reference_id=attempt.get('assessment_id')
+                reference_id=attempt.get('assessment_id'),
+                resource_name=attempt.get('assessment_generation_config_id__assessment_display_name')
             )
 
     @staticmethod
@@ -127,7 +128,9 @@ class DailyAggregationUsecase:
                 course_id=course_id,
                 type_of_aggregation='live_class',
                 time_spent=meeting.get('duration'),
-                reference_id=meeting.get('meeting_id')
+                reference_id=meeting.get('meeting_id'),
+                resource_name=meeting.get('meeting_title')
+                
             )
 
     @staticmethod
@@ -138,12 +141,15 @@ class DailyAggregationUsecase:
             if resource.pdf_id is not None:
                 type_of_aggregation = 'resource_reading'
                 reference_id = resource.pdf_id
+                resource_name=resource.pdf.title
             elif resource.video_id is not None:
                 type_of_aggregation = 'resource_video'
                 reference_id = resource.video_id
+                resource_name=resource.video.title
             elif resource.recording_id is not None:
                 type_of_aggregation = 'resource_recording'
                 reference_id = resource.recording_id
+                resource_name=resource.recording.title
             else:
                 raise ValueError("Resource must have either a pdf_id, video_id, or recording_id")
 
@@ -153,5 +159,6 @@ class DailyAggregationUsecase:
                 course_id=course_id,
                 type_of_aggregation=type_of_aggregation,
                 time_spent=resource.time_spent,
-                reference_id=reference_id
+                reference_id=reference_id,
+                resource_name=resource_name
             )

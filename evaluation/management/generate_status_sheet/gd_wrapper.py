@@ -224,3 +224,59 @@ class GDWrapper:
 
         logger.info(f"Value '{value}' not found in column '{column_name}' of sheet '{sheet_name}'.")
         return None
+    
+
+    def smart_update_sheet(self, sheet_name, new_data, key_fields):
+        """
+        Updates sheet by comparing existing data with new data based on key fields.
+        
+        Args:
+            sheet_name (str): Name of the sheet to update
+            new_data (list): List of dictionaries containing new data
+            key_fields (list): List of field names to use as unique identifiers
+        """
+        logger.info(f"Smart updating sheet {sheet_name} using keys: {key_fields}")
+
+        # Get existing data
+        existing_data = self.get_sheet_as_json(sheet_name)
+        
+        # Create a dictionary of existing data using key fields as composite key
+        existing_data_dict = {}
+        for row in existing_data:
+            composite_key = tuple(str(row.get(key, '')) for key in key_fields)
+            existing_data_dict[composite_key] = row
+
+        # Process new data
+        updated_data = existing_data.copy()  # Start with existing data
+        for new_row in new_data:
+            # Create composite key for new row
+            composite_key = tuple(str(new_row.get(key, '')) for key in key_fields)
+            
+            if composite_key in existing_data_dict:
+                # Row exists - check if update needed
+                existing_row = existing_data_dict[composite_key]
+                if self._row_needs_update(existing_row, new_row):
+                    logger.info(f"Updating existing row with key: {composite_key}")
+                    # Find and update the row in updated_data
+                    for i, row in enumerate(updated_data):
+                        if all(str(row.get(key, '')) == str(new_row.get(key, '')) for key in key_fields):
+                            updated_data[i] = new_row
+                            break
+            else:
+                # New row - append to data
+                logger.info(f"Adding new row with key: {composite_key}")
+                updated_data.append(new_row)
+
+        # Update sheet with final data
+        self.update_sheet(sheet_name, updated_data)
+
+    def _row_needs_update(self, existing_row, new_row):
+        """
+        Compare existing and new row to determine if update is needed.
+        Returns True if rows are different, False if they're the same.
+        """
+        return any(
+            str(existing_row.get(key, '')) != str(new_row.get(key, ''))
+            for key in set(existing_row.keys()) | set(new_row.keys())
+        )
+    
