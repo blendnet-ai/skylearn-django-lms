@@ -512,11 +512,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     'process-activity-aggregations': {
         'task': 'reporting.tasks.process_aggregation',
-        'schedule': crontab(hour=23, minute=0),  # Executes at 11 pm
+        'schedule': crontab(hour=5, minute=30),  # Executes at 11 pm
     },
     'process-report-aggregations': {
         'task': 'reporting.tasks.process_reports',
-        'schedule': crontab(hour=23, minute=30),  # Executes at 11:30 pm
+        'schedule': crontab(hour=6, minute=0),  # Executes at 11:30 pm
     }
     
 }
