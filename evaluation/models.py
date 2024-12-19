@@ -376,6 +376,10 @@ class AssessmentAttempt(models.Model):
     mode = models.IntegerField(choices=Mode.choices, default=Mode.EVALUATION)
     
 class AssessmentGenerationConfig(models.Model):
+    class Type(models.TextChoices):
+        Qualitative = 0, "Qualitative"
+        Quantitative = 1, "Quantitative"
+        
     enabled = models.BooleanField(default=True)
     assessment_generation_id = models.AutoField(primary_key=True)
     kwargs = models.JSONField(default=dict)
@@ -384,10 +388,17 @@ class AssessmentGenerationConfig(models.Model):
     assessment_name = models.CharField(max_length=255, unique=True)
     assessment_display_name = models.CharField(max_length=255)
     number_of_attempts = models.IntegerField(default=2)
+    assessment_type = models.IntegerField(choices=Type.choices, default=Type.Qualitative)
     test_duration = models.DurationField()
     display_data = models.JSONField(default=dict)
+    start_date = models.DateTimeField(blank=True, null=True)
+    end_date=models.DateTimeField(blank=True,null=True)
+    due_date=models.DateTimeField(blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    
+    
 
 class DSAPracticeChatData(models.Model):
     user_id = models.CharField(max_length=100)

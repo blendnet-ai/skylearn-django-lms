@@ -121,6 +121,8 @@ PROJECT_APPS = [
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
     "meetings.apps.MeetingsConfig",
+    "reports.apps.ReportsConfig",
+    "events_logger.apps.EventsLoggerConfig"
 ]
 
 # apps from speechai
@@ -507,6 +509,14 @@ CELERY_BEAT_SCHEDULE = {
     'check-for-completed-meetings-every-1-hour': {
         'task': 'meetings.tasks.process_completed_meetings_task',
         'schedule': crontab(hour='*', minute=0),  # Executes every 1 hour
+    },
+    'process-activity-aggregations': {
+        'task': 'reporting.tasks.process_aggregation',
+        'schedule': crontab(hour=23, minute=0),  # Executes at 11 pm
+    },
+    'process-report-aggregations': {
+        'task': 'reporting.tasks.process_reports',
+        'schedule': crontab(hour=23, minute=30),  # Executes at 11:30 pm
     }
     
 }
@@ -535,7 +545,6 @@ STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
 
 # Firebase Settings
 FIREBASE_ENABLED = os.environ.get("FIREBASE_ENABLED") == "TRUE"
-print(FIREBASE_ENABLED)
 FIREBASE_ACCOUNT_TYPE = os.environ.get("FIREBASE_ACCOUNT_TYPE")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
 FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
@@ -610,6 +619,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_ROUTES = {
     "meetings.tasks.*": {"queue": "meeting_queue"},
     "course.tasks.*": {"queue": "course_queue"},
+    "reporting.tasks.*": {"queue": "reporting_queue"},
 }
 
 CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")

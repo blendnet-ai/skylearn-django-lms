@@ -22,12 +22,23 @@ class StudentRepository:
 
     def create_student(user):
         return Student.objects.create(student=user)
+    
+    def get_all_students():
+        return Student.objects.all()
 
 
 class UserRepository:
     @staticmethod
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
+
+    @staticmethod
+    def get_inactive_users(days: int):
+        from django.utils import timezone
+        from datetime import timedelta
+
+        threshold_date = timezone.now() - timedelta(days=days)
+        return User.objects.filter(last_login__lt=threshold_date)
 
 
 class CourseProviderAdminRepository:
@@ -106,3 +117,4 @@ class UserConfigMappingRepository:
     @staticmethod
     def bulk_create_user_config_mappings(config_mappings: list):
         return UserConfigMapping.objects.bulk_create(config_mappings)
+

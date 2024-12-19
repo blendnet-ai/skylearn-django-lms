@@ -1,7 +1,7 @@
 from telnetlib import LOGOUT
 from meetings.models import Meeting, MeetingSeries, meeting_post_save
 from django.conf import settings
-from meetings.repositories import MeetingRepository, MeetingSeriesRepository
+from meetings.repositories import MeetingRepository, MeetingSeriesRepository, AttendaceRecordRepository
 from course.serializers import LiveClassSeriesSerializer
 from dateutil.rrule import DAILY, WEEKLY, MONTHLY
 from dateutil.rrule import rrule
@@ -15,6 +15,9 @@ import urllib
 from meetings.services.msteams import MSTeamsConferencePlatformService
 import logging
 from storage_service.azure_storage import AzureStorageService
+from meetings.models import AttendanceRecord
+from .repositories import AttendaceRecordRepository
+from django.conf import settings
 logger = logging.getLogger(__name__)
 
 storage_service = AzureStorageService()
@@ -642,3 +645,31 @@ class MeetingUsecase:
             content_type=content_type
         )
         return sas_url
+
+    def create_attendace_records(meeting):
+        participants=meeting.get_participants
+        AttendaceRecordRepository.create_attendance_records(meeting, participants)
+        logger.info(f"created attendance records for meeting {meeting.id}")
+        
+
+class MeetingAttendanceUseCase:
+    def mark_meeting_attendance(attendance_id):
+        attendance_record = AttendaceRecordRepository.get_attendance_record(attendance_id)
+        if attendance_record is not None:
+            AttendaceRecordRepository.mark_attendance(attendance_record)
+            meeting_link = attendance_record.meeting.link
+            return meeting_link
+        
+            
+
+    def get_joining_url(user_id, meeting_id):
+        # Get or create attendance record
+        attendance_record, created = AttendaceRecordRepository.get_or_create_attendance_record(
+            user_id=user_id,
+            meeting_id=meeting_id
+        )
+        
+        # Generate joining URL
+        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join/{attendance_record.attendance_id}/"
+        
+        return joining_url
