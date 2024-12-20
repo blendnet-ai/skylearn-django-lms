@@ -35,7 +35,7 @@ class AzureStorageService(StorageServiceInterface):
         blob_client = self.blob_service_client.get_blob_client(container_name, blob_name)
         return blob_client.get_blob_properties()
 
-    def upload_blob(self, container_name, blob_name, content, overwrite=True):
+    def upload_blob(self, container_name, blob_name, content, overwrite=True, content_type=None):
         """
         Upload content to a blob.
 
@@ -45,7 +45,7 @@ class AzureStorageService(StorageServiceInterface):
             content (bytes): The content to upload.
         """
         blob_client = self.blob_service_client.get_blob_client(container_name, blob_name)
-        blob_client.upload_blob(content, overwrite=overwrite)
+        blob_client.upload_blob(content, overwrite=overwrite, content_settings=ContentSettings(content_type=content_type))
         return blob_client.url
 
     def download_blob(self, *, container_name: str, blob_name: str, file_path: str):
@@ -68,15 +68,6 @@ class AzureStorageService(StorageServiceInterface):
             str: The SAS URL for the blob.
         """
         blob_client = self.blob_service_client.get_blob_client(container_name, blob_name)
-        
-        # Only set content type if it's provided AND different from current
-        if content_type:
-            blob_properties = blob_client.get_blob_properties()
-            current_content_type = blob_properties.content_settings.content_type
-            if current_content_type != content_type:
-                blob_client.set_http_headers(
-                    content_settings=ContentSettings(content_type=content_type)
-                )
             
         sas_token = generate_blob_sas(
             account_name=blob_client.account_name,

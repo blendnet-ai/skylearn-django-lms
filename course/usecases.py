@@ -679,17 +679,20 @@ class CourseContentDriveUsecase:
     def _download_and_upload_file(self, drive_service, file, file_path):
         """Helper method to download from Drive and upload to blob storage"""
         try:
+            # Get file metadata to retrieve MIME type
+            file_metadata = drive_service.files().get(fileId=file['id'], fields='mimeType').execute()
+            mime_type = file_metadata.get('mimeType', 'application/octet-stream')
+            
             request = drive_service.files().get_media(fileId=file['id'])
-            file_content = io.BytesIO()  # Create a BytesIO object to store the file content
+            file_content = io.BytesIO()
             downloader = MediaIoBaseDownload(file_content, request)
             
             done = False
             while not done:
                 _, done = downloader.next_chunk()
             
-            # Reset the pointer to the beginning of the BytesIO object
             file_content.seek(0)
-            return self._upload_to_blob(file_content, file['name'], file_path)
+            return self._upload_to_blob(file_content, file['name'], file_path, mime_type)
         except Exception as e:
             raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
 
@@ -725,13 +728,14 @@ class CourseContentDriveUsecase:
         results = drive_service.files().list(q=query).execute()
         return results.get('files', [])
         
-    def _upload_to_blob(self, file_content, filename, blob_path):
-        """Upload file to Azure Blob Storage"""
-        logging.info(f"Uploading file to blob storage: {blob_path}")
+    def _upload_to_blob(self, file_content, filename, blob_path, content_type):
+        """Upload file to Azure Blob Storage with content type"""
+        logging.info(f"Uploading file to blob storage: {blob_path} with content type: {content_type}")
         blob_url = self.storage_service.upload_blob(
             container_name=settings.AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME,
             blob_name=blob_path,
             content=file_content,
+            content_type=content_type,  # Pass the content type to Azure
             overwrite=True
         )
         logging.info(f"Uploaded file to blob storage: {blob_url}")
