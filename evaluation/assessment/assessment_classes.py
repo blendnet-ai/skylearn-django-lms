@@ -281,7 +281,8 @@ class QuestionBasedAssessment(BaseAssessmentGenerationLogic):
         question_data = {
             'question_ids': self.kwargs['question_ids'],
             'section_name': self.kwargs['section_name'],
-            'skippable': self.kwargs['skippable']
+            'skippable': self.kwargs['skippable'],
+            'category': self.kwargs['category']
         }
         
         return question_data
