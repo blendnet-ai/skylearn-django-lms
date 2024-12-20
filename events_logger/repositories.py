@@ -68,21 +68,21 @@ class PageEventRepository:
     @staticmethod
     def get_total_videos_watched_by_user_in_course(user, course):
         """
-        Get total number of videos watched by a user in a course
+        Get total number of unique videos watched by a user in a course.
         
         Args:
             user: User object
             course: Course object
         
         Returns:
-            int: Total number of videos watched by user in the course
+            int: Total number of unique videos watched by user in the course
         """
-        # Get all page events for the user where upload_video belongs to the course
+        # Get all unique video ids for the user where the video belongs to the course and has been watched
         total_videos_watched = PageEvent.objects.filter(
             user=user,
             watched=True,
             video__course=course
-        ).distinct().count()
+        ).values('video_id').distinct().count()
 
         return total_videos_watched
     
