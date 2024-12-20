@@ -129,6 +129,11 @@ urlpatterns = [
         views.get_modules_and_resources_by_course_id,
         name="get_modules_data",
     ),
+    path(
+        "course/<course_id>/get-assessment-configs/<module_id>/",
+        views.get_assessments_by_module_id,
+        name="get_assessments",
+    ),
     path("course/resource/get-sas-url/", views.get_sas_url, name="get_sas_url"),
     path("course/get-recordings/", views.get_recordings, name="get_recordings"),
     path("course/user-courses-list", views.user_courses_list, name="user_courses_list"),
@@ -142,21 +147,15 @@ urlpatterns = [
         views.get_live_class_details,
         name="get_series_details",
     ),
+    path("course/students-list/", views.get_students_list, name="get_students_list"),
     path(
-        'course/students-list/',
-        views.get_students_list,
-        name='get_students_list'
-    ),
-    path(
-        'course/student-details/<int:student_id>/',
+        "course/student-details/<int:student_id>/",
         views.get_student_details,
-        name='get_student_details'
+        name="get_student_details",
     ),
-    
     path(
-        'course/send-batch-message',
+        "course/send-batch-message",
         views.send_course_batch_message,
-        name='get_student_details'
+        name="get_student_details",
     ),
-    
 ]

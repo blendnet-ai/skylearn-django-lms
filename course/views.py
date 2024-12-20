@@ -10,7 +10,12 @@ from django.views.generic import CreateView
 from django_filters.views import FilterView
 
 from accounts.authentication import FirebaseAuthentication
-from accounts.decorators import lecturer_required, student_required, course_provider_admin_required,course_provider_admin_or_lecturer_required
+from accounts.decorators import (
+    lecturer_required,
+    student_required,
+    course_provider_admin_required,
+    course_provider_admin_or_lecturer_required,
+)
 from accounts.models import Student, User
 from accounts.permissions import (
     IsCourseProviderAdmin,
@@ -44,7 +49,7 @@ from course.usecases import (
     CourseUseCase,
     LiveClassSeriesBatchAllocationUseCase,
     LiveClassUsecase,
-    BatchMessageUsecase
+    BatchMessageUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -79,7 +84,10 @@ from accounts.usecases import StudentProfileUsecase
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class ProgramFilterView(FilterView):
 
     filterset_class = ProgramFilter
@@ -249,7 +257,10 @@ def course_delete(request, slug):
 # ########################################################
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class CourseAllocationFormView(CreateView):
     form_class = CourseAllocationForm
     template_name = "course/course_allocation_form.html"
@@ -270,7 +281,10 @@ class CourseAllocationFormView(CreateView):
         return context
 
 
-@method_decorator(firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer), name="dispatch")
+@method_decorator(
+    firebase_drf_authentication(IsLoggedIn, IsCourseProviderAdminOrLecturer),
+    name="dispatch",
+)
 class CourseAllocationFilterView(FilterView):
     filterset_class = CourseAllocationFilter
     template_name = "course/course_allocation_view.html"
@@ -279,7 +293,6 @@ class CourseAllocationFilterView(FilterView):
         context = super().get_context_data(**kwargs)
         context["title"] = "Course Allocations"
         return context
-
 
 
 @api_view(["GET", "POST"])
@@ -583,20 +596,23 @@ def create_live_class_series(request):
 
     if serializer.is_valid():
         try:
-            live_class_series_id, batches_allocated, batches_failed_to_allocate, presenter_assignement = (
-                LiveClassUsecase.create_live_class_series(
-                    title=serializer.validated_data["title"],
-                    batch_ids=serializer.validated_data["batch_ids"],
-                    start_time=serializer.validated_data["start_time"],
-                    start_date=serializer.validated_data["start_date"],
-                    duration=serializer.validated_data["duration"],
-                    end_date=serializer.validated_data["end_date"],
-                    recurrence_type=serializer.validated_data["recurrence_type"],
-                    weekday_schedule=serializer.validated_data.get(
-                        "weekday_schedule", None
-                    ),
-                    monthly_day=serializer.validated_data.get("monthly_day", None),
-                )
+            (
+                live_class_series_id,
+                batches_allocated,
+                batches_failed_to_allocate,
+                presenter_assignement,
+            ) = LiveClassUsecase.create_live_class_series(
+                title=serializer.validated_data["title"],
+                batch_ids=serializer.validated_data["batch_ids"],
+                start_time=serializer.validated_data["start_time"],
+                start_date=serializer.validated_data["start_date"],
+                duration=serializer.validated_data["duration"],
+                end_date=serializer.validated_data["end_date"],
+                recurrence_type=serializer.validated_data["recurrence_type"],
+                weekday_schedule=serializer.validated_data.get(
+                    "weekday_schedule", None
+                ),
+                monthly_day=serializer.validated_data.get("monthly_day", None),
             )
 
             return Response(
@@ -605,7 +621,7 @@ def create_live_class_series(request):
                     "id": live_class_series_id,
                     "batches_allocated": batches_allocated,
                     "batches_failed_to_allocate": batches_failed_to_allocate,
-                    "presenter_assignment":presenter_assignement
+                    "presenter_assignment": presenter_assignement,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -639,7 +655,7 @@ def update_live_class_series(request, id):
     serializer = LiveClassSeriesSerializer(data=request.data)
     if serializer.is_valid():
         try:
-            batches_allocated, batches_failed_to_allocate,presenter_assignement = (
+            batches_allocated, batches_failed_to_allocate, presenter_assignement = (
                 LiveClassUsecase.update_live_class_series(
                     id,
                     title=serializer.validated_data["title"],
@@ -660,7 +676,7 @@ def update_live_class_series(request, id):
                     "message": f"Live class series updated successfully.",
                     "batches_allocated": batches_allocated,
                     "batches_failed_to_allocate": batches_failed_to_allocate,
-                    "presenter_assignement":presenter_assignement
+                    "presenter_assignement": presenter_assignement,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -841,12 +857,12 @@ def create_batch(request, course_id):
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn,IsCourseProviderAdminOrLecturer])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def get_batches_by_course_id(request, course_id):
     try:
-        #request.user=User.objects.get(id=30)
-        user=request.user
-        batches = BatchUseCase.get_batches_by_course_id(user,course_id)
+        # request.user=User.objects.get(id=30)
+        user = request.user
+        batches = BatchUseCase.get_batches_by_course_id(user, course_id)
         return Response(batches, status=status.HTTP_200_OK)
     except Course.DoesNotExist:
         return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -870,15 +886,47 @@ def get_modules_and_resources_by_course_id(request, course_id):
             {"error": "No modules found for the given course ID."},
             status=status.HTTP_404_NOT_FOUND,
         )
-    return Response({'module_data': module_data}, status=status.HTTP_200_OK)
+    return Response({"module_data": module_data}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_assessments_by_module_id(request, course_id, module_id):
+    print("course_id", course_id)
+    print("module_id", module_id)
+    module_data = CourseUseCase.get_modules_by_course_id(course_id)
+
+    print("module_data", module_data)
+
+    # extract the module from the list of modules, on the basis of module_id
+    for module in module_data:
+        if int(module.get("id")) == int(module_id):
+            break
+    else:
+        module = None
+
+    if not module:
+        return Response(
+            {"error": "No module found for the given module ID."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    # extract module assessment_generation_configs
+    assessment_generation_configs = module.get("assessment_generation_configs", [])
+
+    return Response(
+        {"assessment_generation_configs": assessment_generation_configs},
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def user_courses_list(request):
-    #request.user=User.objects.get(id=4)
-    courses, role=CourseUseCase.get_courses_for_student_or_lecturer(request.user)
+    # request.user=User.objects.get(id=4)
+    courses, role = CourseUseCase.get_courses_for_student_or_lecturer(request.user)
     if courses:
         return Response({"courses": courses, "role": role}, status=status.HTTP_200_OK)
     else:
@@ -891,18 +939,19 @@ def user_courses_list(request):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_meeting_details(request, meeting_id):
-    #request.user=User.objects.get(id=4)
-    meeting=MeetingUsecase.get_meeting_by_id(meeting_id)
-    return Response({"data":meeting}, status=status.HTTP_200_OK)
+    # request.user=User.objects.get(id=4)
+    meeting = MeetingUsecase.get_meeting_by_id(meeting_id)
+    return Response({"data": meeting}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_live_class_details(request, series_id):
-    #request.user=User.objects.get(id=4)
-    meeting_series=MeetingSeriesUsecase.get_meeting_series(series_id)
-    return Response({"data":meeting_series}, status=status.HTTP_200_OK)
+    # request.user=User.objects.get(id=4)
+    meeting_series = MeetingSeriesUsecase.get_meeting_series(series_id)
+    return Response({"data": meeting_series}, status=status.HTTP_200_OK)
+
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
@@ -910,37 +959,38 @@ def get_live_class_details(request, series_id):
 def get_sas_url(request):
     # Get the meeting_blob_url from query parameters
     blob_url = request.GET.get("blob_url")
-    
+
     if not blob_url:
         return Response(
-            {"error": "blob_url is required as a query parameter"}, 
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "blob_url is required as a query parameter"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
     try:
         sas_url = MeetingUsecase.get_sas_url_for_recording(blob_url)
         return Response({"url": sas_url}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
-            {"error": f"Error generating SAS URL: {str(e)}"}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {"error": f"Error generating SAS URL: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_recordings(request):
-        user_id = request.user.id
-        if request.user.is_student:
-            role = 'student'
-        elif request.user.is_lecturer:
-            role = 'lecturer'
-        elif request.user.is_course_provider_admin:
-            role = 'course_provider_admin'
-           
-        recordings = MeetingUsecase.get_recordings_by_user_role(user_id, role)
-        return Response(recordings, status=status.HTTP_200_OK)
+    user_id = request.user.id
+    if request.user.is_student:
+        role = "student"
+    elif request.user.is_lecturer:
+        role = "lecturer"
+    elif request.user.is_course_provider_admin:
+        role = "course_provider_admin"
+
+    recordings = MeetingUsecase.get_recordings_by_user_role(user_id, role)
+    return Response(recordings, status=status.HTTP_200_OK)
+
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
@@ -952,11 +1002,7 @@ def get_students_list(request):
 
     students = BatchUseCase.get_students_for_lecturer_or_provider(request.user)
     return Response(
-        {
-            "students": students,
-            "total_count": len(students)
-        }, 
-        status=status.HTTP_200_OK
+        {"students": students, "total_count": len(students)}, status=status.HTTP_200_OK
     )
 
 
@@ -971,12 +1017,9 @@ def get_student_details(request, student_id):
         student_profile = StudentProfileUsecase.get_student_profile(student_id)
         return Response(student_profile, status=status.HTTP_200_OK)
     except ValueError as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_404_NOT_FOUND
-        )
-        
-        
+        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
@@ -988,11 +1031,8 @@ def get_student_details(request, student_id):
         student_profile = StudentProfileUsecase.get_student_profile(student_id)
         return Response(student_profile, status=status.HTTP_200_OK)
     except ValueError as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_404_NOT_FOUND
-        )
-        
+        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
 
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
@@ -1002,24 +1042,20 @@ def send_course_batch_message(request):
     Send message to all students in a batch for a specific course
     """
     serializer = CourseMessageSerializer(data=request.data)
-    
+
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     try:
         stats = BatchMessageUsecase.send_batch_messages(
-            batch_id=serializer.validated_data['batch_id'],
-            subject=serializer.validated_data['subject'],
-            message=serializer.validated_data['message']
+            batch_id=serializer.validated_data["batch_id"],
+            subject=serializer.validated_data["subject"],
+            message=serializer.validated_data["message"],
         )
 
-        return Response({
-            "message": "Messages sent",
-            "stats": stats
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Messages sent", "stats": stats}, status=status.HTTP_200_OK
+        )
 
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
