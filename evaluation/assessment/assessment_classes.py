@@ -248,3 +248,40 @@ class MockInterviewBasedRandomAssessment(BaseAssessmentGenerationLogic):
         question_data = AssessmentUseCase.fetch_question_ids_from_sub_category(category, total_number, subcategories)
         return question_data
 
+
+class QuestionBasedAssessment(BaseAssessmentGenerationLogic):
+    def __init__(self, assessment_generation_id):
+        super().__init__(assessment_generation_id)
+
+    def validate_kwargs(self):
+        required_keys = ['question_ids', 'section_name', 'skippable']
+        for key in required_keys:
+            if key not in self.kwargs:
+                return False, f"Missing required key: {key}"
+
+        if not isinstance(self.kwargs['question_ids'], list):
+            return False, "'question_ids' must be a list"
+        
+        if not all(isinstance(qid, int) for qid in self.kwargs['question_ids']):
+            return False, "All question IDs must be integers"
+
+        if not isinstance(self.kwargs['section_name'], str):
+            return False, "'section_name' must be a string"
+
+        if not isinstance(self.kwargs['skippable'], bool):
+            return False, "'skippable' must be a boolean"
+
+        return True, ""
+
+    def generate_assessment_attempt(self, user=None):
+        is_valid, message = self.validate_kwargs()
+        if not is_valid:
+            raise ValueError(message)
+
+        question_data = {
+            'question_ids': self.kwargs['question_ids'],
+            'section_name': self.kwargs['section_name'],
+            'skippable': self.kwargs['skippable']
+        }
+        
+        return question_data
