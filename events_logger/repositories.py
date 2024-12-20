@@ -82,7 +82,7 @@ class PageEventRepository:
             user=user,
             watched=True,
             video__course=course
-        ).count()
+        ).distinct().count()
 
         return total_videos_watched
     
