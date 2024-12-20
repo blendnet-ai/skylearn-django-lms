@@ -25,7 +25,8 @@ import io
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from course.models import Course, Module, Upload, UploadVideo
 from storage_service.azure_storage import AzureStorageService
-
+from .services import MessageService
+from telegram_bot.repositories import TelegramChatDataRepository
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -740,4 +741,59 @@ class CourseContentDriveUsecase:
         )
         logging.info(f"Uploaded file to blob storage: {blob_url}")
         return blob_url
-    
+
+class BatchMessageUsecase:
+    @staticmethod
+    def send_batch_messages(batch_id: int, subject: str, message: str) -> dict:
+        """
+        Send messages to all students in a batch via email and telegram
+        
+        Args:
+            batch_id: ID of the batch
+            subject: Email subject
+            message: Message content
+            
+        Returns:
+            dict: Statistics about message delivery
+        """
+        try:
+            batch = BatchRepository.get_batch_by_id(batch_id)
+            
+            # Track success/failure counts
+            stats = {
+                "email_sent": 0,
+                "email_failed": 0,
+                "telegram_sent": 0,
+                "telegram_failed": 0
+            }
+            
+            # Send to each student
+            for student in batch.students.all():
+                # Send email if email exists
+                if student.student.email:
+                    success = MessageService.send_email_message(
+                        email=student.student.email,
+                        subject=subject,
+                        message=message
+                    )
+                    if success:
+                        stats["email_sent"] += 1
+                    else:
+                        stats["email_failed"] += 1
+                
+                telegram_chat_id = TelegramChatDataRepository.get_telegram_chat_id_sync(student.student)
+                if telegram_chat_id:
+                    success = MessageService.send_telegram_message(
+                        chat_id=telegram_chat_id,
+                        message=message
+                    )
+                    if success:
+                        stats["telegram_sent"] += 1
+                    else:
+                        stats["telegram_failed"] += 1
+                        
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error sending batch messages: {str(e)}")
+            raise
