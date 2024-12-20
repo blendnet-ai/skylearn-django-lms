@@ -1020,19 +1020,6 @@ def get_student_details(request, student_id):
         return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(["POST"])
-@authentication_classes([FirebaseAuthentication])
-@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
-def get_student_details(request, student_id):
-    """
-    Get details of a student for lecturer or course provider admin
-    """
-    try:
-        student_profile = StudentProfileUsecase.get_student_profile(student_id)
-        return Response(student_profile, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
-
 
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
