@@ -34,6 +34,7 @@ from course.forms import (
 from course.models import Course, CourseAllocation, Program, Upload, UploadVideo, Module
 from course.serializers import (
     BatchSerializer,
+    CourseMessageSerializer,
     LiveClassDateRangeSerializer,
     LiveClassSeriesSerializer,
     LiveClassUpdateSerializer,
@@ -43,6 +44,7 @@ from course.usecases import (
     CourseUseCase,
     LiveClassSeriesBatchAllocationUseCase,
     LiveClassUsecase,
+    BatchMessageUsecase
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -972,4 +974,52 @@ def get_student_details(request, student_id):
         return Response(
             {"error": str(e)},
             status=status.HTTP_404_NOT_FOUND
+        )
+        
+        
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def get_student_details(request, student_id):
+    """
+    Get details of a student for lecturer or course provider admin
+    """
+    try:
+        student_profile = StudentProfileUsecase.get_student_profile(student_id)
+        return Response(student_profile, status=status.HTTP_200_OK)
+    except ValueError as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_404_NOT_FOUND
+        )
+        
+
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def send_course_batch_message(request):
+    """
+    Send message to all students in a batch for a specific course
+    """
+    serializer = CourseMessageSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        stats = BatchMessageUsecase.send_batch_messages(
+            batch_id=serializer.validated_data['batch_id'],
+            subject=serializer.validated_data['subject'],
+            message=serializer.validated_data['message']
+        )
+
+        return Response({
+            "message": "Messages sent",
+            "stats": stats
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

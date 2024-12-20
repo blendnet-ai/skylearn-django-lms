@@ -153,4 +153,10 @@ urlpatterns = [
         name='get_student_details'
     ),
     
+    path(
+        'course/send-batch-message',
+        views.send_course_batch_message,
+        name='get_student_details'
+    ),
+    
 ]
