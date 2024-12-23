@@ -224,8 +224,11 @@ class LSRWAssessmentEvaluator(AssessmentEvaluator):
         }
 
         self.assessment_attempt.eval_data = eval_data
-
-        self.assessment_attempt.status = AssessmentAttempt.Status.COMPLETED
-        self.assessment_attempt.evaluation_triggered = True
-
         self.assessment_attempt.save()
+        # Trigger the Celery task
+        self.generate_overall_summary_celery_task(self.assessment_attempt.eval_data,self.assessment_attempt.assessment_id)
+
+    def generate_overall_summary_celery_task(self, eval_data,assessment_attempt_id):
+            from evaluation.tasks import evaluate_lsrw_assessment
+            task = evaluate_lsrw_assessment.delay(eval_data,assessment_attempt_id)
+            

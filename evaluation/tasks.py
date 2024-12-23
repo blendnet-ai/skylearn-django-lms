@@ -178,3 +178,24 @@ def evaluate_behavioral_assessment(eval_data,assessment_attempt_id):
         logger.error(f'Error in evaluating behavioral assessment: {e}')
         assessment_attempt.status = AssessmentAttempt.Status.EVALUATION_PENDING
         assessment_attempt.evaluation_triggered = False
+
+
+@shared_task(queue='evaluation_queue')
+def evaluate_lsrw_assessment(eval_data,assessment_attempt_id):
+    try:
+        from evaluation.event_flow.processors.lsrw_summary_processor import LSRW_Summary_Processor
+
+        # Instantiate the processor with all required arguments
+        processor = LSRW_Summary_Processor(eval_data)
+        evaluation_result = processor._execute()
+        assessment_attempt=AssessmentAttemptRepository.fetch_assessment_attempt(assessment_id=assessment_attempt_id)
+        assessment_attempt.eval_data['performance_overview']['feedback'] = evaluation_result['overall_summary']
+        assessment_attempt.status = AssessmentAttempt.Status.COMPLETED
+        assessment_attempt.evaluation_triggered = True
+        assessment_attempt.save()
+
+
+    except Exception as e:
+        logger.error(f'Error in evaluating behavioral assessment: {e}')
+        assessment_attempt.status = AssessmentAttempt.Status.EVALUATION_PENDING
+        assessment_attempt.evaluation_triggered = False
