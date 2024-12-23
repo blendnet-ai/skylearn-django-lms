@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from config import settings
 from course.repositories import CourseRepository, BatchRepository
 from events_logger.repositories import PageEventRepository
 from accounts.repositories import StudentRepository, CourseProviderRepository
@@ -14,7 +15,7 @@ import json
 from datetime import datetime
 
 User = get_user_model()
-
+date=datetime.now()
 # Optimized function to get all required data at once
 def fetch_all_required_data():
     # Fetch all students
@@ -62,7 +63,7 @@ def fetch_all_required_data():
                 "course_provider_id":course_provider_id,
                 "enrolled date":batch.created_at
             })
-    date=datetime.now()
+
     activity_data=DailyAggregationRepository.get_aggregations_by_date(date)
     meetings_data=AttendaceRecordRepository.get_attendance_records_by_date(date)
     assessments_data=AssessmentAttemptRepository.fetch_assessments_attempts_data_by_date(date)

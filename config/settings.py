@@ -513,12 +513,17 @@ CELERY_BEAT_SCHEDULE = {
     },
     'process-activity-aggregations': {
         'task': 'reports.tasks.process_aggregation',
-        'schedule': crontab(hour=5, minute=30),  # Executes at 11 pm
+        'schedule': crontab(hour=17, minute=30),  # Executes at 5:30 PM UTC (11 PM IST)
     },
     'process-report-aggregations': {
         'task': 'reports.tasks.process_reports',
-        'schedule': crontab(hour=6, minute=0),  # Executes at 11:30 pm
-    }
+        'schedule': crontab(hour=18, minute=0),  # Executes at 6:00 PM UTC (11:30 PM IST)
+    },
+    'generate-report-sheet': {
+        'task': 'reports.tasks.run_management_command',  # Update the path accordingly
+        'schedule': crontab(hour=18, minute=15),  # Executes at 7:15 PM UTC (11:45 AM IST)
+    },
+
     
 }
 
