@@ -74,6 +74,9 @@ class CourseProviderRepository:
 
         except CourseProviderAdmin.DoesNotExist:
             return None
+    
+    def get_all_course_providers():
+        return CourseProvider.objects.all()
 
     @staticmethod
     def get_course_provider_by_id(course_provider_id):

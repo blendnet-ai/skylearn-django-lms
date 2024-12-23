@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from course.repositories import CourseRepository, BatchRepository
 from events_logger.repositories import PageEventRepository
-from accounts.repositories import StudentRepository
+from accounts.repositories import StudentRepository, CourseProviderRepository
 from custom_auth.repositories import UserProfileRepository
 from meetings.repositories import AttendaceRecordRepository
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
@@ -12,7 +12,6 @@ from evaluation.repositories import AssessmentAttemptRepository, AssessmentGener
 from evaluation.models import AssessmentGenerationConfig
 import json
 from datetime import datetime
-from django.conf import settings
 
 User = get_user_model()
 
@@ -53,19 +52,21 @@ def fetch_all_required_data():
 
         for batch in batches:
             batch_id = batch.id
-            course_name,course_id = batch_map.get(batch_id).course.title,batch_map.get(batch_id).course.id if batch_id in batch_map else None
+            course_name,course_id,course_provider_id = batch_map.get(batch_id).course.title,batch_map.get(batch_id).course.id,batch_map.get(batch_id).course.course_provider_id if batch_id in batch_map else None
 
             # Add batch details to the student's list of batches
             user_course_batch_map[student.student.id].append({
                 "course_name": course_name,
                 "batch_id": batch_id,
                 "course_id":course_id,
+                "course_provider_id":course_provider_id,
                 "enrolled date":batch.created_at
             })
     date=datetime.now()
     activity_data=DailyAggregationRepository.get_aggregations_by_date(date)
     meetings_data=AttendaceRecordRepository.get_attendance_records_by_date(date)
     assessments_data=AssessmentAttemptRepository.fetch_assessments_attempts_data_by_date(date)
+    course_providers_data=CourseProviderRepository.get_all_course_providers()
     
     
     # Return all the data as a dictionary for easy passing
@@ -77,8 +78,16 @@ def fetch_all_required_data():
         'user_course_batch_map': user_course_batch_map,
         'activity_data': activity_data,
         'meetings_data':meetings_data,
-        'assessments_data': assessments_data
+        'assessments_data': assessments_data,
+        'course_providers_data':course_providers_data
     }
+
+def populate_course_provider_sheet(data):
+    course_providersdata=data['course_providers_data']
+    final_data=[]
+    for data in course_providersdata:
+        final_data.append({'CourseProviderId':data.id,'CourseProviderName':data.name})
+    return final_data
 
 # Function for Sheet 1 - Populate user data
 def populate_lms_users_reporting_data(data):
@@ -112,6 +121,7 @@ def populate_lms_users_reporting_data(data):
                 entry.update({
                     "Course Name": course_info.get("course_name"),
                     "Course ID": course_info.get("course_id"),
+                    "Course Provider ID":course_info.get("course_provider_id"),
                     "Batch ID": course_info.get("batch_id"),
                     "Enrollment DateTIme": course_info.get("enrolled date")
                 })
@@ -123,6 +133,7 @@ def populate_lms_users_reporting_data(data):
                 "Course Name": None,
                 "Course ID": None,
                 "Batch ID": None,
+                "Course Provider ID":None,
                 "Enrolled Date": None
             })
             student_data.append(entry)
@@ -136,6 +147,7 @@ def populate_lms_batch_reporting_data(data):
         batch_data.append({
             "Batch ID": batch.id,
             "Course ID": batch.course_id,
+            "Course Provider ID":batch.course.course_provider_id,
             "Course Name": batch.course.title,
             "Start Date": batch.created_at.date(),
             "Number of Students": len(batch.students)
@@ -182,6 +194,7 @@ def populate_AFH_reporting_data(data):
                 entry.update({
                     "Course Name": course_info.get("course_name"),
                     "Course ID": course_info.get("course_id"),
+                    "Course Provider ID":course_info.get("course_provider_id"),
                     "Batch ID": course_info.get("batch_id"),
                     "Enrollment Date":  course_info.get("enrolled date").date().strftime("%d/%m/%y")
                 })
@@ -192,6 +205,7 @@ def populate_AFH_reporting_data(data):
             entry.update({
                 "Course Name": None,
                 "Course ID": None,
+                "Course Provider ID":None,
                 "Batch ID": None
             })
             profile_data.append(entry)
@@ -220,9 +234,8 @@ def populate_course_provider_reporting_data(data):
             'State': UserProfileRepository.fetch_value_from_form('state', user_profile.user_data),
             'District': UserProfileRepository.fetch_value_from_form('district', user_profile.user_data),
             'Course Name': course_info.get("course_name"),
+            "Course Provider ID":course_info.get("course_provider_id"),
             'Batch ID': course_info.get("batch_id"),
-
-           
             'Time Spent on Videos (in mins)': report.resource_time_video.total_seconds()/60,
             'Time Spent on Reading (in mins)': report.resource_time_reading.total_seconds()/60,
             'Time Spent on Recordings (in mins)': report.time_spent_in_recording_classes.total_seconds()/60,
@@ -246,6 +259,7 @@ def populate_lms_time_spent_reporting_data(data):
         final_data.append({
             'Student ID': user.id,
             'Course ID': course_info.get("course_id"),
+            "Course Provider ID":course_info.get("course_provider_id"),
             'Batch ID': course_info.get("batch_id"),           
             'Time Spent on Videos (in mins)': report.resource_time_video.total_seconds()/60, 
             'Time Spent on Reading (in mins)': report.resource_time_reading.total_seconds()/60,
@@ -338,6 +352,7 @@ def report_sheet_generator():
 
     # Call functions to populate data for each sheet
     # Populate data for each reporting type
+    lms_course_provider_data=populate_course_provider_sheet(all_data)
     lms_users_reporting_data = populate_lms_users_reporting_data(all_data)
     lms_batch_reporting_data = populate_lms_batch_reporting_data(all_data)
     afh_reporting_data = populate_AFH_reporting_data(all_data)
@@ -351,8 +366,9 @@ def report_sheet_generator():
     gd_wrapper = GDWrapper(speadsheet_id=settings.REPORT_SPEADSHEET_ID)
 
     # Update the Google Sheets with the populated data
-    gd_wrapper.smart_update_sheet('LMS Users Reporting', lms_users_reporting_data,key_fields=['StudentID', 'Course ID','Batch ID'])
-    gd_wrapper.smart_update_sheet('LMS Batch Reporting', lms_batch_reporting_data,key_fields=['Course ID','Batch ID'])
+    gd_wrapper.smart_update_sheet('LMS Course Providers', lms_course_provider_data,key_fields=['CourseProviderId','CourseProviderName'])
+    gd_wrapper.update_sheet('LMS Users Reporting', lms_users_reporting_data)
+    gd_wrapper.update_sheet('LMS Batch Reporting', lms_batch_reporting_data)
     gd_wrapper.update_sheet('AFH Reporting', afh_reporting_data)
     gd_wrapper.update_sheet('Course Provider Reporting', course_provider_reporting_data)
     gd_wrapper.update_sheet('LMS Time Spent Reporting', lms_time_spent_reporting_data)
@@ -363,6 +379,3 @@ def report_sheet_generator():
         f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
     )
     gd_wrapper.rename_spreadsheet(new_spreadsheet_name)
-
-    # You can now proceed to update the sheets with the corresponding data
-report_sheet_generator()
