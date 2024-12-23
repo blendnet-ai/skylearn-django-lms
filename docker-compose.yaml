@@ -32,7 +32,7 @@ services:
       - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue
+    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue
 
   lms-celery-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
@@ -43,7 +43,7 @@ services:
       - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue
+    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue
     depends_on:
       - redis
       - postgres

@@ -30,7 +30,9 @@ urlpatterns += i18n_patterns(
     path("result/", include("result.urls")),
     path("search/", include("search.urls")),
     path("quiz/", include("quiz.urls")),
+    path("event-logger/", include("events_logger.urls")),
     path("payments/", include("payments.urls")),
+    path("meeting/",include('meetings.urls'))
 )
 
 

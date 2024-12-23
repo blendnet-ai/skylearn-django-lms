@@ -39,7 +39,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -121,6 +121,8 @@ PROJECT_APPS = [
     "quiz.apps.QuizConfig",
     "payments.apps.PaymentsConfig",
     "meetings.apps.MeetingsConfig",
+    "reports.apps.ReportsConfig",
+    "events_logger.apps.EventsLoggerConfig",
     "notifications_manager.apps.NotificationsManagerConfig",
     "notifications.apps.NotificationsConfig"
 ]
@@ -510,7 +512,20 @@ CELERY_BEAT_SCHEDULE = {
     'check-for-completed-meetings-every-1-hour': {
         'task': 'meetings.tasks.process_completed_meetings_task',
         'schedule': crontab(hour='*', minute=0),  # Executes every 1 hour
-    }
+    },
+    'process-activity-aggregations': {
+        'task': 'reports.tasks.process_aggregation',
+        'schedule': crontab(hour=17, minute=30),  # Executes at 5:30 PM UTC (11 PM IST)
+    },
+    'process-report-aggregations': {
+        'task': 'reports.tasks.process_reports',
+        'schedule': crontab(hour=18, minute=0),  # Executes at 6:00 PM UTC (11:30 PM IST)
+    },
+    'generate-report-sheet': {
+        'task': 'reports.tasks.run_management_command',  # Update the path accordingly
+        'schedule': crontab(hour=18, minute=15),  # Executes at 7:15 PM UTC (11:45 AM IST)
+    },
+
     
 }
 
@@ -538,7 +553,6 @@ STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
 
 # Firebase Settings
 FIREBASE_ENABLED = os.environ.get("FIREBASE_ENABLED") == "TRUE"
-print(FIREBASE_ENABLED)
 FIREBASE_ACCOUNT_TYPE = os.environ.get("FIREBASE_ACCOUNT_TYPE")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
 FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
@@ -613,6 +627,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_ROUTES = {
     "meetings.tasks.*": {"queue": "meeting_queue"},
     "course.tasks.*": {"queue": "course_queue"},
+    "reports.tasks.*": {"queue": "reporting_queue"},
 }
 
 CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
@@ -629,3 +644,4 @@ LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
 STORAGE_ACCOUNT_KEY=os.environ.get("STORAGE_ACCOUNT_KEY")   
 RECORDINGS_CONTAINER_NAME=os.environ.get("RECORDINGS_CONTAINER_NAME")
 AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME")
+REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID","1Xr6k01UA_LLZoOhVDoaVu276pCL7pw0xwBdFStzREOM")

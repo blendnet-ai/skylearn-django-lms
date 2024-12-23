@@ -22,6 +22,9 @@ class StudentRepository:
 
     def create_student(user):
         return Student.objects.create(student=user)
+    
+    def get_all_students():
+        return Student.objects.all()
 
 
 class UserRepository:
@@ -70,6 +73,9 @@ class CourseProviderRepository:
 
         except CourseProviderAdmin.DoesNotExist:
             return None
+    
+    def get_all_course_providers():
+        return CourseProvider.objects.all()
 
     @staticmethod
     def get_course_provider_by_id(course_provider_id):
@@ -113,3 +119,4 @@ class UserConfigMappingRepository:
     @staticmethod
     def bulk_create_user_config_mappings(config_mappings: list):
         return UserConfigMapping.objects.bulk_create(config_mappings)
+

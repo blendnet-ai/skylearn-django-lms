@@ -165,21 +165,7 @@ class MeetingRepository:
 
         return Meeting.objects.none()
     
-    @staticmethod
-    def get_completed_meetings_in_past_24_hours_with_recordings():
-        """
-        Get meetings that:
-        1. Have ended (based on start_time + duration)
-        2. Have recording_metadata
-        3. Haven't sent absent notifications yet
-        """
-        now = datetime.now(ist)
-        potential_meetings = Meeting.objects.filter(
-            start_date__gte=now - timedelta(hours=24),
-            blob_url__isnull=False,  
-            blob_url__gt=''
-        ).select_related("series")
-        return potential_meetings
+
 
 class AttendaceRecordRepository:
     @staticmethod
@@ -263,7 +249,7 @@ class AttendaceRecordRepository:
             'attendance_percentage': attendance_percentage
         }
         
-    
+    @staticmethod
     def get_attended_meetings_for_user_on_day(user_id: int, course_id:int, date: datetime) -> list:
         """
         Get all meetings attended by a user on a specific day.
@@ -288,12 +274,56 @@ class AttendaceRecordRepository:
             meeting = record.meeting
             meetings_list.append({
                 'meeting_id': meeting.id,
+                'meeting_title':meeting.title,
                 'course': meeting.course.id if meeting.course else None,
                 'duration':meeting.duration if record.attendance else timedelta(0)
             })
 
         return meetings_list
-    
+
+    @staticmethod
+    def get_all_attendance_records_data():
+        """
+        Get all attendance records with associated meeting and batch information.
+        
+        Returns:
+            QuerySet of AttendanceRecord instances with related Meeting and Series.
+        """
+        return AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__isnull=False  # Only records for enrolled courses
+        ).select_related('meeting', 'meeting__series').distinct()
+        
+    @staticmethod
+    def get_attendance_records_by_date(target_date):
+        """
+        Get attendance records for a specific date with associated meeting and batch information.
+        
+        Args:
+            target_date (date): The date to filter attendance records for
+                
+        Returns:
+            QuerySet of AttendanceRecord instances with related Meeting and Series.
+        """
+        return AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__isnull=False,
+            meeting__start_date=target_date
+        ).select_related('meeting', 'meeting__series').distinct()
+
+    @staticmethod
+    def get_completed_meetings_in_past_24_hours_with_recordings():
+        """
+        Get meetings that:
+        1. Have ended (based on start_time + duration)
+        2. Have recording_metadata
+        3. Haven't sent absent notifications yet
+        """
+        now = datetime.now(ist)
+        potential_meetings = Meeting.objects.filter(
+            start_date__gte=now - timedelta(hours=24),
+            blob_url__isnull=False,  
+            blob_url__gt=''
+        ).select_related("series")
+        return potential_meetings
     
     @staticmethod
     def get_absent_users_for_meeting(meeting_id):

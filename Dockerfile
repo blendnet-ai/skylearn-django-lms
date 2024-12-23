@@ -58,6 +58,7 @@ ENV POSTGRES_HOST=postgres \
     POSTGRES_DB=db_name \
     POSTGRES_USER=postgres \
     POSTGRES_PASSWORD=password \
+    WHISPER_TIMESTAMP_SERVICE_ENDPOINT=""\
     MAILJET_API_KEY=a \
     MAILJET_SECRET_KEY=a \
     ENV="build" \
@@ -66,7 +67,25 @@ ENV POSTGRES_HOST=postgres \
     REDIS_PORT=6379 \
     REDIS_USER=user \
     REDIS_PASSWORD=dummy \
-    CACHE_ENABLED=TRUE
+    CACHE_ENABLED=TRUE \
+    SENTRY_ENABLED=FALSE \
+    SENTRY_URL="" \
+    FIREBASE_ENABLED=FALSE\
+    FIREBASE_ACCOUNT_TYPE="service_account"\
+    FIREBASE_PROJECT_ID=""\
+    FIREBASE_PRIVATE_KEY_ID=""\
+    FIREBASE_PRIVATE_KEY=""\
+    FIREBASE_CLIENT_EMAIL=""\
+    FIREBASE_CLIENT_ID=""\
+    FIREBASE_AUTH_URI="https://accounts.google.com/o/oauth2/auth"\
+    FIREBASE_TOKEN_URI="https://oauth2.googleapis.com/token"\
+    FIREBASE_AUTH_PROVIDER_X509_CERT_URL="https://www.googleapis.com/oauth2/v1/certs"\
+    FIREBASE_CLIENT_X509_CERT_URL=""\
+    UNIVERSE_DOMAIN="googleapis.com"\
+    AI_TELEGRAM_BOT_TOKEN=""\
+    DISABLE_PROMPT_VALIDATIONS="TRUE"\
+    WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN=""\
+    WHISPER_TIMESTAMP_SERVICE_ENDPOINT=""
 
 
 # Collect static files

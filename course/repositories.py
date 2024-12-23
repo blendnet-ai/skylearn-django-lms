@@ -50,7 +50,7 @@ class CourseRepository:
     @staticmethod
     def get_all_courses():
         return Course.objects.all().values()
-
+    
     @staticmethod
     def get_courses_for_course_provider_admin(course_provider_admin_id):
         return Course.objects.filter(
@@ -90,6 +90,9 @@ class BatchRepository:
         batch.lecturer = lecturer
         batch.save()
         return batch
+    
+    def get_all_batches():
+        return Batch.objects.all()
 
 
 class LiveClassSeriesBatchAllocationRepository:
@@ -162,6 +165,10 @@ class UploadRepository:
             module=module,
             blob_url=blob_url
         )
+    
+    def get_reading_resource_by_id(resource_id):
+        resource=Upload.objects.filter(id=resource_id).first()
+        return resource
 
 class UploadVideoRepository:
     @staticmethod
@@ -185,5 +192,10 @@ class UploadVideoRepository:
     def get_video_count_by_course(course_id):
         videos = UploadVideo.objects.filter(course_id=course_id)
         return videos.count()
+    
+    def get_video_resource_by_id(resource_id):
+        resource=UploadVideo.objects.filter(id=resource_id).first()
+        return resource
+        
 
 

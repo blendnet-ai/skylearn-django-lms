@@ -224,3 +224,114 @@ class GDWrapper:
 
         logger.info(f"Value '{value}' not found in column '{column_name}' of sheet '{sheet_name}'.")
         return None
+    
+
+    def smart_update_sheet(self, sheet_name, new_data, key_fields):
+        """
+        Updates sheet by comparing existing data with new data based on key fields.
+        
+        Args:
+            sheet_name (str): Name of the sheet to update
+            new_data (list): List of dictionaries containing new data
+            key_fields (list): List of field names to use as unique identifiers
+        """
+        logger.info(f"Smart updating sheet {sheet_name} using keys: {key_fields}")
+
+        # Get existing data
+        existing_data = self.get_sheet_as_json(sheet_name)
+        
+        # Create a dictionary of existing data using key fields as composite key
+        existing_data_dict = {}
+        for row in existing_data:
+            composite_key = tuple(str(row.get(key, '')) for key in key_fields)
+            existing_data_dict[composite_key] = row
+
+        # Process new data
+        updated_data = existing_data.copy()  # Start with existing data
+        for new_row in new_data:
+            # Create composite key for new row
+            composite_key = tuple(str(new_row.get(key, '')) for key in key_fields)
+            
+            if composite_key in existing_data_dict:
+                # Row exists - check if update needed
+                existing_row = existing_data_dict[composite_key]
+                if self._row_needs_update(existing_row, new_row):
+                    logger.info(f"Updating existing row with key: {composite_key}")
+                    # Find and update the row in updated_data
+                    for i, row in enumerate(updated_data):
+                        if all(str(row.get(key, '')) == str(new_row.get(key, '')) for key in key_fields):
+                            updated_data[i] = new_row
+                            break
+            else:
+                # New row - append to data
+                logger.info(f"Adding new row with key: {composite_key}")
+                updated_data.append(new_row)
+
+        # Update sheet with final data
+        self.update_sheet(sheet_name, updated_data)
+
+    def _row_needs_update(self, existing_row, new_row):
+        """
+        Compare existing and new row to determine if update is needed.
+        Returns True if rows are different, False if they're the same.
+        """
+        return any(
+            str(existing_row.get(key, '')) != str(new_row.get(key, ''))
+            for key in set(existing_row.keys()) | set(new_row.keys())
+        )
+    
+    def append_to_sheet(self, sheet_name, data):
+        """
+        Appends new data to an existing sheet without clearing existing content.
+        Handles empty data and prevents duplicate rows.
+        
+        Args:
+            sheet_name (str): Name of the sheet to append to
+            data (list): List of dictionaries containing the data to append
+        """
+        if not data:
+            logger.info(f"No data to append to sheet {sheet_name}")
+            return
+
+        logger.info(f"Appending data to sheet {sheet_name}")
+
+        # Get existing data to check for duplicates
+        existing_data = self.get_existing_data(sheet_name)
+        
+        # Get fieldnames from the first data entry
+        fieldnames = data[0].keys()
+        
+        # Convert data to rows, checking for duplicates
+        values = []
+        for entry in data:
+            row = []
+            for field in fieldnames:
+                value = entry.get(field, "")
+                if isinstance(value, dict):
+                    value = json.dumps(value)
+                row.append(str(value))
+            
+            # Skip if row already exists in sheet
+            if not self.is_row_in_existing_data(row, existing_data):
+                values.append(row)
+
+        if not values:
+            logger.info("No new unique rows to append")
+            return
+
+        body = {"values": values}
+        result = (
+            self.sheets_service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.speadsheet_id,
+                range=sheet_name,
+                valueInputOption="RAW",
+                body=body,
+                insertDataOption="INSERT_ROWS"
+            )
+            .execute()
+        )
+
+        logger.info(f"Successfully appended {len(values)} unique rows to sheet {sheet_name}")
+    

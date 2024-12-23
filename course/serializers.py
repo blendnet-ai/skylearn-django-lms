@@ -67,3 +67,10 @@ class BatchSerializer(serializers.ModelSerializer):
 class LiveClassDateRangeSerializer(serializers.Serializer):
     start_date = serializers.DateField()
     end_date = serializers.DateField()
+
+
+class CourseMessageSerializer(serializers.Serializer):
+    course_id = serializers.IntegerField()
+    batch_id = serializers.IntegerField()
+    message = serializers.CharField()
+    subject = serializers.CharField()

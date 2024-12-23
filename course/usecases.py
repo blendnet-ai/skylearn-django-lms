@@ -25,7 +25,8 @@ import io
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from course.models import Course, Module, Upload, UploadVideo
 from storage_service.azure_storage import AzureStorageService
-
+from .services import MessageService
+from telegram_bot.repositories import TelegramChatDataRepository
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -679,17 +680,20 @@ class CourseContentDriveUsecase:
     def _download_and_upload_file(self, drive_service, file, file_path):
         """Helper method to download from Drive and upload to blob storage"""
         try:
+            # Get file metadata to retrieve MIME type
+            file_metadata = drive_service.files().get(fileId=file['id'], fields='mimeType').execute()
+            mime_type = file_metadata.get('mimeType', 'application/octet-stream')
+            
             request = drive_service.files().get_media(fileId=file['id'])
-            file_content = io.BytesIO()  # Create a BytesIO object to store the file content
+            file_content = io.BytesIO()
             downloader = MediaIoBaseDownload(file_content, request)
             
             done = False
             while not done:
                 _, done = downloader.next_chunk()
             
-            # Reset the pointer to the beginning of the BytesIO object
             file_content.seek(0)
-            return self._upload_to_blob(file_content, file['name'], file_path)
+            return self._upload_to_blob(file_content, file['name'], file_path, mime_type)
         except Exception as e:
             raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
 
@@ -725,15 +729,71 @@ class CourseContentDriveUsecase:
         results = drive_service.files().list(q=query).execute()
         return results.get('files', [])
         
-    def _upload_to_blob(self, file_content, filename, blob_path):
-        """Upload file to Azure Blob Storage"""
-        logging.info(f"Uploading file to blob storage: {blob_path}")
+    def _upload_to_blob(self, file_content, filename, blob_path, content_type):
+        """Upload file to Azure Blob Storage with content type"""
+        logging.info(f"Uploading file to blob storage: {blob_path} with content type: {content_type}")
         blob_url = self.storage_service.upload_blob(
             container_name=settings.AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME,
             blob_name=blob_path,
             content=file_content,
+            content_type=content_type,  # Pass the content type to Azure
             overwrite=True
         )
         logging.info(f"Uploaded file to blob storage: {blob_url}")
         return blob_url
-    
+
+class BatchMessageUsecase:
+    @staticmethod
+    def send_batch_messages(batch_id: int, subject: str, message: str) -> dict:
+        """
+        Send messages to all students in a batch via email and telegram
+        
+        Args:
+            batch_id: ID of the batch
+            subject: Email subject
+            message: Message content
+            
+        Returns:
+            dict: Statistics about message delivery
+        """
+        try:
+            batch = BatchRepository.get_batch_by_id(batch_id)
+            
+            # Track success/failure counts
+            stats = {
+                "email_sent": 0,
+                "email_failed": 0,
+                "telegram_sent": 0,
+                "telegram_failed": 0
+            }
+            
+            # Send to each student
+            for student in batch.students.all():
+                # Send email if email exists
+                if student.student.email:
+                    success = MessageService.send_email_message(
+                        email=student.student.email,
+                        subject=subject,
+                        message=message
+                    )
+                    if success:
+                        stats["email_sent"] += 1
+                    else:
+                        stats["email_failed"] += 1
+                
+                telegram_chat_id = TelegramChatDataRepository.get_telegram_chat_id_sync(student.student)
+                if telegram_chat_id:
+                    success = MessageService.send_telegram_message(
+                        chat_id=telegram_chat_id,
+                        message=message
+                    )
+                    if success:
+                        stats["telegram_sent"] += 1
+                    else:
+                        stats["telegram_failed"] += 1
+                        
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error sending batch messages: {str(e)}")
+            raise
