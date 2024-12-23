@@ -39,7 +39,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "adilmohak1.pythonanywhere.com", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -512,11 +512,11 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour='*', minute=0),  # Executes every 1 hour
     },
     'process-activity-aggregations': {
-        'task': 'reporting.tasks.process_aggregation',
+        'task': 'reports.tasks.process_aggregation',
         'schedule': crontab(hour=5, minute=30),  # Executes at 11 pm
     },
     'process-report-aggregations': {
-        'task': 'reporting.tasks.process_reports',
+        'task': 'reports.tasks.process_reports',
         'schedule': crontab(hour=6, minute=0),  # Executes at 11:30 pm
     }
     
@@ -620,7 +620,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_TASK_ROUTES = {
     "meetings.tasks.*": {"queue": "meeting_queue"},
     "course.tasks.*": {"queue": "course_queue"},
-    "reporting.tasks.*": {"queue": "reporting_queue"},
+    "reports.tasks.*": {"queue": "reporting_queue"},
 }
 
 CELERY_USE_SSL = not (os.environ.get("CELERY_USE_SSL", "TRUE") == "FALSE")
@@ -637,3 +637,4 @@ LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
 STORAGE_ACCOUNT_KEY=os.environ.get("STORAGE_ACCOUNT_KEY")   
 RECORDINGS_CONTAINER_NAME=os.environ.get("RECORDINGS_CONTAINER_NAME")
 AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME")
+REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID","1Xr6k01UA_LLZoOhVDoaVu276pCL7pw0xwBdFStzREOM")

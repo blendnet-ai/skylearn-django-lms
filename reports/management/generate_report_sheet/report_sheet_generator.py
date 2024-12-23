@@ -12,6 +12,7 @@ from evaluation.repositories import AssessmentAttemptRepository, AssessmentGener
 from evaluation.models import AssessmentGenerationConfig
 import json
 from datetime import datetime
+from django.conf import settings
 
 User = get_user_model()
 
@@ -61,10 +62,10 @@ def fetch_all_required_data():
                 "course_id":course_id,
                 "enrolled date":batch.created_at
             })
-    
-    activity_data=DailyAggregationRepository.get_all_aggregations_data()
-    meetings_data=AttendaceRecordRepository.get_all_attendance_records_data()
-    assessments_data=AssessmentAttemptRepository.fetch_all_assessments_attempts_data()
+    date=datetime.now()
+    activity_data=DailyAggregationRepository.get_aggregations_by_date(date)
+    meetings_data=AttendaceRecordRepository.get_attendance_records_by_date(date)
+    assessments_data=AssessmentAttemptRepository.fetch_assessments_attempts_data_by_date(date)
     
     
     # Return all the data as a dictionary for easy passing
@@ -347,7 +348,7 @@ def report_sheet_generator():
     lms_assessment_logs_data = populate_lms_assessments_logs_data(all_data)  # Assuming you have this function
 
     # Initialize GDWrapper
-    gd_wrapper = GDWrapper('1Xr6k01UA_LLZoOhVDoaVu276pCL7pw0xwBdFStzREOM')
+    gd_wrapper = GDWrapper(speadsheet_id=settings.REPORT_SPEADSHEET_ID)
 
     # Update the Google Sheets with the populated data
     gd_wrapper.smart_update_sheet('LMS Users Reporting', lms_users_reporting_data,key_fields=['StudentID', 'Course ID','Batch ID'])
@@ -355,12 +356,13 @@ def report_sheet_generator():
     gd_wrapper.update_sheet('AFH Reporting', afh_reporting_data)
     gd_wrapper.update_sheet('Course Provider Reporting', course_provider_reporting_data)
     gd_wrapper.update_sheet('LMS Time Spent Reporting', lms_time_spent_reporting_data)
-    gd_wrapper.update_sheet('LMS Activity Logs', lms_activity_logs_data)
-    gd_wrapper.update_sheet('LMS Live Class Logs', lms_live_class_logs_data)
-    gd_wrapper.update_sheet('LMS Assessment Logs', lms_assessment_logs_data)
+    gd_wrapper.append_to_sheet('LMS Activity Logs', lms_activity_logs_data)
+    gd_wrapper.append_to_sheet('LMS Live Class Logs', lms_live_class_logs_data)
+    gd_wrapper.append_to_sheet('LMS Assessment Logs', lms_assessment_logs_data)
     new_spreadsheet_name = (
         f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
     )
     gd_wrapper.rename_spreadsheet(new_spreadsheet_name)
 
     # You can now proceed to update the sheets with the corresponding data
+report_sheet_generator()

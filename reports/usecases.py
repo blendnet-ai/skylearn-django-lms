@@ -66,6 +66,7 @@ class GenerateUserCourseReportsUseCase:
                 resource_video_time=resource_video_time+activity.time_spent
             elif activity.type_of_aggregation=="live_class":
                 if activity.time_spent != timedelta(0):
+                    #Here time zero means that the class was not attended hence we are not counting it for attendance
                     time_spent_live_classes=time_spent_live_classes+activity.time_spent
                     total_classes_attended+=1;
                     total_classes+=1;

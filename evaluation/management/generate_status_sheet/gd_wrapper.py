@@ -280,3 +280,58 @@ class GDWrapper:
             for key in set(existing_row.keys()) | set(new_row.keys())
         )
     
+    def append_to_sheet(self, sheet_name, data):
+        """
+        Appends new data to an existing sheet without clearing existing content.
+        Handles empty data and prevents duplicate rows.
+        
+        Args:
+            sheet_name (str): Name of the sheet to append to
+            data (list): List of dictionaries containing the data to append
+        """
+        if not data:
+            logger.info(f"No data to append to sheet {sheet_name}")
+            return
+
+        logger.info(f"Appending data to sheet {sheet_name}")
+
+        # Get existing data to check for duplicates
+        existing_data = self.get_existing_data(sheet_name)
+        
+        # Get fieldnames from the first data entry
+        fieldnames = data[0].keys()
+        
+        # Convert data to rows, checking for duplicates
+        values = []
+        for entry in data:
+            row = []
+            for field in fieldnames:
+                value = entry.get(field, "")
+                if isinstance(value, dict):
+                    value = json.dumps(value)
+                row.append(str(value))
+            
+            # Skip if row already exists in sheet
+            if not self.is_row_in_existing_data(row, existing_data):
+                values.append(row)
+
+        if not values:
+            logger.info("No new unique rows to append")
+            return
+
+        body = {"values": values}
+        result = (
+            self.sheets_service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.speadsheet_id,
+                range=sheet_name,
+                valueInputOption="RAW",
+                body=body,
+                insertDataOption="INSERT_ROWS"
+            )
+            .execute()
+        )
+
+        logger.info(f"Successfully appended {len(values)} unique rows to sheet {sheet_name}")
+    

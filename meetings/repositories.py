@@ -304,6 +304,6 @@ class AttendaceRecordRepository:
         """
         return AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__isnull=False,
-            meeting__start_date__date=target_date
+            meeting__start_date=target_date
         ).select_related('meeting', 'meeting__series').distinct()
 
