@@ -309,9 +309,11 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
         writing_normalized_10 = (writing_score_10 + writing_grammar_10 + writing_coherence_10 + writing_vocab_10) / 4
 
         eval_data = {
-            "total_score": round((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4, 1),
-            "max_score": 10.0,
-            "percentage": round(((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4) * 10, 1),
+           "additonal_data":{
+                "total_score": round((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4, 1),
+                "max_score": 10.0,
+                "percentage": round(((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4) * 10, 1)
+           },
             "performance_overview": {
                 "feedback": "You have done well in the assessment. Keep up the good work.",
                 "score": round(overall_score_10, 1)
