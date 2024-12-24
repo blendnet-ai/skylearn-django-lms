@@ -43,7 +43,7 @@ from evaluation.evaluators.DSAAssessmentEvaluator import DSAAssessmentEvaluator
 from evaluation.evaluators.MockInterviewBehaviouralEvaluator import (
     MockInterviewBehaviouralEvaluator,
 )
-from evaluation.evaluators.LSRWEvaluator import LSRWAssessmentEvaluator
+
 from .tasks import mark_test_abandoned
 from custom_auth.repositories import UserProfileRepository
 
@@ -953,8 +953,6 @@ class EvaluationUseCase:
                 assessment_evaluator = DSAAssessmentEvaluator(assessment)
             elif assessment.type == int(AssessmentAttempt.Type.MOCK_BEHAVIOURAL):
                 assessment_evaluator = MockInterviewBehaviouralEvaluator(assessment)
-            elif assessment.type == int(AssessmentAttempt.Type.LSRW):
-                assessment_evaluator = LSRWAssessmentEvaluator(assessment)
 
             assessment_evaluator.evaluate()
 
