@@ -1,6 +1,0 @@
-name: 'dsa_evaluation_gpt_2'
-type: 'AzureOpenAILLMConfig'
-endpoint: 'https://openai-sweden-central-bts.openai.azure.com/'
-deployment_name: 'gpt4-32k'
-api_key: 'b94bf0d4618c456083520b82747c3900'
-version: '2024-02-15-preview'
