@@ -33,7 +33,8 @@ from .views import (
     DSASheetList,
     DSAAssessmentChatHistoryView,
     DSALabQuestionsList,
-    AvailableInterviewTypesView
+    AvailableInterviewTypesView,
+    FetchReport
 )
 
 urlpatterns = [
@@ -70,6 +71,7 @@ urlpatterns = [
     path('assessment-chat-history/<int:assessment_id>/', DSAAssessmentChatHistoryView.as_view(), name='assessment_chat_history'),
      path('available-interview-types', AvailableInterviewTypesView().as_view(), name='available_interview_types'),
      path('mock-interview-behavioural-report', MockInterviewBehaviouralReportView.as_view(), name='mock_interview_behavioural_report'),
+     path('fetch-report', FetchReport.as_view(), name='fetch_report'),
 ]
 
 websocket_urlpatterns =[
