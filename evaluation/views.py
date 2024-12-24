@@ -53,6 +53,7 @@ from .usecases import (
     DashBoardDetailsUsecase,
     DSASheetsConfigUsecase,
     AssessmentExpiredException,
+    AssessmentReportUsecase
 )
 from .models import AssessmentAttempt, DSAPracticeChatData
 
@@ -845,3 +846,16 @@ class MockInterviewBehaviouralReportView(APIView):
         )
 
         return Response({"data": report}, status=status.HTTP_200_OK)
+
+class FetchReport(APIView):
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
+
+    def get(self, request):
+        user = request.user
+        assessment_id = request.query_params.get("assessmentId")
+        if not assessment_id:
+            return Response({"error": "Assessment ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        data = AssessmentReportUsecase.get_assessment_report(user, assessment_id)
+        return Response({"data": data}, status=status.HTTP_200_OK)
+
