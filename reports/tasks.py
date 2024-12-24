@@ -2,17 +2,17 @@ from celery import shared_task
 from django.utils import timezone
 import logging
 
-from reports.management.generate_report_sheet import report_sheet_generator  # {{ edit_1 }}
+from reports.management.generate_report_sheet.report_sheet_generator import report_sheet_generator
 from .usecases import GenerateUserCourseReportsUseCase,DailyAggregationUsecase
 from django.contrib.auth import get_user_model
 from datetime import datetime, timedelta
-# {{ edit_2 }}
+
 logger = logging.getLogger(__name__)  # Setup logger
 User = get_user_model()
 
 @shared_task(queue='reporting_queue')
 def generate_report_sheet():
-    report_sheet_generator.delay()
+    report_sheet_generator()
 
 @shared_task(queue='reporting_queue') 
 def process_reports():

@@ -520,7 +520,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=18, minute=0),  # Executes at 6:00 PM UTC (11:30 PM IST)
     },
     'generate-report-sheet': {
-        'task': 'reports.tasks.run_management_command',  # Update the path accordingly
+        'task': 'reports.tasks.generate_report_sheet',  # Update the path accordingly
         'schedule': crontab(hour=18, minute=15),  # Executes at 7:15 PM UTC (11:45 AM IST)
     },
 
