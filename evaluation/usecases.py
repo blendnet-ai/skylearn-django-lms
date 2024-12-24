@@ -43,6 +43,7 @@ from evaluation.evaluators.DSAAssessmentEvaluator import DSAAssessmentEvaluator
 from evaluation.evaluators.MockInterviewBehaviouralEvaluator import (
     MockInterviewBehaviouralEvaluator,
 )
+
 from .tasks import mark_test_abandoned
 from custom_auth.repositories import UserProfileRepository
 
@@ -2092,3 +2093,26 @@ class MockInterviewReportUsecase:
         }
 
         return report
+
+
+class AssessmentReportUsecase:
+    @staticmethod
+    def get_assessment_report(user, assessment_id):
+        assessment_attempt = AssessmentAttemptRepository.fetch_assessment_attempt(assessment_id)
+        if not assessment_attempt:
+            return None
+
+        eval_data = assessment_attempt.eval_data
+        if eval_data:
+            eval_data["assessment_details"] = {
+                "assessment_id": assessment_attempt.assessment_id,
+                "assessment_name": assessment_attempt.assessment_generation_config_id.assessment_display_name,
+            }
+
+        report = {
+            "status": assessment_attempt.status,
+            "data": eval_data,
+        }
+
+        return report
+
