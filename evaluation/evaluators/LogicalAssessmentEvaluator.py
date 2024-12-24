@@ -121,6 +121,8 @@ class LogicalAssessmentEvaluator(AssessmentEvaluator):
         eval_data = {
             "additional_data": additional_data,
             "percentage": overall_normalized_score,
+            "max_score": max_score,
+            "total_score": score,
             "performance_tag": performance_tag
         }
      
