@@ -43,6 +43,7 @@ from evaluation.evaluators.DSAAssessmentEvaluator import DSAAssessmentEvaluator
 from evaluation.evaluators.MockInterviewBehaviouralEvaluator import (
     MockInterviewBehaviouralEvaluator,
 )
+
 from .tasks import mark_test_abandoned
 from custom_auth.repositories import UserProfileRepository
 
@@ -735,19 +736,9 @@ class AssessmentUseCase:
         # Process history items efficiently
         for item in history:
             eval_data = item.get("eval_data", {})
-            additional_data = eval_data.get("additional_data", {})
-
-            # Get counts with defaults
-            total_correct = additional_data.get("correct", 0)
-            total_incorrect = additional_data.get("incorrect", 0) 
-            total_not_attempted = additional_data.get("not_attempted", 0)
-
-            # Calculate totals
-            total = total_correct + total_incorrect + total_not_attempted
-            total_marks_obtained = total_correct * 3
-            total_marks_lost = total_incorrect * 1
-            total_obtained = total_marks_obtained - total_marks_lost
-            grand_total = total * 3
+            max_score = eval_data.get("max_score")
+            total_score = eval_data.get("total_score")
+            percentage = eval_data.get("percentage")
 
             # Get module info efficiently with select_related
             module_name = None
@@ -771,14 +762,8 @@ class AssessmentUseCase:
                 "status": item.get("status"),
                 "percentage": eval_data.get("percentage"),
                 "short_description": eval_data.get("short_description"),
-                "total_correct": total_correct,
-                "total_marks_obtained": total_marks_obtained,
-                "total_marks_lost": total_marks_lost,
-                "total_obtained": total_obtained,
-                "grand_total": grand_total,
-                "total_incorrect": total_incorrect,
-                "total_not_attempted": total_not_attempted,
-                "total": total,
+                "total_obtained": total_score,
+                "grand_total": max_score,
                 "assessment_name": item.get("assessment_generation_config_id__assessment_display_name"),
                 "module_name": module_name,
                 "course_code": course_code,
@@ -2092,3 +2077,26 @@ class MockInterviewReportUsecase:
         }
 
         return report
+
+
+class AssessmentReportUsecase:
+    @staticmethod
+    def get_assessment_report(user, assessment_id):
+        assessment_attempt = AssessmentAttemptRepository.fetch_assessment_attempt(assessment_id)
+        if not assessment_attempt:
+            return None
+
+        eval_data = assessment_attempt.eval_data
+        if eval_data:
+            eval_data["assessment_details"] = {
+                "assessment_id": assessment_attempt.assessment_id,
+                "assessment_name": assessment_attempt.assessment_generation_config_id.assessment_display_name,
+            }
+
+        report = {
+            "status": assessment_attempt.status,
+            "data": eval_data,
+        }
+
+        return report
+

@@ -154,3 +154,8 @@ media/result_sheet/*
 # Custom
 dump.rdb
 *.DS_Store
+
+#Config directories
+llm_configs/
+llm_configs_v2/
+gd_config.json

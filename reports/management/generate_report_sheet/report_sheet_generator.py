@@ -312,14 +312,15 @@ def populate_lms_assessments_logs_data(data):
     final_data = []
     for record in assessments_data:
         # Get the assessment type
-        assessment_type = AssessmentGenerationConfig().get_assessment_type_display()
+        assessment_type = record.assessment_generation_config_id.assessment_type
         # Initialize the grade/score and comments
         grade_or_score = None
         comments = ''
         # Check if eval_data exists and get the percentage or total_score
         if record.eval_data:
             percentage = record.eval_data.get('percentage')
-            if assessment_type == 'Qualitative':
+            print(percentage)
+            if int(assessment_type) == int(AssessmentGenerationConfig.Type.Qualitative):
                 # Determine the grade based on percentage
                 if percentage is not None:
                     if percentage < 30:
@@ -331,7 +332,7 @@ def populate_lms_assessments_logs_data(data):
                 else:
                     grade_or_score = 'N/A'  # or some default value if percentage is not available
             
-            elif assessment_type == 'Quantitative':
+            elif assessment_type == int(AssessmentGenerationConfig.Type.Quantitative):
                 # Use the total score for quantitative assessments
                 grade_or_score = percentage
         

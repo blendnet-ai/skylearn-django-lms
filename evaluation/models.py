@@ -350,6 +350,7 @@ class AssessmentAttempt(models.Model):
         CODING = 3, "Coding Assessment"
         DSA_PRACTICE = 4, "DSA Practice"
         MOCK_BEHAVIOURAL = 5, "Mock Behavioural"
+        LSRW=6, "LSRW"
 
     class Mode(models.TextChoices):
         EVALUATION = 0, "Evaluation"
