@@ -49,6 +49,8 @@ class UserProfileRepository:
         return UserProfile.objects.get_or_create(user_id=user)
 
     def fetch_value_from_form(field_name, form_data):
+        if form_data is None:
+            return None
         for section in form_data["sections"]:
             for field in section["fields"]:
                 if field["name"] == field_name:
