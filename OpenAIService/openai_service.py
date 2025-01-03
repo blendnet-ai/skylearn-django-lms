@@ -7,6 +7,7 @@ from openai.types import FileObject
 from openai.types.beta.threads.run import Run
 import logging
 import litellm
+from pydantic import BaseModel
 
 class OpenAIService:
     def __init__(self):
@@ -133,11 +134,12 @@ class OpenAIService:
         except Exception as e:
             self.logger.error(f"An error occurred while listing the messages: {e}")
             return None
-        
+
     @staticmethod
-    def send_messages_and_get_response(messages: list, llm_config_params: dict):
+    def send_messages_and_get_response(messages: list, llm_config_params: dict, response_format_class: type[BaseModel]|None=None):
         response = litellm.completion(
            **llm_config_params,
             messages=messages,
+            response_format=response_format_class
         )
         return response["choices"][0]

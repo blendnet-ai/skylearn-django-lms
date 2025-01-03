@@ -173,21 +173,21 @@ class AssessmentUseCase:
             display_data = assessment.display_data
             name = assessment.assessment_display_name
             max_attempts = assessment.number_of_attempts
-            start_date=assessment.start_date
-            end_date=assessment.end_date
-            due_date=assessment.due_date
+            start_date = assessment.start_date
+            end_date = assessment.end_date
+            due_date = assessment.due_date
             number_of_attempts = AssessmentAttemptRepository.number_of_attempts_expired(
                 assessment_generation_config_id=assessment_generation_id,
                 user_id=user_id,
             )
-            
+
             # Check if the assessment should be locked
             current_date = timezone.now()
             if start_date is not None and end_date is not None:
                 is_locked = not (start_date <= current_date <= end_date)
             else:
                 is_locked = False
-            
+
             resp_obj = {
                 "assessment_generation_id": assessment_generation_id,
                 "test": {
@@ -211,10 +211,8 @@ class AssessmentUseCase:
                 "user_id": user_id,
                 "start_date": start_date,
                 "end_date": end_date,
-                "due_date":due_date,
-                "is_locked": is_locked
- 
-                
+                "due_date": due_date,
+                "is_locked": is_locked,
             }
 
             resp_data.append(resp_obj)
@@ -593,12 +591,19 @@ class AssessmentUseCase:
         current_attempt_count = AssessmentAttemptRepository.number_of_attempts_expired(
             assessment_generation_config_id=assessment_generation_id, user_id=user.id
         )
-        
-        if assessment_generation_class_data.start_date is not None and assessment_generation_class_data.end_date is not None:
-            is_locked = not (assessment_generation_class_data.start_date <= timezone.now() <= assessment_generation_class_data.end_date)
+
+        if (
+            assessment_generation_class_data.start_date is not None
+            and assessment_generation_class_data.end_date is not None
+        ):
+            is_locked = not (
+                assessment_generation_class_data.start_date
+                <= timezone.now()
+                <= assessment_generation_class_data.end_date
+            )
         else:
-            is_locked=False
-        
+            is_locked = False
+
         if is_locked:
             raise ValueError("Assessment is locked")
 
@@ -720,15 +725,23 @@ class AssessmentUseCase:
 
         # Build filter options in one pass
         for assessment in available_assessments:
-            if (assessment.assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1 
-                and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED):
+            if (
+                assessment.assessment_generation_id
+                == int(AssessmentAttempt.Type.CODING) + 1
+                and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED
+            ):
                 continue
-                
-            filter_options.append({
-                "name": assessment.assessment_display_name,
-                "type": assessment.kwargs.get("category"), 
-                "shortForm": "".join(word[0].upper() for word in assessment.assessment_display_name.split())
-            })
+
+            filter_options.append(
+                {
+                    "name": assessment.assessment_display_name,
+                    "type": assessment.kwargs.get("category"),
+                    "shortForm": "".join(
+                        word[0].upper()
+                        for word in assessment.assessment_display_name.split()
+                    ),
+                }
+            )
 
         # Fetch history with all needed fields in one query
         history = AssessmentAttemptRepository.fetch_user_assessment_history(user_id)
@@ -744,36 +757,43 @@ class AssessmentUseCase:
             module_name = None
             course_code = None
             assessment_config_id = item.get("assessment_generation_config_id")
-            
+
             from course.models import Module
-            module_info = Module.objects.filter(
-                assignment_configs__assessment_generation_id=assessment_config_id
-            ).select_related('course').only('title', 'course__code').first()
+
+            module_info = (
+                Module.objects.filter(
+                    assignment_configs__assessment_generation_id=assessment_config_id
+                )
+                .select_related("course")
+                .only("title", "course__code")
+                .first()
+            )
 
             if module_info:
                 module_name = module_info.title
                 course_code = module_info.course.code
 
             # Build response object
-            resp_data.append({
-                "last_attempted": item.get("start_time"),
-                "assessment_id": item.get("assessment_id"),
-                "type": item.get("type"),
-                "status": item.get("status"),
-                "percentage": f"{eval_data.get('percentage')}%",
-                "short_description": eval_data.get("short_description"),
-                "total_obtained": total_score,
-                "grand_total": max_score,
-                "assessment_name": item.get("assessment_generation_config_id__assessment_display_name"),
-                "module_name": module_name,
-                "course_code": course_code,
-                "assessment_config_id": item.get("assessment_generation_config_id")
-            })
+            resp_data.append(
+                {
+                    "last_attempted": item.get("start_time"),
+                    "assessment_id": item.get("assessment_id"),
+                    "type": item.get("type"),
+                    "status": item.get("status"),
+                    "percentage": f"{eval_data.get('percentage')}%",
+                    "short_description": eval_data.get("short_description"),
+                    "total_obtained": total_score,
+                    "grand_total": max_score,
+                    "assessment_name": item.get(
+                        "assessment_generation_config_id__assessment_display_name"
+                    ),
+                    "module_name": module_name,
+                    "course_code": course_code,
+                    "assessment_config_id": item.get("assessment_generation_config_id"),
+                }
+            )
 
-        return {
-            "filter_options": filter_options,
-            "attempted_list": resp_data
-        }
+        return {"filter_options": filter_options, "attempted_list": resp_data}
 
 
 class EvaluationUseCase:
@@ -1498,6 +1518,7 @@ class DSABotWebsocketConsumerUseCase:
             question_id=question_id
         ).question_data["question"]
         name = UserProfileRepository.get_user_fullname(user_id=user_id)
+
         context = {
             "code": code,
             "question": question_text,
@@ -2082,7 +2103,9 @@ class MockInterviewReportUsecase:
 class AssessmentReportUsecase:
     @staticmethod
     def get_assessment_report(user, assessment_id):
-        assessment_attempt = AssessmentAttemptRepository.fetch_assessment_attempt(assessment_id)
+        assessment_attempt = AssessmentAttemptRepository.fetch_assessment_attempt(
+            assessment_id
+        )
         if not assessment_attempt:
             return None
 
@@ -2102,38 +2125,44 @@ class AssessmentReportUsecase:
 
 
 class AssessmentGenerationConfigUsecase:
-    def get_total_assessment_duration_by_course_and_user(course_id,user_id): 
+    def get_total_assessment_duration_by_course_and_user(course_id, user_id):
         total_duration = timedelta()
         completed_count = 0
         assessment_details = []
-        assessment_configs=AssessmentGenerationConfigRepository.get_total_assessment_by_course_id(course_id)
+        assessment_configs = (
+            AssessmentGenerationConfigRepository.get_total_assessment_by_course_id(
+                course_id
+            )
+        )
         for config in assessment_configs:
             # Get completed assessment attempt for this config and user
             assessment_attempt = AssessmentAttempt.objects.filter(
                 assessment_generation_config_id=config.assessment_generation_id,
                 user_id=user_id,
-                status=AssessmentAttempt.Status.COMPLETED
+                status=AssessmentAttempt.Status.COMPLETED,
             ).first()
 
             if assessment_attempt:
                 # If there's a completed attempt, add test duration directly
                 test_duration = config.test_duration
-                
+
                 total_duration += test_duration
                 completed_count += 1
-                
-                assessment_details.append({
-                    'assessment_id': assessment_attempt.assessment_id,
-                    'assessment_name': config.assessment_display_name,
-                    'duration': test_duration,
-                    'start_time': assessment_attempt.start_time,
-                    'completion_time': assessment_attempt.updated_at,
-                    'status': 'completed'
-                })
+
+                assessment_details.append(
+                    {
+                        "assessment_id": assessment_attempt.assessment_id,
+                        "assessment_name": config.assessment_display_name,
+                        "duration": test_duration,
+                        "start_time": assessment_attempt.start_time,
+                        "completion_time": assessment_attempt.updated_at,
+                        "status": "completed",
+                    }
+                )
 
         return {
-            'total_duration': total_duration,
-            'completed_count': completed_count,
-            'total_count': assessment_configs.count(),
-            'assessment_details': assessment_details
+            "total_duration": total_duration,
+            "completed_count": completed_count,
+            "total_count": assessment_configs.count(),
+            "assessment_details": assessment_details,
         }
