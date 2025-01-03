@@ -130,12 +130,12 @@ class LiveClassSeriesBatchAllocation(models.Model):
         return f"{self.live_class_series} - {self.course.title}"
     
 
-@receiver(post_save,sender=LiveClassSeriesBatchAllocation)
-def attendance_record_creater(sender,instance,created,**kwargs):
+@receiver(post_save, sender=LiveClassSeriesBatchAllocation)
+def attendance_record_creater(sender, instance, created, **kwargs):
     if created:
-        from meetings.usecases import MeetingUsecase
+        from .tasks import create_attendance_records_task
         for meeting in Meeting.objects.filter(series=instance.live_class_series):
-            MeetingUsecase.create_attendace_records(meeting=meeting)
+            create_attendance_records_task.delay(meeting.id)
 
 
 @receiver(pre_save, sender=Course)
