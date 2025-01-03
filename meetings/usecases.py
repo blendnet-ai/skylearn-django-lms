@@ -20,6 +20,8 @@ from .repositories import AttendaceRecordRepository
 from django.conf import settings
 from meetings.tasks import create_teams_meeting_task
 logger = logging.getLogger(__name__)
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 storage_service = AzureStorageService()
 
@@ -668,9 +670,10 @@ class MeetingAttendanceUseCase:
             
 
     def get_joining_url(user_id, meeting_id):
+        user=User.objects.get(id=user_id)
         # Get or create attendance record
         attendance_record, created = AttendaceRecordRepository.get_or_create_attendance_record(
-            user_id=user_id,
+            user_id=user,
             meeting_id=meeting_id
         )
         

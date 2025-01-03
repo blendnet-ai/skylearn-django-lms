@@ -31,16 +31,39 @@ class NotificationService:
     @staticmethod
     def process_intent(intent_id):
         intent = NotificationIntentRepository.get_intent_by_id(intent_id)
-        users = UserRepository.get_users_by_ids(intent.user_ids)
-        provider = NotificationService._providers.get(intent.medium)
+        existing_users = UserRepository.get_users_by_ids(intent.user_ids)
         
+        # Create mapping of user_id to user object
+        user_map = {str(user.user_id): user.user for user in existing_users}
+        user_telegram_map={str(user.user_id): user.telegram_chat_id for user in existing_users}
+
+        provider = NotificationService._providers.get(intent.medium)
         if not provider:
             raise ValueError(f"Unsupported notification medium: {intent.medium}")
 
         records = []
-        messages_data = []  # Will store message data for each recipient
+        messages_data = []
+        skipped_users = []
         
-        for user, user_variables in zip(users, intent.variables):
+        # Iterate through user_ids and variables together
+        for user_id, user_variables in zip(intent.user_ids, intent.variables):
+            # Skip if user doesn't exist
+            
+            if str(user_id) not in user_map:
+                skipped_users.append({
+                    'user_id': user_id,
+                    'variables': user_variables,
+                    'reason': 'User not found in database'
+                })
+                logger.warning(
+                    f"Skipping notification for user_id={user_id}. "
+                    f"Reason: User not found in database. "
+                    f"Variables that would have been used: {user_variables}"
+                )
+                continue
+                
+            user = user_map[str(user_id)]
+            telegram_chat_id = user_telegram_map[str(user_id)]
             logger.info(f"Rendering message for user {user.email} with variables: {user_variables}")
             rendered_message = NotificationService.render_message(
                 intent.message_template,
@@ -49,30 +72,38 @@ class NotificationService:
             
             record = NotificationRecordRepository.create_record(
                 intent=intent,
-                user=user.user,
-                message=rendered_message,
+                user=user,
+                message=rendered_message, 
                 medium=intent.medium
             )
             records.append(record)
             
-            # Create message data dictionary
-            recipient_id = user.email if intent.medium == 'email' else user.telegram_chat_id
+            recipient_id = user.email if intent.medium == 'email' else telegram_chat_id
             message_data = {
                 'recipient': recipient_id,
                 'message': rendered_message,
-                'variables': user_variables  # Include original variables for additional customization
+                'variables': user_variables
             }
             messages_data.append(message_data)
         
-        # Send notifications using the appropriate provider with message data
-        sent_status = provider.send_message(messages_data)
+        # Log summary of skipped users
+        if skipped_users:
+            logger.info(
+                f"Notification intent {intent_id} completed with {len(skipped_users)} skipped users. "
+                f"Total users processed: {len(messages_data)}. "
+                f"Skipped users summary: {skipped_users}"
+            )
         
-        # Update records
-        for record in records:
-            NotificationRecordRepository.mark_record_as_sent(record, sent_status)
+        # Only send notifications if we have valid messages
+        if messages_data:
+            sent_status = provider.send_message(messages_data)
+            
+            # Update records
+            for record in records:
+                NotificationRecordRepository.mark_record_as_sent(record, sent_status)
         
         NotificationIntentRepository.mark_intent_as_processed(intent)
-
+        
     @staticmethod
     def render_message(template_str, variables):
         template = Template(template_str)
