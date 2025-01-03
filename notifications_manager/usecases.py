@@ -284,7 +284,7 @@ class NotificationManagerUsecase:
                 datetime.now(utc_tz),
                 "user_inactive_7_days",
             )
-            logger.info(f"Scheduled inactive notification for user {user.id}")
+            logger.info(f"Scheduled inactive notification for users")
 
         except Exception as e:
             logger.error(f"Error scheduling inactive user notifications: {str(e)}")
@@ -317,7 +317,7 @@ class NotificationManagerUsecase:
                         {
                             "assessment_title": assessment.assessment_display_name,
                             "course_name": assessment.modules.first().course.title,
-                            "assessment_link": f"{settings.FRONTEND_BASE_URL}?courseId={assessment.modules.first().course.id}&moduleId={assessment.modules.first().id}",
+                            "assessment_link": f"{settings.FRONTEND_BASE_URL}/assessment?courseId={assessment.modules.first().course.id}&moduleId={assessment.modules.first().id}",
                             "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
                         }
                     )
