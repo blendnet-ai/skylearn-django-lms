@@ -66,6 +66,43 @@ class AssessmentGenerationConfigRepository:
             assessment_generation_id=assessment_generation_id
         )
         return assessment_data
+    
+    
+    
+    def fetch_pending_assessments_for_user(user_id):
+        """
+        Fetch all assessment configs where:
+        1. Config is enabled
+        2. Start date has passed
+        3. User has no attempt for this assessment
+        4. Due date is in future
+        5. Assessment is for a course the user is enrolled in
+        """
+        from accounts.repositories import StudentRepository
+        
+        current_time = timezone.now()
+        
+        # Get student's enrolled courses through batches
+        student = StudentRepository.get_student_by_student_id(user_id)
+            
+        # Get course IDs from student's batches
+        enrolled_course_ids = [batch.course.id for batch in student.batches.all()]
+        
+        # Get all enabled configs where:
+        # - Start date has passed
+        # - Due date is in future
+        # - Course is one the student is enrolled in
+        configs = AssessmentGenerationConfig.objects.filter(
+            enabled=True,
+            start_date__lte=current_time,
+            end_date__gte=current_time,
+            modules__course_id__in=enrolled_course_ids
+        ).exclude(
+            # Exclude configs where user already has an attempt
+            assessmentattempt__user_id=user_id
+        ).prefetch_related('modules__course').distinct()
+        
+        return configs
 
 
 class AssessmentAttemptRepository:

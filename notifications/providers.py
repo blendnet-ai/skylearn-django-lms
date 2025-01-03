@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from django.template import Template, Context
+from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-from django.core.mail import send_mass_mail
+from django.utils.html import strip_tags
 import requests
+from telegram_bot.services.telegram_service import TelegramService
 
 class NotificationProvider(ABC):
     @abstractmethod
@@ -18,15 +19,28 @@ class NotificationProvider(ABC):
         pass
 
 class EmailNotificationProvider(NotificationProvider):
-    def send_message(self, messages_data, **kwargs):
-        subject = kwargs.get('subject', "Notification")
-        messages = [
-            (subject, data['message'], settings.DEFAULT_FROM_EMAIL, [data['recipient']]) 
-            for data in messages_data
-        ]
+      def send_message(self, messages_data, **kwargs):        
         try:
-            result = send_mass_mail(messages, fail_silently=False)
-            return bool(result)
+            for data in messages_data:
+                print("ok",data)
+                user_variables=data.get('variables', {})
+                print(user_variables)
+                subject = user_variables.get('email_subject','Notification')
+                html_content = data['message']
+                text_content = strip_tags(html_content)
+                from_email = settings.DEFAULT_FROM_EMAIL
+                recipient = data['recipient']
+                
+                email = EmailMultiAlternatives(
+                    subject=subject,
+                    body=text_content,
+                    from_email=from_email,
+                    to=[recipient]
+                )
+                email.attach_alternative(html_content, "text/html")
+                email.send(fail_silently=False)
+                
+            return True
         except Exception as e:
             print(f"Error sending email: {e}")
             return False

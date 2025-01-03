@@ -1,68 +1,59 @@
-from custom_auth.repositories import UserProfileRepository
 from telegram import Update
 from telegram.ext import ContextTypes
-from accounts.models import User
-from .services import TelegramBotService
-from .repositories import TelegramChatDataRepository
+from .services.telegram_service import TelegramService
 from custom_auth.models import UserProfile
+from telegram_bot.interfaces import TelegramMessage
+from telegram_bot.repositories import TelegramChatDataRepository
+from notifications.repositories import UserRepository
 
-class TelegramBotHandler:
+class TelegramCommandHandler:
     def __init__(self):
-        self.service = TelegramBotService()
-        self.test_user = None
-    
+        self.telegram_service = TelegramService()
+
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler for /start command"""
+        """Handle /start command"""
         chat_id = update.effective_chat.id
-        
-        # Check if chat_id already exists
-        self.test_user,existing_chat_id = await TelegramChatDataRepository.get_entry_by_chat_id(chat_id)
-        
-        if self.test_user and str(chat_id)==str(existing_chat_id):
-            welcome_message = await self.service.handle_start_command(self.test_user.first_name)
-            await update.message.reply_text(welcome_message)
-        else:
-            try:
-                # Get OTP from context args
-                if not context.args:
-                    await update.message.reply_text("Please use valid link sent through email")
-                    return
-                    
-                otp = context.args[0]
-                print(otp)
-                # Try to find user profile with matching OTP
-                user_profile,self.test_user = await TelegramChatDataRepository.get_user_profile(otp=otp)
+        if not context.args:
+            await update.message.reply_text("Please use valid link from platform")
+            return
 
-                # Handle successful verification
-                welcome_message = await self.service.handle_start_command(self.test_user.first_name)
-                stored_chat_id = await TelegramChatDataRepository.get_telegram_chat_id(self.test_user)
+        try:
+            # Get OTP from context args
+            otp = context.args[0]
+            
+            # Try to find user profile with matching OTP
+            user_profile, user_id = await TelegramChatDataRepository.get_user_profile(otp=otp)
+            
+            # Check if this user already has a different chat_id connected
+            existing_chat_id = await TelegramChatDataRepository.get_telegram_chat_id(user_id)
+            if existing_chat_id and str(existing_chat_id) != str(chat_id):
+                await update.message.reply_text(
+                    "This account is already connected to a different Telegram account. "
+                    "Please disconnect the existing Telegram account first or use the same Telegram account."
+                )
+                return
+            
+            # Check if this chat_id is already connected to a different user
+            other_user, existing_chat_id, other_email = await TelegramChatDataRepository.get_entry_by_chat_id(chat_id)
+            if other_user and other_user.id != user_id:
+                await update.message.reply_text(
+                    "This Telegram account is already connected to another user "
+                    f"({other_email}). Please use a different Telegram account."
+                )
+                return
 
-                if stored_chat_id is None or str(stored_chat_id) != str(chat_id):
-                    await TelegramChatDataRepository.save_telegram_chat_id(self.test_user, chat_id)
-                    print(self.test_user)
-                    await UserProfileRepository.set_telegram_onboarding_complete(self.test_user)
-                    print("saved chat id")
-
-                await update.message.reply_text(welcome_message)
-
-            except UserProfile.DoesNotExist:
-                await update.message.reply_text("Invalid OTP. Please try again.")
-            except IndexError:
-                await update.message.reply_text("Please use valid link send through email.")
-
-    async def message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler for incoming text messages"""
-        chat_id = update.effective_chat.id
-        message_text = update.message.text
-
-        # Only handle regular messages if user is verified
-        if self.test_user:
-            response = await self.service.handle_user_message(
-                self.test_user,
-                chat_id,
-                message_text
+            # If we get here, either:
+            # 1. This is a new connection
+            # 2. This is the same user reconnecting with the same Telegram account
+            welcome_message = TelegramMessage(
+                chat_id=str(chat_id),
+                text=f"👋 Hi User!\nWelcome to our bot."
             )
-            if response:
-                await update.message.reply_text(response)
-        else:
-            await update.message.reply_text("Please verify using /start command first")
+            
+            # Save/update the chat_id
+            await TelegramChatDataRepository.save_telegram_chat_id(user_id, chat_id)
+            await UserRepository.add_user_info(user_id.id, user_id.email, chat_id)
+            await self.telegram_service.send_message(welcome_message)
+
+        except UserProfile.DoesNotExist:
+            await update.message.reply_text("Invalid OTP. Please try again.")

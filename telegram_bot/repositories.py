@@ -39,6 +39,6 @@ class TelegramChatDataRepository:
     def get_entry_by_chat_id(chat_id: str):
         try:
             telegram_data = chats_data.objects.get(telegram_chat_id=chat_id)
-            return telegram_data.user,telegram_data.telegram_chat_id
+            return telegram_data.user, telegram_data.telegram_chat_id, telegram_data.user.email
         except chats_data.DoesNotExist:
-            return None ,None
+            return None, None, None

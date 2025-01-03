@@ -522,11 +522,31 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=18, minute=0),  # Executes at 6:00 PM UTC (11:30 PM IST)
     },
     'generate-report-sheet': {
-        'task': 'reports.tasks.generate_report_sheet',  # Update the path accordingly
-        'schedule': crontab(hour=18, minute=15),  # Executes at 7:15 PM UTC (11:45 AM IST)
+        'task': 'reports.tasks.generate_report_sheet',
+        'schedule': crontab(hour=18, minute=15),  # Executes at 6:15 PM UTC (11:45 AM IST)
     },
+    'schedule-meeting-notifications': { 
+        'task': 'notifications_manager.tasks.schedule_meeting_notifications_task', 
+        'schedule': crontab(hour=18, minute=35),  #  Executes at 6:35 PM UTC (12:05 AM IST next day)
+    }, 
 
-    
+    'schedule-missed-lecture-notifications': { 
+        'task': 'notifications_manager.tasks.schedule_missed_lecture_notifications_task', 
+        'schedule': crontab(hour=18, minute=40),  # Executes at 6:40 PM UTC (12:10 AM IST next day)
+    }, 
+
+    'schedule-inactive-user-notifications': { 
+        'task': 'notifications_manager.tasks.schedule_inactive_user_notifications_task', 
+        'schedule': crontab(hour=19, minute=45),  # Executes at 6:45 PM UTC (12:15 AM IST next day)
+    }, 
+    'schedule-pending-assessments-notifications': { 
+        'task': 'notifications_manager.tasks.schedule_pending_assessments_notifications_task', 
+        'schedule': crontab(hour=19, minute=50),  # Executes at 6:50 PM UTC (12:20 AM IST next day)
+    },
+    'check-for-pending-intents': { 
+        'task': 'notifications.tasks.process_notification_intents', 
+         'schedule': crontab(minute='*'), 
+    }
 }
 
 # Task-specific settings
@@ -645,3 +665,4 @@ STORAGE_ACCOUNT_KEY=os.environ.get("STORAGE_ACCOUNT_KEY")
 RECORDINGS_CONTAINER_NAME=os.environ.get("RECORDINGS_CONTAINER_NAME")
 AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME")
 REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID","1Xr6k01UA_LLZoOhVDoaVu276pCL7pw0xwBdFStzREOM")
+FRONTEND_BASE_URL=os.environ.get("FRONTEND_BASE_URL","https://lms.sakshm.com")

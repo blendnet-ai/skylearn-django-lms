@@ -78,3 +78,7 @@ class NotificationService:
         template = Template(template_str)
         context = Context({**variables})
         return template.render(context)
+    
+    def send_immediate_notification(intent_id):
+        intent = NotificationIntentRepository.get_intent_by_id(intent_id)
+        NotificationService.process_intent(intent_id)

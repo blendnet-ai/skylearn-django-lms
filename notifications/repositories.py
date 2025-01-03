@@ -1,5 +1,6 @@
 from .models import UserInfo, NotificationIntent, NotificationRecord
 from django.utils import timezone
+from channels.db import database_sync_to_async
 
 class UserRepository:
     @staticmethod
@@ -9,31 +10,35 @@ class UserRepository:
     @staticmethod
     def get_users_by_ids(user_ids):
         return UserInfo.objects.filter(user_id__in=user_ids)
+    
+    @staticmethod
+    @database_sync_to_async
+    def add_user_info(user_id, email, telegram_chat_id):
+        return UserInfo.objects.create(user_id=user_id, email=email, telegram_chat_id=telegram_chat_id)
 
 
 class NotificationIntentRepository:
     @staticmethod
-    def get_existing_intent(reference_id, notification_type, medium):
+    def get_existing_intent(reference_id, notification_type, medium, scheduled_at):
         return NotificationIntent.objects.filter(
             reference_id=reference_id,
             notification_type=notification_type,
             processed=False,
+            scheduled_at__date=scheduled_at.date(),
             medium=medium
         ).first()
 
     @staticmethod
-    def create_intent(message_template, variables, user_ids, medium, 
-                     notification_type, reference_id=None, scheduled_at=None):
-        # Check for duplicate intent if reference_id is provided
-        if reference_id:
-            existing_intent = NotificationIntentRepository.get_existing_intent(
-                reference_id=reference_id,
-                notification_type=notification_type,
-                medium=medium
-            )
-            if existing_intent:
-                return existing_intent
-
+    def create_intent(
+        message_template, 
+        variables, 
+        user_ids, 
+        medium, 
+        notification_type, 
+        reference_id=None, 
+        scheduled_at=None,
+        timing_type='scheduled'
+    ):
         return NotificationIntent.objects.create(
             message_template=message_template,
             variables=variables,
@@ -41,7 +46,8 @@ class NotificationIntentRepository:
             medium=medium,
             scheduled_at=scheduled_at,
             notification_type=notification_type,
-            reference_id=reference_id
+            reference_id=reference_id,
+            timing_type=timing_type
         )
 
     @staticmethod

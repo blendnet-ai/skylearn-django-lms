@@ -20,7 +20,9 @@ class NotificationIntent(models.Model):
     NOTIFICATION_TYPES = [
         ('meeting_24h', 'Meeting 24 Hour Reminder'),
         ('meeting_30m', 'Meeting 30 Minute Reminder'),
-        ('user_inactive_past_7_days', 'User 7 Days Inactive Notification')
+        ('user_inactive_past_7_days', 'User 7 Days Inactive Notification'),
+        ('missed_lecture', 'Missed Lecture Notification'),
+        ('assessment_pending','Assessment Pending')
     ]
 
     message_template = models.TextField()
@@ -34,6 +36,18 @@ class NotificationIntent(models.Model):
     
     # Optional fields for different notification types
     reference_id = models.IntegerField(null=True)  # Can be meeting_id, user_id, or any other entity id
+
+    TIMING_CHOICES = [
+        ('immediate', 'Immediate'),
+        ('scheduled', 'Scheduled'),
+    ]
+    
+    # Add this field to existing model
+    timing_type = models.CharField(
+        max_length=20,
+        choices=TIMING_CHOICES,
+        default='scheduled'
+    )
 
     def __str__(self):
         return f"Intent {self.id} - {self.medium}"

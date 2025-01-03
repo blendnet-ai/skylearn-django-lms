@@ -10,10 +10,15 @@ logger = logging.getLogger(__name__)  # Setup logger
 @shared_task(queue='notification_queue') 
 def process_notification_intents():
     current_time = timezone.now()
-    logger.info("Processing notification intents at %s", current_time)  # Log the current time
-    intents=NotificationIntentRepository.get_pending_intents_by_time(current_time)
+    logger.info("Processing scheduled notification intents at %s", current_time)
+    
+    # Only process scheduled intents
+    intents = NotificationIntentRepository.get_pending_intents_by_time(
+        current_time
+    ).filter(timing_type='scheduled')
+    
     for intent in intents:
-        process_notification_intent.delay(intent.id)  # Use delay to call the task asynchronously
+        process_notification_intent.delay(intent.id)
 
 @shared_task(queue='notification_queue') 
 def process_notification_intent(intent_id):
