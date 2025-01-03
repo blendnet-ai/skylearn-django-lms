@@ -18,6 +18,7 @@ from storage_service.azure_storage import AzureStorageService
 from meetings.models import AttendanceRecord,Meeting
 from .repositories import AttendaceRecordRepository
 from django.conf import settings
+from meetings.tasks import create_teams_meeting_task
 logger = logging.getLogger(__name__)
 
 storage_service = AzureStorageService()
@@ -236,7 +237,9 @@ class MeetingSeriesUsecase:
         for meeting_date in recurring_dates:
              meetings_to_create.append(Meeting(series=meeting_series, start_date=meeting_date, link=""))
         
-        MeetingRepository.create_bulk_meetings(meetings_to_create)
+        created_meetings=MeetingRepository.create_bulk_meetings(meetings_to_create)
+        for meeting in created_meetings:
+            create_teams_meeting_task.delay(meeting.id)
         return meeting_series
 
     @staticmethod
