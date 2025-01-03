@@ -43,6 +43,7 @@ from course.serializers import (
     LiveClassDateRangeSerializer,
     LiveClassSeriesSerializer,
     LiveClassUpdateSerializer,
+    PersonalMessageSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -50,6 +51,7 @@ from course.usecases import (
     LiveClassSeriesBatchAllocationUseCase,
     LiveClassUsecase,
     BatchMessageUsecase,
+    PersonalMessageUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -913,7 +915,7 @@ def get_assessments_by_module_id(request, course_id, module_id):
         )
 
     # extract module assessment_generation_configs
-    assessment_generation_configs = sorted(module.get("assessment_generation_configs", []))
+    assessment_generation_configs = module.get("assessment_generation_configs", [])
 
     return Response(
         {"assessment_generation_configs": assessment_generation_configs},
@@ -1046,3 +1048,22 @@ def send_course_batch_message(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def send_course_personal_message(request):
+    serializer = PersonalMessageSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        PersonalMessageUsecase.send_personal_message(
+            user_id=serializer.validated_data["user_id"],
+            message=serializer.validated_data["message"]
+        )
+        return Response(
+            {"message": "Messages sent"}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

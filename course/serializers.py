@@ -74,3 +74,7 @@ class CourseMessageSerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
     message = serializers.CharField()
     subject = serializers.CharField()
+    
+class PersonalMessageSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    message = serializers.CharField()

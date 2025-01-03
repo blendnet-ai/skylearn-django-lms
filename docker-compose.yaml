@@ -32,18 +32,18 @@ services:
       - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue,evaluation_queue
+    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue,evaluation_queue,notification_queue,notification_manager_queue
 
   lms-celery-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
-    container_name: lms-celery
+    container_name: lms-celery-dev
     working_dir: /appuser/code
     volumes:
       - .:/appuser/code
     env_file:
       - .env
-    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue,evaluation_queue
+    entrypoint: python -m celery -A config worker -l debug -Q default,meeting_queue,course_queue,reporting_queue,evaluation_queue,notification_queue,notification_manager_queue
     depends_on:
       - redis
       - postgres
@@ -95,7 +95,7 @@ services:
   lms-celery-beat:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
-    container_name: lms-celery-beat-dev
+    container_name: lms-celery-beat
     working_dir: /home/appuser/code
     volumes:
       - .:/home/appuser/code
@@ -109,7 +109,7 @@ services:
   lms-celery-beat-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
-    container_name: lms-celery-beat
+    container_name: lms-celery-beat-dev
     working_dir: /home/appuser/code
     volumes:
       - .:/home/appuser/code

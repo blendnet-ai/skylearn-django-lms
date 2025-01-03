@@ -27,6 +27,7 @@ from course.models import Course, Module, Upload, UploadVideo
 from storage_service.azure_storage import AzureStorageService
 from .services import MessageService
 from telegram_bot.repositories import TelegramChatDataRepository
+from notifications_manager.usecases import NotificationManagerUsecase
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -750,50 +751,70 @@ class BatchMessageUsecase:
         
         Args:
             batch_id: ID of the batch
-            subject: Email subject
+            subject: Subject line for email
             message: Message content
             
         Returns:
             dict: Statistics about message delivery
         """
-        try:
-            batch = BatchRepository.get_batch_by_id(batch_id)
-            
-            # Track success/failure counts
-            stats = {
-                "email_sent": 0,
-                "email_failed": 0,
-                "telegram_sent": 0,
-                "telegram_failed": 0
-            }
-            
-            # Send to each student
-            for student in batch.students.all():
-                # Send email if email exists
-                if student.student.email:
-                    success = MessageService.send_email_message(
-                        email=student.student.email,
-                        subject=subject,
-                        message=message
-                    )
-                    if success:
-                        stats["email_sent"] += 1
-                    else:
-                        stats["email_failed"] += 1
-                
-                telegram_chat_id = TelegramChatDataRepository.get_telegram_chat_id_sync(student.student)
-                if telegram_chat_id:
-                    success = MessageService.send_telegram_message(
-                        chat_id=telegram_chat_id,
-                        message=message
-                    )
-                    if success:
-                        stats["telegram_sent"] += 1
-                    else:
-                        stats["telegram_failed"] += 1
-                        
-            return stats
-            
-        except Exception as e:
-            logger.error(f"Error sending batch messages: {str(e)}")
-            raise
+        batch = BatchRepository.get_batch_by_id(batch_id)
+        
+        # Prepare variables and user_ids
+        variables = []
+        user_ids = []
+        
+        for student in batch.students.all():
+            variables.append({
+                "participant_name": student.student.get_full_name,
+                "subject": subject
+            })
+            user_ids.append(student.student_id)
+
+        # Send immediate notifications for both email and telegram
+        email_success = NotificationManagerUsecase.send_immediate_notification(
+            message_template=message,
+            variables=variables,
+            user_ids=user_ids,
+            medium="email",
+            notification_type="batch_message",
+            reference_id=None
+        )
+        
+        telegram_success = NotificationManagerUsecase.send_immediate_notification(
+            message_template=message,
+            variables=variables,
+            user_ids=user_ids,
+            medium="telegram",
+            notification_type="batch_message",
+            reference_id=None
+        )
+
+        # Return statistics
+        return {
+            "email_sent": len(user_ids) if email_success else 0,
+            "email_failed": len(user_ids) if not email_success else 0,
+            "telegram_sent": len(user_ids) if telegram_success else 0,
+            "telegram_failed": len(user_ids) if not telegram_success else 0
+        }
+        
+class PersonalMessageUsecase:
+    @staticmethod
+    def send_personal_message(user_id: int, message: str) -> None:
+        """
+        Send a personal message to a user via email
+        
+        Args:
+            user_id: ID of the user
+            message: Message content
+        """
+        user = UserRepository.get_user_by_id(user_id)
+        variables = [{"participant_name": user.get_full_name, "subject": message}]
+        
+        NotificationManagerUsecase.send_immediate_notification(
+            message_template=message,
+            variables=variables,
+            user_ids=[user.id],
+            medium="email",
+            notification_type="personal_message",
+            reference_id=None
+        )

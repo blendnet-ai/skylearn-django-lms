@@ -143,7 +143,7 @@ class Meeting(models.Model):
 
 
 class AttendanceRecord(models.Model):
-    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, to_field='id')
     attendance_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE)
     attendance = models.BooleanField(default=False)

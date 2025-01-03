@@ -38,8 +38,7 @@ class UserRepository:
         from datetime import timedelta
 
         threshold_date = timezone.now() - timedelta(days=days)
-        return User.objects.filter(last_login__lt=threshold_date)
-
+        return User.objects.filter(last_login__lt=threshold_date,is_student=True)
 
 class CourseProviderAdminRepository:
     @staticmethod

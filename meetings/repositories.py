@@ -73,6 +73,7 @@ class MeetingRepository:
     def create_meeting(series, start_date, link):
         return Meeting.objects.create(series=series, start_date=start_date, link=link)
     
+    @staticmethod
     def create_bulk_meetings(meeting_objects):
         return Meeting.objects.bulk_create(meeting_objects)
 
@@ -167,6 +168,21 @@ class MeetingRepository:
             ).distinct()
 
         return Meeting.objects.none()
+    
+    def get_completed_meetings_in_past_24_hours_with_recordings():
+        now = datetime.now(ist)
+        potential_meetings = Meeting.objects.filter(
+            start_date__gte=now - timedelta(hours=24),
+            blob_url__isnull=False,  
+            blob_url__gt=''
+        ).select_related("series")
+        return potential_meetings
+    
+    def get_meetings_in_time_range(start_time, end_time):
+        return Meeting.objects.filter(
+            start_date__range=(start_time, end_time)
+        ).select_related("series")
+
 
 class AttendaceRecordRepository:
     @staticmethod
@@ -179,7 +195,6 @@ class AttendaceRecordRepository:
                             each with a 'user_id' key.
         """
         attendance_records = []
-        print("asdd",participants)
         for participant in participants:
             attendance_record = AttendanceRecord(
                 meeting=meeting,
@@ -250,7 +265,7 @@ class AttendaceRecordRepository:
             'attendance_percentage': attendance_percentage
         }
         
-    
+    @staticmethod
     def get_attended_meetings_for_user_on_day(user_id: int, course_id:int, date: datetime) -> list:
         """
         Get all meetings attended by a user on a specific day.
@@ -310,3 +325,28 @@ class AttendaceRecordRepository:
             meeting__start_date=target_date
         ).select_related('meeting', 'meeting__series').distinct()
 
+    @staticmethod
+    def get_completed_meetings_in_past_24_hours_with_recordings():
+        """
+        Get meetings that:
+        1. Have ended (based on start_time + duration)
+        2. Have recording_metadata
+        3. Haven't sent absent notifications yet
+        """
+        now = datetime.now(ist)
+        potential_meetings = Meeting.objects.filter(
+            start_date__gte=now - timedelta(hours=24),
+            blob_url__isnull=False,  
+            blob_url__gt=''
+        ).select_related("series")
+        return potential_meetings
+    
+    @staticmethod
+    def get_absent_users_for_meeting(meeting_id):
+        """Get all users who were absent for a specific meeting with their full names"""
+        absent_records = AttendanceRecord.objects.filter(
+            meeting_id=meeting_id,
+            attendance=False
+        ).prefetch_related('user_id')
+
+        return absent_records
