@@ -30,7 +30,7 @@ class GetJoiningUrl(APIView):
     permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]
     def get(self, request,meeting_id):
-        user_id=request.user.id
+        user_id=request.user
         meeting_id=meeting_id
         # user_id=46
         # meeting_id=117
