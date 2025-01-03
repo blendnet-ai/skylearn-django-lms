@@ -21,52 +21,6 @@ utc_tz = pytz.UTC
 indian_tz = pytz.timezone("Asia/Kolkata")
 
 
-class MeetingNotificationUsecase:
-    """Handles all meeting-related notification logic"""
-    
-    @staticmethod
-    def schedule_meeting_notifications() -> None:
-        current_time = datetime.now(indian_tz)
-        twenty_four_hours = current_time + timedelta(hours=24)
-        
-        upcoming_meetings = MeetingRepository.get_meetings_in_time_range(
-            current_time, twenty_four_hours
-        )
-        meeting_configs = NotificationConfig.objects.filter(
-            notification_type__startswith='meeting_'
-        )
-        
-        for meeting in upcoming_meetings:
-            MeetingNotificationUsecase._process_meeting_notifications(meeting, meeting_configs)
-    
-    @staticmethod
-    def _process_meeting_notifications(meeting: Any, configs: List[NotificationConfig]) -> None:
-        participants = meeting.get_participants
-        variables = NotificationManagerUsecase._prepare_meeting_variables(meeting, participants)
-        user_ids = [participant.id for participant in participants]
-        
-        for config in configs:
-            scheduled_at = MeetingNotificationUsecase._calculate_notification_time(
-                meeting, config
-            )
-            
-            MeetingNotificationUsecase._schedule_meeting_notifications_for_mediums(
-                meeting, config, variables, user_ids, scheduled_at
-            )
-
-    @staticmethod
-    def _calculate_notification_time(meeting: Any, config: NotificationConfig) -> datetime:
-        meeting_time = datetime.combine(meeting.start_date, meeting.start_time.time())
-        meeting_time = indian_tz.localize(meeting_time)
-        
-        if config.hours_before:
-            meeting_time -= timedelta(hours=config.hours_before)
-        if config.minutes_before:
-            meeting_time -= timedelta(minutes=config.minutes_before)
-            
-        return meeting_time
-
-
 class NotificationManagerUsecase:
     """Main usecase class with simplified interface"""
     
@@ -124,7 +78,7 @@ class NotificationManagerUsecase:
         twenty_four_hours = current_time + timedelta(hours=24)
 
         upcoming_meetings = MeetingRepository.get_meetings_in_time_range(
-            current_time, twenty_four_hours
+            current_time.date(), twenty_four_hours.date()
         )
 
         # Get notification configs from database
