@@ -913,7 +913,7 @@ def get_assessments_by_module_id(request, course_id, module_id):
         )
 
     # extract module assessment_generation_configs
-    assessment_generation_configs = module.get("assessment_generation_configs", [])
+    assessment_generation_configs = sorted(module.get("assessment_generation_configs", []))
 
     return Response(
         {"assessment_generation_configs": assessment_generation_configs},

@@ -109,7 +109,7 @@ services:
   lms-celery-beat-dev:
     image: ghcr.io/blendnet-ai/django-lms:latest
     platform: linux/amd64
-    container_name: lms-celery-beat-dev
+    container_name: lms-celery-beat
     working_dir: /home/appuser/code
     volumes:
       - .:/home/appuser/code

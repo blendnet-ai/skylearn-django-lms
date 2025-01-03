@@ -41,6 +41,8 @@ ENV PYTHONPATH=/home/$USERNAME/code/
 # Install dependencies
 COPY --chown=$USER_UID:$USER_GID requirements.txt /home/$USERNAME/code/
 COPY --chown=$USER_UID:$USER_GID download_nltk_punk.py /home/$USERNAME/code/
+#adding for building image
+RUN mkdir -p /home/appuser/code/llm_configs_v2 
 WORKDIR /home/$USERNAME/code
 #Ignoring 71720-2 for Litellm. TODO: Fix as soon as possible
 RUN pip install safety && safety check -r /home/$USERNAME/code/requirements.txt --ignore 71720 --ignore 71721 --ignore 71722 --ignore 73564

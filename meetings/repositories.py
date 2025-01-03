@@ -72,6 +72,9 @@ class MeetingRepository:
     @staticmethod
     def create_meeting(series, start_date, link):
         return Meeting.objects.create(series=series, start_date=start_date, link=link)
+    
+    def create_bulk_meetings(meeting_objects):
+        return Meeting.objects.bulk_create(meeting_objects)
 
     @staticmethod
     def get_meetings_by_series_id(series_id) -> typing.List[Meeting]:

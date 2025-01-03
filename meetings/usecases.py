@@ -15,7 +15,7 @@ import urllib
 from meetings.services.msteams import MSTeamsConferencePlatformService
 import logging
 from storage_service.azure_storage import AzureStorageService
-from meetings.models import AttendanceRecord
+from meetings.models import AttendanceRecord,Meeting
 from .repositories import AttendaceRecordRepository
 from django.conf import settings
 logger = logging.getLogger(__name__)
@@ -231,10 +231,12 @@ class MeetingSeriesUsecase:
                 ),
             )
 
+        meetings_to_create=[]
         # Create meeting instances for each date
         for meeting_date in recurring_dates:
-            MeetingRepository.create_meeting(meeting_series, meeting_date, "")
-
+             meetings_to_create.append(Meeting(series=meeting_series, start_date=meeting_date, link=""))
+        
+        MeetingRepository.create_bulk_meetings(meetings_to_create)
         return meeting_series
 
     @staticmethod

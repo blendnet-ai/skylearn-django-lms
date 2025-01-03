@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
 import uuid
 from django.conf import settings
+import time
 
 
 class MeetingSeries(models.Model):
@@ -159,6 +160,7 @@ def meeting_post_save(sender, instance, created, **kwargs):
     Signal handler to create Teams meeting when a new meeting is created
     """
     if created:
+       time.sleep(15)
        create_teams_meeting_task.delay(instance.id)
     elif not created:
         #in case of update created is false
