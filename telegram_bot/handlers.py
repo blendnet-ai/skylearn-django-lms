@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from .services.telegram_service import TelegramService
 from custom_auth.models import UserProfile
+from custom_auth.repositories import UserProfileRepository
 from telegram_bot.interfaces import TelegramMessage
 from telegram_bot.repositories import TelegramChatDataRepository
 from notifications.repositories import UserRepository
@@ -53,6 +54,7 @@ class TelegramCommandHandler:
             # Save/update the chat_id
             await TelegramChatDataRepository.save_telegram_chat_id(user_id, chat_id)
             await UserRepository.add_user_info(user_id.id, user_id.email, chat_id)
+            await UserProfileRepository.set_telegram_onboarding_complete(user_id)
             await self.telegram_service.send_message(welcome_message)
 
         except UserProfile.DoesNotExist:
