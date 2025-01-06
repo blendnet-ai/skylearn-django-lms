@@ -244,14 +244,14 @@ class AttendaceRecordRepository:
         # Get all attendance records for meetings in this course's batches
         total_classes = AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__batch__course_id=course_id,
-            meeting__start_date__lt=datetime.now(),
+            meeting__start_date__lt=datetime.now().date(),
             user_id=user_id
         ).count()
         
         # Get count of attended classes
         attended_classes = AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__batch__course_id=course_id,
-            meeting__start_date__lt=datetime.now(),
+            meeting__start_date__lt=datetime.now().date(),
             user_id=user_id,
             attendance=True
         ).count()
