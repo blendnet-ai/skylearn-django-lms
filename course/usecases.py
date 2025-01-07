@@ -808,13 +808,22 @@ class PersonalMessageUsecase:
             message: Message content
         """
         user = UserRepository.get_user_by_id(user_id)
-        variables = [{"participant_name": user.get_full_name, "subject": message}]
+        variables = [{"participant_name": user.get_full_name,"email_subject":'Message from course provider', "subject": message}]
         
         NotificationManagerUsecase.send_immediate_notification(
             message_template=message,
             variables=variables,
             user_ids=[user.id],
             medium="email",
+            notification_type="personal_message",
+            reference_id=None
+        )
+        
+        NotificationManagerUsecase.send_immediate_notification(
+            message_template=message,
+            variables=variables,
+            user_ids=[user.id],
+            medium="telegram",
             notification_type="personal_message",
             reference_id=None
         )
