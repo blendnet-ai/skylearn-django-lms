@@ -766,7 +766,7 @@ class BatchMessageUsecase:
         for student in batch.students.all():
             variables.append({
                 "participant_name": student.student.get_full_name,
-                "subject": subject
+                "email_subject": subject
             })
             user_ids.append(student.student_id)
 
