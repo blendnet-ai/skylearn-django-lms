@@ -48,7 +48,7 @@ class TelegramCommandHandler:
             # 2. This is the same user reconnecting with the same Telegram account
             welcome_message = TelegramMessage(
                 chat_id=str(chat_id),
-                text=f"👋 Hi User!\nWelcome to our bot."
+                text=f"Hey! 👋 Welcome to Sakshm AI! 🎉\nYour Telegram onboarding is now complete ✅. You can return to the LMS to continue your course and access all the learning materials. \nHappy learning! 🚀✨"
             )
             
             # Save/update the chat_id
