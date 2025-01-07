@@ -248,6 +248,19 @@ def cv_upload(request):
 
     return Response(cv_upload_result, status=status.HTTP_200_OK)
 
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def skip_telegram_onboarding(request):
+    user=request.user
+    
+    if user.is_lecturer:
+        skip_telegram_onboarding_result=OnBoardingUsecase.skip_telegram_onboarding(request.user)
+        return Response(skip_telegram_onboarding_result, status=status.HTTP_200_OK)
+    else:
+        return Response({"telegram_skipped":False,"message":"Only lecturer can skip telegram onboarding"}, status=status.HTTP_200_OK)
+        
+
 # @csrf_exempt
 # @api_view(['POST'])
 # def fetch_filled_data(request):
