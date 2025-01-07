@@ -152,18 +152,21 @@ class UserProfileRepository:
         return UserProfile.objects.all()
 
     @staticmethod
-            
     def get_onboarding_status_details(user_id):
         try:
             user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.get(user_id__id=user_id)
             telegram_status=user_profile.is_telegram_connected
+            telegram_skipped=user_profile.is_telegram_skipped
             mobile_status=user_profile.is_mobile_verified
             onboarding_status =user_profile.onboarding_complete
             otp = user_profile.otp
             cv_status = user_profile.cv_details.get("status") if user_profile.cv_details else None
             onboarding_cv_status = cv_status in ["filled", "skipped"]     
-
+            if telegram_status or telegram_skipped:
+                telegram_status = True
+            else: 
+                telegram_status = False
             if user.is_lecturer:
                 return {
                     "telegram_status": telegram_status,
@@ -182,6 +185,12 @@ class UserProfileRepository:
                 }
         except UserProfile.DoesNotExist:
             return None
+        
+    @staticmethod
+    def skip_telegram_onboarding(user):
+        user_profile=UserProfile.objects.get(user_id=user)
+        user_profile.is_telegram_onboarding_skipped=True
+        user_profile.save()
 
     @staticmethod
     @database_sync_to_async

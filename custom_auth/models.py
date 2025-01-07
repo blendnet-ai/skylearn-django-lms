@@ -52,6 +52,7 @@ class UserProfile (models.Model):
     doubt_solving_token=models.CharField(max_length=8,null=True,blank=True)
     token_expiration_time=models.DateTimeField(null=True, blank=True)
     is_telegram_connected = models.BooleanField(default=False)
+    is_telegram_onboarding_skipped= models.BooleanField(default=False)
     is_mobile_verified = models.BooleanField(default=False)
 
     def get_user_details_for_memgpt(self) -> str:

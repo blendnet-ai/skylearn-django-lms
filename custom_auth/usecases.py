@@ -227,6 +227,10 @@ class OnBoardingUsecase:
         UserProfileRepository.set_cv_data(user, link, linked_in_link, status)
         return {"cv_link_added": True}
     
+    def skip_telegram_onboarding(user):
+        UserProfileRepository.skip_telegram_onboarding(user)
+        return {"telegram_skipped":True,"message":"telegram onboarding skipped"}
+    
     # def handle_fetching_filled_data( user):
     #     data = GDWrapperIntance.find_row_by_value('dummy', 'Serail Number', '212')
     #     if data is not None:
