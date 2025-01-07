@@ -157,7 +157,7 @@ class UserProfileRepository:
             user = User.objects.get(id=user_id)
             user_profile = UserProfile.objects.get(user_id__id=user_id)
             telegram_status=user_profile.is_telegram_connected
-            telegram_skipped=user_profile.is_telegram_skipped
+            telegram_skipped=user_profile.is_telegram_onboarding_skipped
             mobile_status=user_profile.is_mobile_verified
             onboarding_status =user_profile.onboarding_complete
             otp = user_profile.otp
