@@ -157,7 +157,7 @@ class StudentProfileUsecase:
     def _calculate_age(user_data):
         try:
             if not user_data or 'sections' not in user_data:
-                return 'No Information Available'
+                return 'N/A'
             
             # Find dob field in the sections
             user_dob=UserProfileRepository.fetch_value_from_form('dob',user_data)
@@ -167,7 +167,7 @@ class StudentProfileUsecase:
             return str(age)
                         
         except (ValueError, TypeError):
-            return 'No Information Available'
+            return 'N/A'
     @staticmethod
     def get_student_profile(student_id):
         try:
@@ -214,10 +214,10 @@ class StudentProfileUsecase:
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
                     "age": StudentProfileUsecase._calculate_age(user_profile.user_data),
-                    "gender": gender if gender else 'No Information Available',
-                    "college": college if college else 'No Information Available',
+                    "gender": gender if gender else 'N/A',
+                    "college": college if college else 'N/A',
                     "email": user.email,
-                    "phone":  phone if phone else "No Information available"
+                    "phone":  phone if phone else "N/A"
                 },
                 "engagement_stats": {
                     "last_login_date": user.last_login.date() if user.last_login else None,
