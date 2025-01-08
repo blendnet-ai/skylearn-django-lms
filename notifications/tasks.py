@@ -24,3 +24,8 @@ def process_notification_intents():
 def process_notification_intent(intent_id):
     logger.info(f"Processing Intent {intent_id}")
     NotificationService.process_intent(intent_id)
+
+@shared_task(queue='notification_queue')
+def send_immediate_notifications(intent_id):
+    intent = NotificationIntentRepository.get_intent_by_id(intent_id)
+    NotificationService.process_intent(intent_id)

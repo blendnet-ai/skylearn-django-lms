@@ -3,6 +3,7 @@ from notifications.services import NotificationService
 from notifications.repositories import NotificationIntentRepository
 from notifications_manager.repositories import NotificationTemplateRepository
 from notifications.models import NotificationIntent
+from notifications.tasks import send_immediate_notifications
 from meetings.repositories import MeetingRepository, AttendaceRecordRepository
 from meetings.usecases import MeetingAttendanceUseCase
 from accounts.repositories import UserRepository, StudentRepository
@@ -364,7 +365,7 @@ class NotificationManagerUsecase:
             
             # Process the intent immediately using NotificationService
             from notifications.services import NotificationService
-            NotificationService.send_immediate_notification(intent.id)
+            send_immediate_notifications.delay(intent.id)
             
             logger.info(f"Immediate notification sent successfully for intent {intent.id}")
             return True
