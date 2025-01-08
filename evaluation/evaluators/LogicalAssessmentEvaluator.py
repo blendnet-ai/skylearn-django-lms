@@ -3,8 +3,10 @@ from evaluation.models import AssessmentAttempt, Question, UserEvalQuestionAttem
 
 
 class LogicalAssessmentEvaluator(AssessmentEvaluator):
-    MCQ_POINTS = 3
-    MCQ_INCORRECT_POINTS = -1
+    # MCQ_POINTS = 3
+    # MCQ_INCORRECT_POINTS = -1
+    MCQ_POINTS = 1
+    MCQ_INCORRECT_POINTS = 0
 
     def __init__(self, assessment_attempt: AssessmentAttempt):
         self.assessment_attempt = assessment_attempt
