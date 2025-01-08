@@ -256,7 +256,7 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
                                     if mcq_eval_data["is_correct"]
                                     else LanguageAssessmentEvaluator.MCQ_INCORRECT_POINTS
                                 )
-                            reading_max_score += LanguageAssessmentEvaluator.MCQ_POINTS
+                                reading_max_score += LanguageAssessmentEvaluator.MCQ_POINTS
 
                     elif sub_category == int(Question.SubCategory.WRITING) and question_eval_data:
                         if answer_type == int(Question.AnswerType.SUBJECTIVE):

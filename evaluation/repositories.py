@@ -221,7 +221,7 @@ class AssessmentAttemptRepository:
             AssessmentAttempt.objects.filter(user_id=user_id)
             .filter(
                 status__in=[
-                    AssessmentAttempt.Status.ABANDONED,
+                    # AssessmentAttempt.Status.ABANDONED,
                     AssessmentAttempt.Status.COMPLETED,
                 ]
             )
