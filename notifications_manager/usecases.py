@@ -312,16 +312,14 @@ class NotificationManagerUsecase:
                 )
             )
             if len(assessments) > 0:
-                for assessment in assessments:
-                    user_ids.append(student.student_id)
-                    variables.append(
-                        {
-                            "assessment_title": assessment.assessment_display_name,
-                            "course_name": assessment.modules.first().course.title,
-                            "assessment_link": f"{settings.FRONTEND_BASE_URL}/assessment?courseId={assessment.modules.first().course.id}&moduleId={assessment.modules.first().id}",
-                            "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
-                        }
-                    )
+                user_ids.append(student.student_id)
+                variables.append(
+                    {
+                        "course_name": assessments[0].modules.first().course.title,
+                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}",
+                        "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
+                    }
+                )
         NotificationManagerUsecase.schedule_notification(
             None,
             template_pending_assessments_email.body,
