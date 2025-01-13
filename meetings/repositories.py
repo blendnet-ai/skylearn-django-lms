@@ -227,35 +227,34 @@ class AttendaceRecordRepository:
     def get_total_classes_attended_by_user_for_course(user_id: int, course_id: int) -> dict:
         """
         Get total classes attended by a user for a specific course.
-        
-        Args:
-            user_id (int): ID of the user
-            course_id (int): ID of the course
-            
-        Returns:
-            dict: Contains total classes attended and total classes held
-            Example: {
-                'classes_attended': 10,
-                'total_classes': 15,
-                'attendance_percentage': 66.67
-            }
         """
+        # Get all meetings for this course
+        meetings = Meeting.objects.filter(
+            series__course_enrollments__batch__course_id=course_id,
+            start_date__lt=datetime.now().date()
+        )
         
-        # Get all attendance records for meetings in this course's batches
-        total_classes = AttendanceRecord.objects.filter(
+        # Get existing attendance records
+        attendance_records = AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__batch__course_id=course_id,
-            meeting__start_date__lt=datetime.now().date(),
             user_id=user_id
-        ).count()
+        )
         
-        # Get count of attended classes
-        attended_classes = AttendanceRecord.objects.filter(
-            meeting__series__course_enrollments__batch__course_id=course_id,
-            meeting__start_date__lt=datetime.now().date(),
-            user_id=user_id,
-            attendance=True
-        ).count()
+        # Create a map of meeting_id to attendance record
+        attendance_map = {record.meeting_id: record for record in attendance_records}
         
+        # Count attendance
+        attended_classes = 0
+        total_classes = len(meetings)
+        
+        for meeting in meetings:
+            if meeting.id in attendance_map:
+                if attendance_map[meeting.id].attendance:
+                    attended_classes += 1
+            else:
+                # If no record exists, count as absent
+                pass
+                
         # Calculate attendance percentage
         attendance_percentage = 0
         if total_classes > 0:
@@ -268,35 +267,47 @@ class AttendaceRecordRepository:
         }
         
     @staticmethod
-    def get_attended_meetings_for_user_on_day(user_id: int, course_id:int, date: datetime) -> list:
+    def get_attended_meetings_for_user_on_day(user_id: int, course_id: int, date: str) -> list:
         """
-        Get all meetings attended by a user on a specific day.
-
+        Get all meetings for a user on a specific day, including those without attendance records.
+        
         Args:
-            user_id (int): ID of the user
-            date (datetime): Date for which to fetch attended meetings
-
+            user_id (int): The user's ID
+            course_id (int): The course ID
+            date (str): The date in YYYY-MM-DD format
+            
         Returns:
-            list: List of meetings attended by the user on the specified date
+            list: List of dictionaries containing meeting details and attendance status
         """
-        # Filter attendance records for the user on the specified date
-        attended_meetings = AttendanceRecord.objects.filter(
-            user_id=user_id,
-            meeting__start_date=date,
-            meeting__series__course_enrollments__batch__course_id=course_id
-        )
-
-        # Convert the QuerySet to a list of dictionaries containing meeting details
+        # Get all meetings for the course on the specified date
+        meetings = Meeting.objects.filter(
+            series__course_enrollments__batch__course_id=course_id,
+            start_date=date
+        ).select_related('series')
+        
+        # Get existing attendance records
+        attendance_records = AttendanceRecord.objects.filter(
+            meeting__in=meetings,
+            user_id=user_id
+        ).select_related('meeting')
+        
+        # Create a map of meeting_id to attendance record
+        attendance_map = {record.meeting_id: record for record in attendance_records}
+        
         meetings_list = []
-        for record in attended_meetings:
-            meeting = record.meeting
-            meetings_list.append({
-                'meeting_id': meeting.id,
-                'meeting_title':meeting.title,
-                'course': meeting.course.id if meeting.course else None,
-                'duration':meeting.duration if record.attendance else timedelta(0)
-            })
-
+        for meeting in meetings:
+            # Check if user is a participant in this meeting
+            if user_id in [p.id for p in meeting.get_participants]:
+                attendance_record = attendance_map.get(meeting.id)
+                
+                meetings_list.append({
+                    'meeting_id': meeting.id,
+                    'meeting_title':meeting.title,
+                    'course_id': meeting.course.id if meeting.course else None,
+                    # If no attendance record exists or attendance is False, duration is 0
+                    'duration': meeting.duration if attendance_record and attendance_record.attendance else timedelta(0)
+                })
+        
         return meetings_list
 
     @staticmethod
@@ -346,9 +357,35 @@ class AttendaceRecordRepository:
     @staticmethod
     def get_absent_users_for_meeting(meeting_id):
         """Get all users who were absent for a specific meeting with their full names"""
-        absent_records = AttendanceRecord.objects.filter(
-            meeting_id=meeting_id,
-            attendance=False
-        ).prefetch_related('user_id')
-
+        # Get the meeting
+        meeting = Meeting.objects.get(id=meeting_id)
+        
+        # Get all participants for the meeting
+        participants = meeting.get_participants
+        
+        # Get existing attendance records
+        existing_records = AttendanceRecord.objects.filter(
+            meeting_id=meeting_id
+        ).select_related('user_id')
+        
+        # Create a map of user_id to attendance record
+        attendance_map = {record.user_id_id: record for record in existing_records}
+        
+        # Build list of all attendance records, including virtual ones for missing records
+        absent_records = []
+        for participant in participants:
+            if participant.id in attendance_map:
+                # Use existing record if it exists
+                record = attendance_map[participant.id]
+                if not record.attendance:  # Only include if marked as absent
+                    absent_records.append(record)
+            else:
+                # Create a virtual attendance record for users without one
+                virtual_record = AttendanceRecord(
+                    meeting_id=meeting_id,
+                    user_id=participant,
+                    attendance=False
+                )
+                absent_records.append(virtual_record)
+        
         return absent_records
