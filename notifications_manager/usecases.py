@@ -316,7 +316,7 @@ class NotificationManagerUsecase:
                 variables.append(
                     {
                         "course_name": assessments[0].modules.first().course.title,
-                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}.replace(' ','-')",
+                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}".replace(' ','-'),
                         "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
                     }
                 )
