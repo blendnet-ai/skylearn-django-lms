@@ -224,7 +224,7 @@ class StudentProfileUsecase:
             # Get last login info from user profile
             user_profile = UserProfileRepository.get(user.id)
             gender=UserProfileRepository.fetch_value_from_form('gender',user_profile.user_data)
-            college=UserProfileRepository.fetch_value_from_form('college_name',user_profile.user_data)
+            college=UserProfileRepository.fetch_value_from_form('College Name',user_profile.user_data)
             phone=user_profile.phone
             return {
                 "user_stats": {
