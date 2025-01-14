@@ -78,7 +78,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP sent successfully"
         else:
-            logger.error(f'error sending otp : {response.json()}' )
+            logger.info(f'error sending otp : {response.json()}' )
             return False,"OTP sending failed"
         
     def send_otp_phone(self, phone_number: str) -> dict:
@@ -98,7 +98,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP sent successfully",response.json()['Details']
         else:
-            logger.error(f'error sending otp : {response.json()}' )
+            logger.info(f'error sending otp : {response.json()}' )
             return False,"OTP sending failed",None
 
     def verify_otp(self, phone_number: str, entered_otp_value: str) -> bool:
@@ -117,7 +117,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP Verified successfully"
         else:
-            logger.error(f'error verifying otp : {response.json()}' )
+            logger.info(f'error verifying otp : {response.json()}' )
             return False,"Error in verifying OTP"
         
     def verify_otp_phone(self,code,entered_otp_value):
@@ -201,7 +201,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP sent successfully"
         else:
-            logger.error(f'error sending otp : {response.json()}' )
+            logger.info(f'error sending otp : {response.json()}' )
             return False,"OTP sending failed"
         
     def send_otp_phone(self, phone_number: str) -> dict:
@@ -221,7 +221,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP sent successfully",response.json()['Details']
         else:
-            logger.error(f'error sending otp : {response.json()}' )
+            logger.info(f'error sending otp : {response.json()}' )
             return False,"OTP sending failed",None
 
     def verify_otp(self, phone_number: str, entered_otp_value: str) -> bool:
@@ -240,7 +240,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP Verified successfully"
         else:
-            logger.error(f'error verifying otp : {response.json()}' )
+            logger.info(f'error verifying otp : {response.json()}' )
             return False,"Error in verifying OTP"
         
     def verify_otp_phone(self,code,entered_otp_value):
@@ -249,5 +249,5 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP Verified successfully"
         else:
-            logger.error(f'error sending otp : {response.json()}' )
+            logger.info(f'error verifying otp : {response.json()}' )
             return False,"OTP Verification Failed"
