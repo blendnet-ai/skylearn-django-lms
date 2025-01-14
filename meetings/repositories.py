@@ -84,6 +84,9 @@ class MeetingRepository:
     @staticmethod
     def get_meeting_by_id(id) -> Meeting:
         return Meeting.objects.get(id=id)
+    
+    def get_no_of_meetings_occured_in_course(course_id,batch_id,date):
+        return Meeting.objects.filter(series__course_enrollments__batch__course_id=course_id,series__course_enrollments__batch__id=batch_id,start_date__lt=date).count()
 
     @staticmethod
     def get_meetings_of_series_in_period(series_id, start_date, end_date):
