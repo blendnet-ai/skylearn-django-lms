@@ -107,21 +107,22 @@ class RoleAssignmentUsecase:
             StudentRepository.create_student(user)
 
             StudentRepository.add_batch_by_student_id(student_id, batch)
-            # Transform user_data into the required format
-            user_data=user_data[0]
-            formatted_user_data = {"fields":[]}
-            if isinstance(user_data, dict):
-                for key, value in user_data.items():
-                    formatted_user_data["fields"].append({
-                        "name": key,
-                        "value": value
-                    })
+            if user_data is not None:
+                # Transform user_data into the required format
+                user_data=user_data[0]
+                formatted_user_data = {"fields":[]}
+                if isinstance(user_data, dict):
+                    for key, value in user_data.items():
+                        formatted_user_data["fields"].append({
+                            "name": key,
+                            "value": value
+                        })
 
-            existing_data = user_profile.user_data if user_profile.user_data else {"sections": []}
-            existing_data["sections"].append(formatted_user_data)
-            
-            user_profile.user_data = existing_data
-            user_profile.save()
+                existing_data = user_profile.user_data if user_profile.user_data else {"sections": []}
+                existing_data["sections"].append(formatted_user_data)
+                
+                user_profile.user_data = existing_data
+                user_profile.save()
             user.save()
                     
             
