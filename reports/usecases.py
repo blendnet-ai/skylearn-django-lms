@@ -34,9 +34,12 @@ class GenerateUserCourseReportsUseCase:
 
         courses = GenerateUserCourseReportsUseCase._get_user_courses(user_id)
         batch_to_course_mapping = GenerateUserCourseReportsUseCase._get_mapping_of_batch_to_course(user_id)
+        print("batch_to_course_mapping",batch_to_course_mapping)
         for course in courses:
             batch_id = batch_to_course_mapping.get(course.id)
+            print("batch_id",batch_id,"date",date,"course_id",course.id)
             no_of_meetings = MeetingRepository.get_no_of_meetings_occured_in_course(course.id,batch_id,date)
+            print("no_of_meetings",no_of_meetings)
             activites = DailyAggregationRepository.get_aggregations_by_user(user_id,course.id)
             report=GenerateUserCourseReportsUseCase._create_or_update_course_report(user,activites,course,no_of_meetings)
             reports.append(report)
@@ -57,7 +60,7 @@ class GenerateUserCourseReportsUseCase:
             return []
             
         batches = student.batches.all()
-        return {batch.id:batch.course_id for batch in batches}
+        return {batch.course_id:batch.id for batch in batches}
 
     def _create_or_update_course_report(user, daily_activites,course,no_of_meetings):
         assessment_time=timedelta(0)
@@ -65,7 +68,7 @@ class GenerateUserCourseReportsUseCase:
         resource_video_time=timedelta(0)
         time_spent_live_classes=timedelta(0)
         time_spent_recording_classes=timedelta(0)
-        total_classes=0
+        total_classes=no_of_meetings
         total_classes_attended=0
         
         for activity in daily_activites:
@@ -82,7 +85,6 @@ class GenerateUserCourseReportsUseCase:
                     total_classes_attended+=1;
                 else:
                     pass
-                total_classes=no_of_meetings
             elif activity.type_of_aggregation=="resource_recording":
                 time_spent_recording_classes=time_spent_recording_classes+activity.time_spent
                     
