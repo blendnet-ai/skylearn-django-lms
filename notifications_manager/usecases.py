@@ -79,7 +79,7 @@ class NotificationManagerUsecase:
         twenty_four_hours = current_time + timedelta(hours=24)
 
         upcoming_meetings = MeetingRepository.get_meetings_in_time_range(
-            current_time.date(), twenty_four_hours.date()
+            twenty_four_hours.date(), twenty_four_hours.date()
         )
 
         # Get notification configs from database
@@ -316,7 +316,7 @@ class NotificationManagerUsecase:
                 variables.append(
                     {
                         "course_name": assessments[0].modules.first().course.title,
-                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}",
+                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}.replace(' ','-')",
                         "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
                     }
                 )
