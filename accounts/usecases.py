@@ -98,13 +98,19 @@ class RoleAssignmentUsecase:
             
         if role == RoleAssignmentUsecase.STUDENT_ROLE:
             batch_id=config.get("batch_id")
+            user_data=config.get("user_data")
             user.is_student = True
             student_id=user.id
+            user_profile = UserProfileRepository.get(user.id)
 
             batch=BatchRepository.get_batch_by_id(batch_id)
             StudentRepository.create_student(user)
 
             StudentRepository.add_batch_by_student_id(student_id, batch)
+            existing_data = user_profile.user_data if user_profile.user_data else {"sections": []}
+            existing_data["sections"].append(user_data)
+            user_profile.user_data = existing_data
+            user_profile.save()
             user.save()
                     
             

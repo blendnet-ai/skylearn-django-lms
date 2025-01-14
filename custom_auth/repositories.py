@@ -57,22 +57,49 @@ class UserProfileRepository:
                     return field["value"]
         return None
 
+    
     @staticmethod
     def save_user_data(user_id, form_name, user_data):
         form = Form.objects.get(form_name=form_name)
         user = User.objects.get(id=user_id)
 
         user_profile, _ = UserProfile.objects.get_or_create(user_id=user)
-        user_profile.user_data = user_data
+
+        # Retain existing user_data by merging with new data
+        if user_profile.user_data:
+            existing_data = user_profile.user_data
+            if isinstance(existing_data, dict) and isinstance(user_data, dict):
+                # Merge dictionaries, with new data taking precedence
+                merged_data = {**existing_data, **user_data}
+                
+                # Handle merging of sections if they exist
+                if 'sections' in existing_data and 'sections' in user_data:
+                    existing_sections = existing_data['sections']
+                    new_sections = user_data['sections']
+                    
+                    # Simply merge the two lists
+                    merged_sections = existing_sections + new_sections
+                    merged_data['sections'] = merged_sections
+
+            else:
+                # Handle cases where user_data is not a dictionary (fallback)
+                merged_data = user_data  # Simplify or customize as needed
+        else:
+            merged_data = user_data
+
+        user_profile.user_data = merged_data
+
         email = UserProfileRepository.fetch_value_from_form("email", user_data)
         name = UserProfileRepository.fetch_value_from_form("fullName", user_data)
-        phone = UserProfileRepository.fetch_value_from_form("phone", user_data)
-        user_profile.phone = phone
+        # phone = UserProfileRepository.fetch_value_from_form("phone", user_data)
+        # user_profile.phone = phone
         user_profile.email = email
         user_profile.name = name
         user_profile.form_name = form
+
         if form_name == ONBOARDING_FORM_NAME:
             user_profile.onboarding_complete = True
+
         user_profile.save()
 
     @staticmethod

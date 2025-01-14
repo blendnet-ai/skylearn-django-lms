@@ -36,6 +36,7 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                 )
                 user.set_password(generate_password())
                 user.save()
+                user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
                 RoleAssignmentUsecase.assign_role_from_config(user)
             user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
             update_last_login(None, user)
