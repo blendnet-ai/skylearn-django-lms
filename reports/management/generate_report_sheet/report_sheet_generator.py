@@ -266,8 +266,8 @@ def populate_lms_time_spent_reporting_data(data):
             'Time Spent on Reading (in mins)': report.resource_time_reading.total_seconds()/60,
             'Time Spent on Recordings (in mins)': report.time_spent_in_recording_classes.total_seconds()/60,
             'Time Spent in Live Classes (in mins)': report.time_spent_in_live_classes.total_seconds()/60,
-            'Number of classes attended (in mins)': report.classes_attended,
-            'Number of classes missed (in mins)': report.total_classes - report.classes_attended
+            'Number of classes attended': report.classes_attended,
+            'Number of classes missed': report.total_classes - report.classes_attended
         })
     return final_data
 
