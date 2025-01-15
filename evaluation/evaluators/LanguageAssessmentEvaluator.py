@@ -272,13 +272,13 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
                     question = Question.objects.filter(id=question_id).first()
                     sub_category = question.sub_category
                     if sub_category == int(Question.SubCategory.LISTENING):
-                        section_wise_max_score += LanguageAssessmentEvaluator.MCQ_POINTS * len(question.question_data.get("questions", []))
+                        listening_max_score += LanguageAssessmentEvaluator.MCQ_POINTS * len(question.question_data.get("questions", []))
                     elif sub_category == int(Question.SubCategory.SPEAKING):
-                        section_wise_max_score += LanguageAssessmentEvaluator.SPEAKING_POINTS
+                        speaking_max_score += LanguageAssessmentEvaluator.SPEAKING_POINTS
                     elif sub_category == int(Question.SubCategory.WRITING):
-                        section_wise_max_score += LanguageAssessmentEvaluator.WRITING_POINTS
+                        writing_max_score += LanguageAssessmentEvaluator.WRITING_POINTS
                     elif sub_category == int(Question.SubCategory.RC):
-                        section_wise_max_score += LanguageAssessmentEvaluator.MCQ_POINTS * len(question.question_data.get("questions", []))
+                        reading_max_score += LanguageAssessmentEvaluator.MCQ_POINTS * len(question.question_data.get("questions", []))
                         
             
        
