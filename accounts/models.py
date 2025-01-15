@@ -97,7 +97,7 @@ class User(AbstractUser):
     @property
     def get_full_name(self):
         full_name = self.username
-        if self.first_name and self.last_name:
+        if self.first_name or self.last_name:
             full_name = self.first_name + " " + self.last_name
         return full_name
 
