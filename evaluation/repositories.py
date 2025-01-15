@@ -67,6 +67,10 @@ class AssessmentGenerationConfigRepository:
         )
         return assessment_data
     
+    def return_assessment_generation_configs_by_course_id_module_id(course_id, module_id):
+        assessment_data = AssessmentGenerationConfig.objects.filter(modules__course_id=course_id, modules__id=module_id)
+        return assessment_data
+    
     
     
     def fetch_pending_assessments_for_user(user_id):
@@ -135,6 +139,11 @@ class AssessmentAttemptRepository:
     def fetch_assessment_configs():
         assessments_available = AssessmentGenerationConfig.objects.filter(enabled=True)
         return assessments_available
+    
+    def get_assessment_attempts_by_config(user_id,assessment_generation_config_id):
+        all_attempts = AssessmentAttempt.objects.filter(user_id=user_id,assessment_generation_config_id_id=assessment_generation_config_id).all()
+        return all_attempts
+        
 
     def fetch_assessment_state(assessment_id, user_id):
         assessment_attempt = AssessmentAttempt.objects.filter(

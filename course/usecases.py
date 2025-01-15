@@ -28,6 +28,8 @@ from storage_service.azure_storage import AzureStorageService
 from .services import MessageService
 from telegram_bot.repositories import TelegramChatDataRepository
 from notifications_manager.usecases import NotificationManagerUsecase
+from django.utils import timezone
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -827,3 +829,81 @@ class PersonalMessageUsecase:
             notification_type="personal_message",
             reference_id=None
         )
+
+class AssessmentModuleUsecase:
+    def fetch_assessment_display_data(user_id,course_id,module_id):
+        from evaluation.repositories import AssessmentGenerationConfigRepository, AssessmentAttemptRepository
+        available_assessments = AssessmentGenerationConfigRepository.return_assessment_generation_configs_by_course_id_module_id(course_id,module_id)
+        resp_data = []
+        for assessment in available_assessments:
+            assessment_generation_id = assessment.assessment_generation_id
+            # Get max score and percentage for this assessment config
+            attempts = AssessmentAttemptRepository.get_assessment_attempts_by_config(
+                user_id=user_id,
+                assessment_generation_config_id=assessment_generation_id
+            )
+            max_percentage = 0
+            
+            for attempt in attempts:
+                eval_data = attempt.eval_data or {}
+                percentage = eval_data.get('percentage', 0)
+                max_percentage = max(max_percentage, percentage)
+          
+        
+
+            # if (
+            #     assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1
+            #     and str(user_id) not in settings.USER_IDS_CODING_TEST_ENABLED
+            # ):
+            #     continue
+
+            display_data = assessment.display_data
+            name = assessment.assessment_display_name
+            max_attempts = assessment.number_of_attempts
+            start_date=assessment.start_date
+            end_date=assessment.end_date
+            due_date=assessment.due_date
+            number_of_attempts = AssessmentAttemptRepository.number_of_attempts_expired(
+                assessment_generation_config_id=assessment_generation_id,
+                user_id=user_id,
+            )
+            
+            # Check if the assessment should be locked
+            current_date = timezone.now()
+            if start_date is not None and end_date is not None:
+                is_locked = not (start_date <= current_date <= end_date)
+            else:
+                is_locked = False
+            
+            resp_obj = {
+                "assessment_generation_id": assessment_generation_id,
+                "test": {
+                    "heading": f"{name} test",
+                    "path": f"assessment",
+                    "query_params": f"?id={assessment_generation_id}",
+                },
+                "welcome": {
+                    "heading": f"Welcome to {name} test",
+                    "heading_inner": f"Welcome to your {name} test",
+                    "instructions": display_data.get("instructions"),
+                    "img_url": display_data.get("welcome_img_url"),
+                },
+                "eval_home": {
+                    "heading": f"{name}",
+                    "img_url": display_data.get("eval_img_url"),
+                },
+                "name": assessment.assessment_name,
+                "max_attempts": max_attempts,
+                "user_attempts": number_of_attempts,
+                "user_id": user_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "due_date":due_date,
+                "is_locked": is_locked,
+                "score":max_percentage
+ 
+                
+            }
+
+            resp_data.append(resp_obj)
+        return resp_data

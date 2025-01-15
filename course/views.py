@@ -52,6 +52,7 @@ from course.usecases import (
     LiveClassUsecase,
     BatchMessageUsecase,
     PersonalMessageUsecase,
+    AssessmentModuleUsecase
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -80,6 +81,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import ListModelMixin
 from accounts.usecases import StudentProfileUsecase
+
 
 # ########################################################
 # Program Views
@@ -895,27 +897,17 @@ def get_modules_and_resources_by_course_id(request, course_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_assessments_by_module_id(request, course_id, module_id):
-    print("course_id", course_id)
-    print("module_id", module_id)
-    module_data = CourseUseCase.get_modules_by_course_id(course_id)
+    user_id=request.user.id
+    # extract module assessment_generation_configs
+    assessment_generation_configs = AssessmentModuleUsecase.fetch_assessment_display_data(user_id,course_id,module_id)
 
-    print("module_data", module_data)
-
-    # extract the module from the list of modules, on the basis of module_id
-    for module in module_data:
-        if int(module.get("id")) == int(module_id):
-            break
-    else:
-        module = None
-
-    if not module:
+    if not assessment_generation_configs or len(assessment_generation_configs)==0:
         return Response(
-            {"error": "No module found for the given module ID."},
+            {"error": f"No assessment configs for course {course_id} module {module_id}"},
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    # extract module assessment_generation_configs
-    assessment_generation_configs = module.get("assessment_generation_configs", [])
+    
 
     return Response(
         {"assessment_generation_configs": assessment_generation_configs},
