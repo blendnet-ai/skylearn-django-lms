@@ -760,7 +760,7 @@ class AssessmentUseCase:
                 "assessment_id": item.get("assessment_id"),
                 "type": item.get("type"),
                 "status": item.get("status"),
-                "percentage": eval_data.get("percentage"),
+                "percentage": f"{eval_data.get('percentage')}%",
                 "short_description": eval_data.get("short_description"),
                 "total_obtained": total_score,
                 "grand_total": max_score,

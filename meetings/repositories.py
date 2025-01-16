@@ -114,7 +114,7 @@ class MeetingRepository:
             meeting_end_time = meeting.end_time.astimezone(ist) if meeting.end_time.tzinfo else ist.localize(meeting.end_time)
             
             # Check if the meeting ended within the last hour
-            if meeting_end_time >= one_hour_ago and meeting_end_time <= now:
+            if meeting_end_time+timedelta(hours=1) <= now:
                 completed_meetings.append(meeting)
                 
         return completed_meetings
