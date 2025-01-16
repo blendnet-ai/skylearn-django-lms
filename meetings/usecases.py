@@ -526,12 +526,8 @@ class MeetingUsecase:
         meetings_data = []
         for meeting in meetings:
             # Combine date and time for start_time
-            start_datetime = (
-                datetime.combine(meeting.start_date, meeting.start_time_override)
-                if meeting.start_time_override
-                else datetime.combine(meeting.start_date, meeting.series.start_time)
-            )
-            end_datetime = start_datetime + meeting.series.duration
+            start_datetime = meeting.start_time
+            end_datetime = meeting.end_time
             meetings_data.append(
                 {
                     "type": 0,
