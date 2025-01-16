@@ -900,7 +900,7 @@ class AssessmentModuleUsecase:
                 "end_date": end_date,
                 "due_date":due_date,
                 "is_locked": is_locked,
-                "score":max_percentage
+                "score":f"{max_percentage}%"
  
                 
             }

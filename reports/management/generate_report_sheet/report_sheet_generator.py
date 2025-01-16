@@ -319,7 +319,8 @@ def populate_lms_assessments_logs_data(data):
         # Check if eval_data exists and get the percentage or total_score
         if record.eval_data:
             percentage = record.eval_data.get('percentage')
-            print(percentage)
+            max_score=record.eval_data.get('max_score')
+            total_score=record.eval_data.get('total_score')
             if int(assessment_type) == int(AssessmentGenerationConfig.Type.Qualitative):
                 # Determine the grade based on percentage
                 if percentage is not None:
@@ -342,7 +343,9 @@ def populate_lms_assessments_logs_data(data):
             'Assessment ID': record.assessment_id,
             'DateTime': record.updated_at,
             'Assessment Type': assessment_type,
-            'Grade/Score': grade_or_score,
+            'Percentage': grade_or_score,
+            'Total Score':total_score,
+            'Max Score':max_score,
             'Report Link': None,
             'Comments': comments
         })
