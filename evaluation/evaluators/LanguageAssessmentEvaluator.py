@@ -311,7 +311,7 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
         eval_data = {
             "total_score": round((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4, 1),
             "max_score": 10.0,
-            "percentage": round(((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4) * 10, 1),
+            "percentage": round(((listening_score_10 + speaking_normalized_10 + reading_score_10 + writing_normalized_10) / 4) * 10, 1),
             "performance_overview": {
                 "feedback": "You have done well in the assessment. Keep up the good work.",
                 "score": round(overall_score_10, 1)
