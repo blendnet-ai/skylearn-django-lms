@@ -302,14 +302,14 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
         writing_vocab_10 = (writing_vocab_score / writing_max_score * 10) if writing_max_score else 0
 
         # Calculate normalized averages on 0-10 scale
-        overall_score_10 = (listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4
+        
         speaking_normalized_10 = (speaking_score_10 + speaking_fluency_10 + speaking_vocab_10 + 
                                 speaking_coherence_10 + speaking_pronunciation_10 + speaking_grammar_10 + 
                                 speaking_sentiment_10) / 7
         writing_normalized_10 = (writing_score_10 + writing_grammar_10 + writing_coherence_10 + writing_vocab_10) / 4
-
+        overall_score_10 = (listening_score_10 + speaking_normalized_10 + reading_score_10 + writing_normalized_10) / 4
         eval_data = {
-            "total_score": round((listening_score_10 + speaking_score_10 + reading_score_10 + writing_score_10) / 4, 1),
+            "total_score": round((listening_score_10 + speaking_normalized_10 + reading_score_10 + writing_normalized_10) / 4, 1),
             "max_score": 10.0,
             "percentage": round(((listening_score_10 + speaking_normalized_10 + reading_score_10 + writing_normalized_10) / 4) * 10, 1),
             "performance_overview": {
