@@ -952,7 +952,7 @@ def get_live_class_details(request, series_id):
 @permission_classes([IsLoggedIn])
 def get_sas_url(request):
     # Get the meeting_blob_url from query parameters
-    blob_url = request.GET.get("blob_url")
+    blob_url = request.query_params.get("blob_url")
 
     if not blob_url:
         return Response(
