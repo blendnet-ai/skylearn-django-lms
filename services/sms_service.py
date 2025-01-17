@@ -50,6 +50,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
     
     def __init__(self,api_key):
         self.api_key=api_key
+        self.sms_template_name='lms-otp-template'
         super().__init__()
     
     def get_base_headers(self):
@@ -73,13 +74,13 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         Returns:
             bool,str: True/False based on OTP sent status, and a message
         """
-        url = f"{self.get_base_url()}/{phone_number}/AUTOGEN/OTP1"
+        url = f"{self.get_base_url()}/{phone_number}/AUTOGEN3/{self.sms_template_name}"
         response = self._get_request(url=url)
         if response.status_code == 200 and response.json()['Status']=='Success':
-            return True,"OTP sent successfully"
+            return True,"OTP sent successfully",response.json()['Details']
         else:
             logger.info(f'error sending otp : {response.json()}' )
-            return False,"OTP sending failed"
+            return False,"OTP sending failed",None
         
     def send_otp_phone(self, phone_number: str) -> dict:
         """
@@ -101,7 +102,7 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
             logger.info(f'error sending otp : {response.json()}' )
             return False,"OTP sending failed",None
 
-    def verify_otp(self, phone_number: str, entered_otp_value: str) -> bool:
+    def verify_otp(self, code: str, entered_otp_value: str) -> bool:
         """
         Verify if the provided OTP is valid for the given phone number using local database.
 
@@ -112,13 +113,13 @@ class SMS2FactorService(BaseSMSService,BaseRestService):
         Returns:
             bool: True if the OTP is valid, False otherwise with message.
         """
-        url = f"{self.get_base_url()}/VERIFY3/{phone_number}/{entered_otp_value}"
+        url = f"{self.get_base_url()}/VERIFY/{code}/{entered_otp_value}"
         response = self._get_request(url=url)
         if response.status_code == 200 and response.json()['Status']=='Success':
             return True,"OTP Verified successfully"
         else:
             logger.info(f'error verifying otp : {response.json()}' )
-            return False,"Error in verifying OTP"
+            return False,"OTP Verification Failed"
         
     def verify_otp_phone(self,code,entered_otp_value):
         url = f"{self.get_base_url_VOICE()}/VERIFY/{code}/{entered_otp_value}"

@@ -199,7 +199,7 @@ class OnBoardingUsecase:
 
     def handle_otp_sending(user, phone_number):
         if phone_number:
-            status, message, code = SMS2FactorService.send_otp_phone(phone_number)
+            status, message, code = SMS2FactorService.send_otp(phone_number)
             # status,message=True,"OTP Sent Successfully"
             if status:
                 return {"otp_sent": True, "status": status, "message": message, "code":code}
@@ -213,7 +213,7 @@ class OnBoardingUsecase:
             }
 
     def handle_otp_verification(user, code, entered_otp_value,phone_number):
-        is_verified, message = SMS2FactorService.verify_otp_phone(
+        is_verified, message = SMS2FactorService.verify_otp(
             code, entered_otp_value
         )
 
