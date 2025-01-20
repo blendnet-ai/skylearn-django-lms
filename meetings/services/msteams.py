@@ -187,7 +187,7 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             # If authentication failed, clear cache and retry once
             if e.response and e.response.status_code == 401:
                 cache.delete(settings.MS_TEAMS_ACCESS_TOKEN_CACHE_KEY)
-                return self.delete_meeting(meeting_id=meeting_id)
+                return self.update_meeting(presenter,meeting_id,start_time,end_time,subject)
             raise
     
     def get_meetings_recordings(self, presenter: Presenter, meeting) -> list:

@@ -1,6 +1,9 @@
 from .models import UserInfo, NotificationIntent, NotificationRecord
 from django.utils import timezone
 from channels.db import database_sync_to_async
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserRepository:
     @staticmethod
@@ -69,16 +72,25 @@ class NotificationIntentRepository:
 
 class NotificationRecordRepository:
     @staticmethod
-    def create_record(intent, user, message,medium):
-        return NotificationRecord.objects.create(
+    def create_record(intent, user, message, medium):
+        record, created = NotificationRecord.objects.get_or_create(
             intent=intent,
             user=user,
-            message=message,
-            medium=medium
+            defaults={
+                'message': message,
+                'medium': medium,
+                'sent': False
+            }
         )
+        if not created:
+            if record.sent:
+                logger.info(f"Notification already sent for intent_id={intent.id} and user_id={user.user_id}")
+                return None
+            logger.info(f"Found existing unsent notification record for intent_id={intent.id} and user_id={user.user_id}")
+        return record
 
     @staticmethod
-    def mark_record_as_sent(record,sent_status):
+    def mark_record_as_sent(record, sent_status):
         record.sent = sent_status
         record.sent_at = timezone.now()
         record.save()

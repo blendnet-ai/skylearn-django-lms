@@ -35,7 +35,7 @@ class NotificationService:
         
         # Create mapping of user_id to user object
         user_map = {str(user.user_id): user.user for user in existing_users}
-        user_telegram_map={str(user.user_id): user.telegram_chat_id for user in existing_users}
+        user_telegram_map = {str(user.user_id): user.telegram_chat_id for user in existing_users}
 
         provider = NotificationService._providers.get(intent.medium)
         if not provider:
@@ -48,7 +48,6 @@ class NotificationService:
         # Iterate through user_ids and variables together
         for user_id, user_variables in zip(intent.user_ids, intent.variables):
             # Skip if user doesn't exist
-            
             if str(user_id) not in user_map:
                 skipped_users.append({
                     'user_id': user_id,
@@ -64,7 +63,7 @@ class NotificationService:
                 
             user = user_map[str(user_id)]
             telegram_chat_id = user_telegram_map[str(user_id)]
-            logger.info(f"Rendering message for user {user.email} with variables: {user_variables}")
+            
             rendered_message = NotificationService.render_message(
                 intent.message_template,
                 user_variables
@@ -76,8 +75,18 @@ class NotificationService:
                 message=rendered_message, 
                 medium=intent.medium
             )
-            records.append(record)
             
+            # Skip if record was already processed (create_record returned None)
+            if record is None:
+                skipped_users.append({
+                    'user_id': user_id,
+                    'variables': user_variables,
+                    'reason': 'Notification already sent'
+                })
+                logger.info(f"Skipping already sent notification for user_id={user_id}")
+                continue
+                
+            records.append(record)
             recipient_id = user.email if intent.medium == 'email' else telegram_chat_id
             message_data = {
                 'recipient': recipient_id,
