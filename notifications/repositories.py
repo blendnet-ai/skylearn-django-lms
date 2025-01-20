@@ -84,9 +84,9 @@ class NotificationRecordRepository:
         )
         if not created:
             if record.sent:
-                logger.info(f"Notification already sent for intent_id={intent.id} and user_id={user.user_id}")
+                logger.info(f"Notification already sent for intent_id={intent.id} and user_id={user.id}")
                 return None
-            logger.info(f"Found existing unsent notification record for intent_id={intent.id} and user_id={user.user_id}")
+            logger.info(f"Found existing unsent notification record for intent_id={intent.id} and user_id={user.id}")
         return record
 
     @staticmethod
