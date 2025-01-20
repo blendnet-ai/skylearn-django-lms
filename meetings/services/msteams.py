@@ -89,7 +89,7 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
                 "startDateTime": start_time.isoformat() + "Z",
                 "endDateTime": end_time.isoformat() + "Z",
                 "subject": subject,
-                "recordAutomatically": False,
+                "recordAutomatically": True,
                 "lobbyBypassSettings": {"scope": "everyone"},
                 "allowedPresenters": "organization",
                 "participants": {
@@ -167,7 +167,8 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
             meeting_data = {
                 "startDateTime": start_time.isoformat() + "Z",
                 "endDateTime": end_time.isoformat() + "Z",
-                "subject": subject
+                "subject": subject,
+                "recordAutomatically": True
             }
             response=requests.patch(
                 headers=headers,
