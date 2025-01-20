@@ -3,7 +3,7 @@ from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.http import JsonResponse
 
-
+# remove
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first
     response = exception_handler(exc, context)

@@ -9,7 +9,7 @@ from PIL import Image
 from course.models import Batch, Program
 from .validators import ASCIIUsernameValidator
 
-
+# remove
 # LEVEL_COURSE = "Level course"
 BACHELOR_DEGREE = _("Bachelor")
 MASTER_DEGREE = _("Master")
@@ -38,7 +38,7 @@ RELATION_SHIP = (
     (OTHER, _("Other")),
 )
 
-
+# -- 
 class UserConfigMapping(models.Model):
     email = models.EmailField(unique=True)
     config = models.JSONField(max_length=100)
@@ -68,7 +68,7 @@ class CustomUserManager(UserManager):
     def get_superuser_count(self):
         return self.model.objects.filter(is_superuser=True).count()
 
-
+# remove
 GENDERS = ((_("M"), _("Male")), (_("F"), _("Female")))
 
 
@@ -76,18 +76,18 @@ class User(AbstractUser):
     firebase_uid = models.CharField(max_length=150, unique=True, null=True)
     is_student = models.BooleanField(default=False)
     is_lecturer = models.BooleanField(default=False)
-    is_parent = models.BooleanField(default=False)
-    is_dep_head = models.BooleanField(default=False)
+    is_parent = models.BooleanField(default=False) # remove
+    is_dep_head = models.BooleanField(default=False) # remove
     is_course_provider_admin = models.BooleanField(default=False)
-    gender = models.CharField(max_length=1, choices=GENDERS, blank=True, null=True)
-    phone = models.CharField(max_length=60, blank=True, null=True)
-    address = models.CharField(max_length=60, blank=True, null=True)
+    gender = models.CharField(max_length=1, choices=GENDERS, blank=True, null=True) # remove
+    phone = models.CharField(max_length=60, blank=True, null=True) # remove
+    address = models.CharField(max_length=60, blank=True, null=True) # remove
     picture = models.ImageField(
         upload_to="profile_pictures/%y/%m/%d/", default="default.png", null=True
-    )
+    ) # remove
     email = models.EmailField(blank=True, null=True)
 
-    username_validator = ASCIIUsernameValidator()
+    username_validator = ASCIIUsernameValidator() # remove
 
     objects = CustomUserManager()
 
@@ -120,6 +120,7 @@ class User(AbstractUser):
             role = _("User")
         return role
 
+    # remove
     def get_picture(self):
         try:
             return self.picture.url
@@ -127,9 +128,11 @@ class User(AbstractUser):
             no_picture = settings.MEDIA_URL + "default.png"
             return no_picture
 
+    # remove
     def get_absolute_url(self):
         return reverse("profile_single", kwargs={"user_id": self.id})
 
+    # remove
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         try:
@@ -141,12 +144,13 @@ class User(AbstractUser):
         except:
             pass
 
+    # remove
     def delete(self, *args, **kwargs):
         if self.picture.url != settings.MEDIA_URL + "default.png":
             self.picture.delete()
         super().delete(*args, **kwargs)
 
-
+# remove
 class StudentManager(models.Manager):
     def search(self, query=None):
         qs = self.get_queryset()
@@ -161,8 +165,8 @@ class StudentManager(models.Manager):
 class Student(models.Model):
     student = models.OneToOneField(User, on_delete=models.CASCADE)
     # id_number = models.CharField(max_length=20, unique=True, blank=True)
-    level = models.CharField(max_length=25, choices=LEVEL, null=True)
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)
+    level = models.CharField(max_length=25, choices=LEVEL, null=True) # remove
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True) # remove
     batches = models.ManyToManyField(Batch, blank=True)
 
     objects = StudentManager()
@@ -180,6 +184,7 @@ class Student(models.Model):
 
         return {"M": males_count, "F": females_count}
 
+    # remove
     def get_absolute_url(self):
         return reverse("profile_single", kwargs={"user_id": self.id})
 
@@ -187,7 +192,7 @@ class Student(models.Model):
         self.student.delete()
         super().delete(*args, **kwargs)
 
-
+# remove
 class Parent(models.Model):
     """
     Connect student with their parent, parents can
@@ -211,7 +216,7 @@ class Parent(models.Model):
     def __str__(self):
         return self.user.username
 
-
+# remove
 class DepartmentHead(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     department = models.ForeignKey(Program, on_delete=models.CASCADE, null=True)

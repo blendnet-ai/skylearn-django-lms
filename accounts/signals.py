@@ -4,7 +4,7 @@ from .utils import (
     send_new_account_email,
 )
 
-
+# remove
 def post_save_account_receiver(instance=None, created=False, *args, **kwargs):
     """
     Send email notification

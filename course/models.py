@@ -11,7 +11,7 @@ from core.models import ActivityLog, Semester
 from core.utils import unique_slug_generator
 from meetings.models import MeetingSeries,Meeting
 
-
+# remove
 class ProgramManager(models.Manager):
     def search(self, query=None):
         queryset = self.get_queryset()
@@ -58,7 +58,7 @@ class CourseManager(models.Manager):
             queryset = queryset.filter(or_lookup).distinct()
         return queryset
 
-
+# --
 
 class Module(models.Model):
     title = models.CharField(max_length=200)
@@ -74,17 +74,17 @@ class Course(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     title = models.CharField(max_length=200)
     code = models.CharField(max_length=200, unique=True)
-    credit = models.IntegerField(default=0)
+    credit = models.IntegerField(default=0) # remove
     summary = models.TextField(max_length=200, blank=True)
-    level = models.CharField(max_length=25, choices=settings.LEVEL_CHOICES)
-    year = models.IntegerField(choices=settings.YEARS, default=1)
-    semester = models.CharField(choices=settings.SEMESTER_CHOICES, max_length=200)
-    is_elective = models.BooleanField(default=False)
-    assessment_generation_ids = models.JSONField(blank=True, default=list)
+    level = models.CharField(max_length=25, choices=settings.LEVEL_CHOICES) # remove
+    year = models.IntegerField(choices=settings.YEARS, default=1) # remove
+    semester = models.CharField(choices=settings.SEMESTER_CHOICES, max_length=200) # remove
+    is_elective = models.BooleanField(default=False) # remove
+    assessment_generation_ids = models.JSONField(blank=True, default=list) # remove
     course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
     drive_folder_link = models.CharField(max_length=255, blank=True)
 
-    objects = CourseManager()
+    objects = CourseManager() # remove
 
     def __str__(self):
         return f"{self.title} ({self.code})"
@@ -93,7 +93,7 @@ class Course(models.Model):
         return reverse("course_detail", kwargs={"slug": self.slug})
 
     @property
-    def is_current_semester(self):
+    def is_current_semester(self): # remove
 
         current_semester = Semester.objects.filter(is_current_semester=True).first()
         return self.semester == current_semester.semester if current_semester else False
@@ -164,18 +164,19 @@ class CourseAllocation(models.Model):
     courses = models.ManyToManyField(Course, related_name="allocated_course")
     session = models.ForeignKey(
         "core.Session", on_delete=models.CASCADE, blank=True, null=True
-    )
+    ) # remove
 
     def __str__(self):
         return self.lecturer.get_full_name
 
+    # remove
     def get_absolute_url(self):
         return reverse("edit_allocated_course", kwargs={"pk": self.pk})
 
 
 class Upload(models.Model):
     title = models.CharField(max_length=100)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE) # remove
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='uploads', null=True, blank=True)  # New field
     # file = models.FileField(
     #     upload_to="course_files/",
@@ -251,7 +252,7 @@ def log_upload_delete(sender, instance, **kwargs):
 class UploadVideo(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE) # remove
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='video_uploads', null=True, blank=True)  # New field
     # video = models.FileField(
     #     upload_to="course_videos/",
@@ -306,7 +307,7 @@ def log_uploadvideo_delete(sender, instance, **kwargs):
         )
     )
 
-
+# remove
 class CourseOffer(models.Model):
     """NOTE: Only department head can offer semester courses"""
 

@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
+# remove unused vars
 import os
 from decouple import config
 from django.utils.translation import gettext_lazy as _
@@ -39,7 +39,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost:3000"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost:3000", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
