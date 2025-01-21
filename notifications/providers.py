@@ -5,6 +5,11 @@ from django.utils.html import strip_tags
 import requests
 from telegram_bot.services.telegram_service import TelegramService
 
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
 class NotificationProvider(ABC):
     @abstractmethod
     def send_message(self, messages_data):
@@ -42,7 +47,7 @@ class EmailNotificationProvider(NotificationProvider):
                 
             return True
         except Exception as e:
-            print(f"Error sending email: {e}")
+            logger.info(f"Error sending email: {e}")
             return False
 
 class TelegramNotificationProvider(NotificationProvider):
@@ -58,10 +63,17 @@ class TelegramNotificationProvider(NotificationProvider):
                     'parse_mode': 'HTML'
                 }
                 response = requests.post(url, data=payload)
-                response.raise_for_status()
+                
+                # Check for 403 error (blocked by user)
+                if response.status_code == 403:
+                    logger.info(f"User {data['recipient']} has blocked the bot. Skipping...")
+                    continue
+                
+                response.raise_for_status()  # Will raise an exception for non-2xx responses
+                
                 if not response.ok:
                     success = False
             return success
-        except Exception as e:
-            print(f"Error sending Telegram message: {e}")
+        except requests.exceptions.RequestException as e:
+            logger.info(f"Error sending Telegram message: {e}")
             return False
