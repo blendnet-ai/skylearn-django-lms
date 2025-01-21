@@ -545,7 +545,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-for-pending-intents': { 
         'task': 'notifications.tasks.process_notification_intents', 
-         'schedule': crontab(minute='*'), 
+        'schedule': crontab(minute='*/5'),  # Runs every 5 minutes
     }
 }
 
@@ -616,12 +616,14 @@ AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ[
 DEEPGRAM_KEY = os.environ["DEEPGRAM_KEY"]
 
 ANYMAIL = {
-    "MAILJET_API_KEY": os.environ["MAILJET_API_KEY"],
-    "MAILJET_SECRET_KEY": os.environ["MAILJET_SECRET_KEY"],
+    "SENDGRID_API_KEY":"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"
+    # "MAILJET_API_KEY": os.environ["MAILJET_API_KEY"],
+    # "MAILJET_SECRET_KEY": os.environ["MAILJET_SECRET_KEY"],
 }
 
-EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
-DEFAULT_FROM_EMAIL = "speechai0@gmail.com"
+#EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
+EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
+DEFAULT_FROM_EMAIL = "contact@sakshm.com"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 ADMINS = os.environ["ADMINS"]

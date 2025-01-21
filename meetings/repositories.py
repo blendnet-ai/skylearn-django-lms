@@ -86,7 +86,7 @@ class MeetingRepository:
         return Meeting.objects.get(id=id)
     
     def get_no_of_meetings_occured_in_course(course_id,batch_id,date):
-        return Meeting.objects.filter(series__course_enrollments__batch__course_id=course_id,series__course_enrollments__batch__id=batch_id,start_date__lt=date).count()
+        return Meeting.objects.filter(series__course_enrollments__batch__course_id=course_id,series__course_enrollments__batch__id=batch_id,start_date__lte=date).count()
 
     @staticmethod
     def get_meetings_of_series_in_period(series_id, start_date, end_date):
@@ -227,19 +227,21 @@ class AttendaceRecordRepository:
         )
         
     @staticmethod
-    def get_total_classes_attended_by_user_for_course(user_id: int, course_id: int) -> dict:
+    def get_total_classes_attended_by_user_for_course(user_id: int, course_id: int,batch_id:int) -> dict:
         """
         Get total classes attended by a user for a specific course.
         """
         # Get all meetings for this course
         meetings = Meeting.objects.filter(
             series__course_enrollments__batch__course_id=course_id,
+            series__course_enrollments__batch_id=batch_id,
             start_date__lt=datetime.now().date()
         )
         
         # Get existing attendance records
         attendance_records = AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__batch__course_id=course_id,
+            meeting__series__course_enrollments__batch_id=batch_id,
             user_id=user_id
         )
         

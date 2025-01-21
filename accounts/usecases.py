@@ -202,7 +202,7 @@ class StudentProfileUsecase:
             for batch in student_batches:
                 course = batch.course
                 total_time_spent_on_resources = PageEventRepository.get_total_time_spent_by_user_on_resources_in_course(user, course.id)
-                attendance_data = AttendaceRecordRepository.get_total_classes_attended_by_user_for_course(user.id, course.id)
+                attendance_data = AttendaceRecordRepository.get_total_classes_attended_by_user_for_course(user.id, course.id,batch.id)
                 assessments_data = AssessmentAttemptRepository.get_total_assessment_duration_by_course_and_user(course.id, user.id)
                 # Get video stats
                 total_videos = UploadVideoRepository.get_video_count_by_course(course.id)
