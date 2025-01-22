@@ -64,10 +64,39 @@ class NotificationIntentRepository:
 
     @staticmethod
     def get_pending_intents_by_time(scheduled_time):
-        return NotificationIntent.objects.filter(processed=False, scheduled_at__lte=scheduled_time)
+        return NotificationIntent.objects.filter(
+            state=NotificationIntent.State.PENDING,
+            scheduled_at__lte=scheduled_time
+        )
     
+    @staticmethod
     def get_intent_by_id(id):
         return NotificationIntent.objects.filter(id=id).first()
+
+    @staticmethod
+    def mark_intent_as_picked(intent):
+        intent.state = NotificationIntent.State.PICKED
+        intent.save()
+    
+    @staticmethod
+    def mark_intent_as_processing(intent):
+        intent.state = NotificationIntent.State.PROCESSING
+        intent.save()
+    
+    @staticmethod
+    def mark_intent_as_completed(intent):
+        intent.state = NotificationIntent.State.COMPLETED
+        intent.processing_completed_at = timezone.now()
+        intent.processed = True
+        intent.save()
+    
+    @staticmethod
+    def mark_intent_as_failed(intent, error_message):
+        intent.state = NotificationIntent.State.FAILED
+        intent.error_message = error_message
+        intent.processing_completed_at = timezone.now()
+        intent.processed = True
+        intent.save()
 
 
 class NotificationRecordRepository:
@@ -90,7 +119,8 @@ class NotificationRecordRepository:
         return record
 
     @staticmethod
-    def mark_record_as_sent(record, sent_status):
-        record.sent = sent_status
+    def mark_record_as_sent(record, success,error):
+        record.sent = success
+        record.error=error
         record.sent_at = timezone.now()
         record.save()
