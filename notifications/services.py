@@ -132,6 +132,7 @@ class NotificationService:
                         NotificationRecordRepository.mark_record_as_sent(record, success,error)
             
             NotificationIntentRepository.mark_intent_as_completed(intent)
+            NotificationIntentRepository.mark_intent_as_processed(intent)
             
         except Exception as e:
             logger.error(f"Failed to process notification intent {intent_id}: {str(e)}")
