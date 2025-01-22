@@ -65,7 +65,6 @@ class NotificationIntentRepository:
     @staticmethod
     def get_pending_intents_by_time(scheduled_time):
         return NotificationIntent.objects.filter(
-            state=NotificationIntent.State.PENDING,
             scheduled_at__lte=scheduled_time
         )
     
