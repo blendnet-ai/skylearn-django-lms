@@ -65,6 +65,7 @@ class NotificationIntentRepository:
     @staticmethod
     def get_pending_intents_by_time(scheduled_time):
         return NotificationIntent.objects.filter(
+            processed=False,
             scheduled_at__lte=scheduled_time
         )
     
@@ -104,10 +105,9 @@ class NotificationRecordRepository:
         record, created = NotificationRecord.objects.get_or_create(
             intent=intent,
             user=user,
+            medium=medium,
             defaults={
-                'message': message,
-                'medium': medium,
-                'sent': False
+                'message': message
             }
         )
         if not created:
