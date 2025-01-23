@@ -310,15 +310,15 @@ def populate_lms_live_classes_logs_data(data):
 def populate_lms_assessments_logs_data(data):
     assessments_data = data['assessments_data']
     final_data = []
-    total_score=None
-    max_score=None
-    percentage=None
     for record in assessments_data:
         # Get the assessment type
         assessment_type = record.assessment_generation_config_id.assessment_type
         # Initialize the grade/score and comments
         grade_or_score = None
         comments = ''
+        total_score=None
+        max_score=None
+        percentage=None
         # Check if eval_data exists and get the percentage or total_score
         if record.eval_data:
             percentage = record.eval_data.get('percentage')
