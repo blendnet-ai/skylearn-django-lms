@@ -1,4 +1,3 @@
-from practice.models import UserAttemptedQuestionResponse
 from .base_event_processor import EventProcessor
 from ...models import UserAttemptResponseEvaluation, UserEvalQuestionAttempt, AssessmentAttempt
 import logging
