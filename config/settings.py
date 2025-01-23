@@ -124,7 +124,6 @@ INTEGRATED_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS + INTEGRATED_APPS
 
 REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "accounts.exceptions.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "accounts.authentication.FirebaseAuthentication",
         "rest_framework.authentication.SessionAuthentication",
@@ -157,8 +156,7 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "accounts.auth_context_processor.firebase_config"
+                "django.contrib.messages.context_processors.messages"
             ],
         },
     },
