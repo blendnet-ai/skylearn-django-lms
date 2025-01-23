@@ -175,7 +175,7 @@ class MeetingRepository:
     def get_completed_meetings_in_past_24_hours_with_recordings():
         now = datetime.now(ist)
         potential_meetings = Meeting.objects.filter(
-            start_date__gte=now - timedelta(hours=24),
+            start_date=(now - timedelta(hours=24)).date(),
             blob_url__isnull=False,  
             blob_url__gt=''
         ).select_related("series")
@@ -353,7 +353,7 @@ class AttendaceRecordRepository:
         """
         now = datetime.now(ist)
         potential_meetings = Meeting.objects.filter(
-            start_date__gte=now - timedelta(hours=24),
+            start_date=(now - timedelta(hours=24)).date(),
             blob_url__isnull=False,  
             blob_url__gt=''
         ).select_related("series")
