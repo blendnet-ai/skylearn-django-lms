@@ -12,6 +12,13 @@ class UserInfo(models.Model):
 
 
 class NotificationIntent(models.Model):
+    class State(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        PICKED = 'picked', 'Picked for Processing'
+        PROCESSING = 'processing', 'Processing'
+        COMPLETED = 'completed', 'Completed'
+        FAILED = 'failed', 'Failed'
+    
     MEDIUM_CHOICES = [
         ('email', 'Email'),
         ('telegram', 'Telegram'),
@@ -36,7 +43,6 @@ class NotificationIntent(models.Model):
     
     # Optional fields for different notification types
     reference_id = models.IntegerField(null=True)  # Can be meeting_id, user_id, or any other entity id
-
     TIMING_CHOICES = [
         ('immediate', 'Immediate'),
         ('scheduled', 'Scheduled'),
@@ -48,6 +54,13 @@ class NotificationIntent(models.Model):
         choices=TIMING_CHOICES,
         default='scheduled'
     )
+
+    state = models.CharField(
+        max_length=20,
+        choices=State.choices,
+        default=State.PENDING
+    )
+    processing_completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Intent {self.id} - {self.medium}"
@@ -61,6 +74,7 @@ class NotificationRecord(models.Model):
     message = models.TextField()
     sent = models.BooleanField(default=False)
     sent_at = models.DateTimeField(null=True, blank=True)
+    error = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"Record {self.record_id} for User {self.user.id}"

@@ -3,6 +3,7 @@ from django.utils import timezone
 from .services import NotificationService
 from .repositories import NotificationIntentRepository
 import logging  # {{ edit_1 }}
+from .exceptions import NotificationIntentProcessingError
 
 # {{ edit_2 }}
 logger = logging.getLogger(__name__)  # Setup logger
@@ -20,10 +21,14 @@ def process_notification_intents():
     for intent in intents:
         process_notification_intent.delay(intent.id)
 
-@shared_task(queue='notification_queue') 
-def process_notification_intent(intent_id):
-    logger.info(f"Processing Intent {intent_id}")
-    NotificationService.process_intent(intent_id)
+@shared_task(queue='notification_queue', bind=True, max_retries=3)
+def process_notification_intent(self, intent_id):
+    """Process a single notification intent"""
+    try:
+        logger.info(f"Processing Intent {intent_id}")
+        NotificationService.process_intent(intent_id)
+    except (NotificationIntentProcessingError, ValueError) as e:
+        logger.error(f"Failed to process notification intent {intent_id}: {str(e)}")
 
 @shared_task(queue='notification_queue')
 def send_immediate_notifications(intent_id):
