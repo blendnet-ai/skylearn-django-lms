@@ -668,11 +668,13 @@ class MeetingAttendanceUseCase:
             else:
                 return meeting_link
     
-    def mark_meeting_attendance_common_link(user):
-        user_id=user.id
+    def mark_meeting_attendance_common_link(user_id):
+        user=User.objects.get(id=user_id)
         next_meeting_for_user=MeetingRepository.get_next_meeting_for_user(user_id)
+        logger.info(f"next meeting for user  {next_meeting_for_user}")
         if next_meeting_for_user is not None:
             meeting_id=next_meeting_for_user.get('meeting_id')
+            meeting_link=next_meeting_for_user.get('meeting_link')
             # Get or create attendance record
             attendance_record, created = AttendaceRecordRepository.get_or_create_attendance_record(
                 user_id=user,
@@ -687,8 +689,8 @@ class MeetingAttendanceUseCase:
                 return meeting_link
 
     
-    def get_common_joining_url():
-        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join-meeting/"
+    def get_common_joining_url(user_id):
+        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join-meeting/{user_id}/"
         
         return joining_url
 

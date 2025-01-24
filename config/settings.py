@@ -49,7 +49,7 @@ LOCAL_MEM_CACHE = {
 }
 
 # DEBUG = config("DEBUG", default=False, cast=bool)
-DEBUG = True
+DEBUG = False
 ENV = os.environ["ENV"]
 
 CACHES = LOCAL_MEM_CACHE

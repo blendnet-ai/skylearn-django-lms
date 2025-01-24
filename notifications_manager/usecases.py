@@ -137,8 +137,8 @@ class NotificationManagerUsecase:
                 "course": meeting.course.title,
                 "participant_name": participant.get_full_name,
                 "date_time": formatted_datetime,
-                "class_link": MeetingAttendanceUseCase.get_joining_url(
-                    participant.id, meeting.id
+                "class_link": MeetingAttendanceUseCase.get_common_joining_url(
+                    participant.id
                 ),
                 "email_subject": f"Reminder: {'Upcoming Class Scheduled for'} \"{meeting.course.title}\""
             })
