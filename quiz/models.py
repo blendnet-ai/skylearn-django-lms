@@ -17,7 +17,7 @@ from django.dispatch import receiver
 from model_utils.managers import InheritanceManager
 
 from course.models import Course
-from core.utils import unique_slug_generator
+from course.utils import unique_slug_generator
 
 CHOICE_ORDER_OPTIONS = (
     ("content", _("Content")),
