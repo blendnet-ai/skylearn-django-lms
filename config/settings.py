@@ -93,13 +93,8 @@ THIRD_PARTY_APPS = [
 
 # Custom apps
 PROJECT_APPS = [
-    "core.apps.CoreConfig",
     "accounts.apps.AccountsConfig",
     "course.apps.CourseConfig",
-    "result.apps.ResultConfig",
-    "search.apps.SearchConfig",
-    "quiz.apps.QuizConfig",
-    "payments.apps.PaymentsConfig",
     "meetings.apps.MeetingsConfig",
     "reports.apps.ReportsConfig",
     "events_logger.apps.EventsLoggerConfig",
@@ -115,7 +110,6 @@ INTEGRATED_APPS = [
     "services",
     "common",
     "OpenAIService",
-    "practice",
     "custom_auth",
     "telegram_bot",
 ]
@@ -211,12 +205,8 @@ def gettext(s):
 
 LANGUAGES = (
     ("en", gettext("English")),
-    ("fr", gettext("French")),
-    ("es", gettext("Spanish")),
-    ("ru", gettext("Russia")),
 )
 
-LOCALE_PATHS = (os.path.join(BASE_DIR, "locale"),)
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "en"
 LANGUAGE_CODE = "en-us"
@@ -320,33 +310,6 @@ LOGGING = {
 # WhiteNoise configuration
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Constants
-YEARS = (
-    (1, "1"),
-    (2, "2"),
-    (3, "3"),
-    (4, "4"),
-    (5, "5"),
-    (6, "6"),
-)
-
-BACHELOR_DEGREE = "Bachelor"
-MASTER_DEGREE = "Master"
-
-LEVEL_CHOICES = (
-    (BACHELOR_DEGREE, _("Bachelor Degree")),
-    (MASTER_DEGREE, _("Master Degree")),
-)
-
-FIRST = "First"
-SECOND = "Second"
-THIRD = "Third"
-
-SEMESTER_CHOICES = (
-    (FIRST, _("First")),
-    (SECOND, _("Second")),
-    (THIRD, _("Third")),
-)
 
 AI_BOT_USERNAME = os.environ[
     "AI_BOT_USERNAME"

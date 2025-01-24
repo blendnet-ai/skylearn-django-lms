@@ -64,8 +64,6 @@ class User(AbstractUser):
             role = _("Student")
         elif self.is_lecturer:
             role = _("Lecturer")
-        elif self.is_parent:
-            role = _("Parent")
         elif self.is_course_provider_admin:
             role = _("Course Provider Admin")
         else:
