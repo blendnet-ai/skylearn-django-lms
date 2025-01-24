@@ -22,6 +22,7 @@ from meetings.tasks import create_teams_meeting_task
 logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
 User = get_user_model()
+from custom_auth.utils import CryptographyHandler
 
 storage_service = AzureStorageService()
 
@@ -668,7 +669,8 @@ class MeetingAttendanceUseCase:
             else:
                 return meeting_link
     
-    def mark_meeting_attendance_common_link(user_id):
+    def mark_meeting_attendance_common_link(reference_id):
+        user_id=CryptographyHandler.decrypt_user_id(reference_id)
         user=User.objects.get(id=user_id)
         next_meeting_for_user=MeetingRepository.get_next_meeting_for_user(user_id)
         logger.info(f"next meeting for user  {next_meeting_for_user}")
@@ -690,7 +692,8 @@ class MeetingAttendanceUseCase:
 
     
     def get_common_joining_url(user_id):
-        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join-meeting/{user_id}/"
+        encrypted_user_id = CryptographyHandler.encrypt_user_id(user_id)
+        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join-meeting/{encrypted_user_id}/"
         
         return joining_url
 

@@ -28,9 +28,8 @@ class MarkAttendanceAndRedirect(APIView):
         return redirect(meeting_link)
 
 class MarkAttendanceCommonURLAndRedirect(APIView):
-    def get(self, request, user_id):
-        user_id=user_id
-        meeting_link=MeetingAttendanceUseCase.mark_meeting_attendance_common_link(user_id)
+    def get(self, request, reference_id):
+        meeting_link=MeetingAttendanceUseCase.mark_meeting_attendance_common_link(reference_id)
         if meeting_link is None or len(meeting_link) <5:
             return redirect(settings.FRONTEND_BASE_URL)
         return redirect(meeting_link)
