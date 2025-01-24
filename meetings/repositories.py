@@ -200,7 +200,7 @@ class MeetingRepository:
         # Get the current time
         now = datetime.now(ist)
         now_date=now.date()
-        date_after_one_day=now.date()+timedelta(days=1)
+        date_after_one_day=now.date()+timedelta(days=3)
         # Find the next meeting for the user
         # Get all meetings for the courses the user is enrolled in
         upcoming_meetings = Meeting.objects.filter(
