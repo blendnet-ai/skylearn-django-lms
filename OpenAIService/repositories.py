@@ -78,6 +78,12 @@ class ValidPromptTemplates:
     DOUBT_SOLVING = "doubt_solving"
     DOUBT_SOLVING_JSON = "doubt_solving_json"
     ASSISTANT_PROMPT = "assistant_prompt"
+    CODE_QUALITY_PROCESSOR = "code_quality_processor"
+    CODE_EFFICIENCY_PROCESSOR = "code_efficiency_processor"
+    CODE_IMPROVEMENT_PROCESSOR = "code_improvement_processor"
+    CODE_REVISION_TOPIC_PROCESSOR = "code_revision_topic_processor"
+    CODE_SUMMARY_PROCESSOR = "code_summary_processor"
+    APPROACH_CODE_SUMMARY_PROCESSOR = "approach_code_summary_processor"
 
     @classmethod
     def get_all_valid_prompts(cls) -> list:
@@ -254,8 +260,14 @@ class LLMCommunicationWrapper:
                                self.prompt_template.tools.all()}
         self.context_params = {tool.name: tool.context_params for tool in self.prompt_template.tools.all()}
 
+<<<<<<< HEAD
         print(GLOBAL_LOADED_LLM_CONFIGS)
         llm_config_instance: LLMConfig = GLOBAL_LOADED_LLM_CONFIGS[self.prompt_template.llm_config_name]
+=======
+        self.llm_config_name = random_llm_config_name
+
+        llm_config_instance: LLMConfig = GLOBAL_LOADED_LLM_CONFIGS[self.llm_config_name]
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
         self.llm_config_params = llm_config_instance.get_config_dict()
         
         if llm_config_instance.__class__.__name__ == "OpenAIAssistantConfig":
@@ -277,8 +289,52 @@ class LLMCommunicationWrapper:
             self.llm_config_params["tools"] = self.tool_json_specs
                         
         elif len(self.tool_json_specs):
+<<<<<<< HEAD
             raise ValueError(f"Tools not enabled in LLM config but used in LLM Prompt - {self.prompt_name}. "
                              f"LLM config name - {llm_config_instance.name}")
+=======
+            raise ValueError(
+                f"Tools not enabled in LLM config but used in LLM Prompt - {self.prompt_name}. "
+                f"LLM config name - {llm_config_instance.name}"
+            )
+
+    def __init__(
+        self,
+        *,
+        prompt_name,
+        chat_history_id=None,
+        assistant_id=None,
+        initialize=True,
+        initializing_context_vars=None,
+        response_format_class: type[BaseModel] | None = None,
+    ):
+        self.prompt_name = prompt_name
+        self.response_format_class = response_format_class
+        self.prompt_template = PromptTemplate.objects.get(name=prompt_name)
+        self.chat_history_repository = ChatHistoryRepository(
+            chat_history_id=chat_history_id
+        )
+
+        self.tool_json_specs = [
+            {"type": "function", "function": tool.tool_json_spec}
+            for tool in self.prompt_template.tools.all()
+        ]
+        self.tool_callables = {
+            tool.name: LLMCommunicationWrapper.convert_to_function(tool.tool_code)
+            for tool in self.prompt_template.tools.all()
+        }
+        self.context_params = {
+            tool.name: tool.context_params for tool in self.prompt_template.tools.all()
+        }
+
+        self.assistant_id = assistant_id
+
+        self.llm_config_names = [
+            config.name for config in self.prompt_template.llm_config_names.all()
+        ]
+        self.init_llm_config()
+
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
         self.to_be_logged_context_vars = self.prompt_template.logged_context_vars
         if initialize:
             if chat_history_id is not None:
@@ -292,6 +348,7 @@ class LLMCommunicationWrapper:
     def get_initial_msg_templates(self):
         return self.prompt_template.initial_messages_templates
 
+<<<<<<< HEAD
     def initialize_chat_history(self, *, initializing_context_vars=None, commit_to_db=True):
         if initializing_context_vars is None:
             initializing_context_vars = {}
@@ -303,6 +360,35 @@ class LLMCommunicationWrapper:
                                   "system_generated": True,
                                   "show_in_user_history": False,
                                   })
+=======
+    @staticmethod
+    def get_chat_history_init_msg_list(prompt_template, initializing_context_vars):
+        if initializing_context_vars is None:
+            initializing_context_vars = {}
+        system_prompt = Template(prompt_template.system_prompt_template).substitute(
+            initializing_context_vars
+        )
+        init_msg_list = [{"role": "system", "content": system_prompt}]
+        for msg in prompt_template.initial_messages_templates:
+            init_msg_list.append(
+                {
+                    "content": Template(msg["content"]).substitute(
+                        initializing_context_vars
+                    ),
+                    "role": msg["role"],
+                    "system_generated": True,
+                    "show_in_user_history": False,
+                }
+            )
+        return init_msg_list
+
+    def initialize_chat_history(
+        self, *, initializing_context_vars=None, commit_to_db=True
+    ):
+        init_msg_list = LLMCommunicationWrapper.get_chat_history_init_msg_list(
+            self.prompt_template, initializing_context_vars
+        )
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
         self.chat_history_repository.add_msgs_to_chat_history(init_msg_list)
         if commit_to_db:
             self.chat_history_repository.commit_chat_to_db()
@@ -403,12 +489,71 @@ class LLMCommunicationWrapper:
             user_prompt = Template(self.prompt_template.user_prompt_template).substitute(**context_vars, user_msg=user_msg)
         return {"role":"user", "content":user_prompt}
 
+<<<<<<< HEAD
     def send_user_message_and_get_response(self, user_msg: str, context_vars=None) -> str:
+=======
+    @staticmethod
+    def get_response_without_chathistory(
+        prompt_name,
+        response_format_class=None,
+        initializing_context_vars=None,
+        retry_on_openai_time_limit=False,
+    ):
+        def select_llm_config(llm_config_names):
+            random_llm_config_name = random.choice(llm_config_names)
+            llm_config_instance: LLMConfig = GLOBAL_LOADED_LLM_CONFIGS[
+                random_llm_config_name
+            ]
+            return llm_config_instance.get_config_dict(), random_llm_config_name
+
+        prompt_template = PromptTemplate.objects.get(name=prompt_name)
+
+        llm_config_names = [
+            config.name for config in prompt_template.llm_config_names.all()
+        ]
+        if len(llm_config_names) == 0:
+            raise LLMCommunicationWrapper.LLMConfigsNotAvailable()
+
+        llm_config_params, llm_config_name = select_llm_config(llm_config_names)
+
+        msg_list = LLMCommunicationWrapper.get_chat_history_init_msg_list(
+            prompt_template, initializing_context_vars
+        )
+
+        while True:
+            try:
+                choice_response = OpenAIService.send_messages_and_get_response(
+                    messages=msg_list,
+                    llm_config_params=llm_config_params,
+                    response_format_class=response_format_class,
+                )
+                break
+            except openai._exceptions.RateLimitError as e:
+                if retry_on_openai_time_limit:
+                    llm_config_names.remove(llm_config_name)
+                    llm_config_params, llm_config_name = select_llm_config(
+                        llm_config_names
+                    )
+                else:
+                    raise e
+
+        response_msg_content = choice_response["message"]["content"]
+
+        return response_msg_content
+
+    def send_user_message_and_get_response(
+        self,
+        user_msg: str,
+        context_vars=None,
+        retry_on_openai_time_limit=False,
+    ) -> str:
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
         if context_vars is None:
             context_vars = {}
+
         required_keys = self.prompt_template.required_kwargs
-        logged_context_vars = self.prompt_template.logged_context_vars
         missing_keys = [key for key in required_keys if key not in context_vars]
+        logged_context_vars = self.prompt_template.logged_context_vars
         logger.info(f"Required keys: {required_keys}. Missing keys: {missing_keys}.")
         if missing_keys:
             error_message = f"Missing required keys: {', '.join(missing_keys)}"
@@ -430,12 +575,30 @@ class LLMCommunicationWrapper:
             return self.handle_tool_call(choice_response,context_vars)
         else:
             response_msg_content = choice_response["message"]["content"]
+<<<<<<< HEAD
             self.chat_history_repository.add_msgs_to_chat_history(
                 [{"role": "assistant",
                   "message_generation_time": round(datetime.now().timestamp() - a_time,1),
                   "content": response_msg_content}])
             self.chat_history_repository.commit_chat_to_db()
             return response_msg_content
+=======
+            msg_id = self.chat_history_repository.add_msgs_to_chat_history(
+                [
+                    {
+                        "role": "assistant",
+                        "message_generation_time": round(
+                            datetime.now().timestamp() - a_time, 1
+                        ),
+                        "content": response_msg_content,
+                    }
+                ]
+            )[0][0]
+
+            self.chat_history_repository.commit_chat_to_db()
+            response = {"message": response_msg_content, "id": msg_id}
+            return response
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
 
     def update_chat_history(self, context_vars: None):
         if context_vars is None:
@@ -458,7 +621,20 @@ class LLMCommunicationWrapper:
     
 
     @staticmethod
+<<<<<<< HEAD
     def get_processed_chat_messages(chat_history,is_superuser):
+=======
+    def update_message_thumb_rating(chat_history_obj, message_id, thumb):
+        for msg in chat_history_obj.chat_history:
+            if msg.get("id") and msg["id"][0] == message_id:
+                msg["thumb"] = thumb
+                chat_history_obj.save()
+                return True
+        return False
+
+    @staticmethod
+    def get_processed_chat_messages(chat_history, is_superuser):
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
         messages_list = []  # Initialize list to store processed messages
         mapping = {"user": "user", "assistant": "bot"}
         for i, msg in enumerate(chat_history):
@@ -482,11 +658,23 @@ class LLMCommunicationWrapper:
                     }
 
                 # Append the message and additional information to the list
+<<<<<<< HEAD
                 messages_list.append({
                     "message": message_content,
                     "type": msg_type,
                     "tool_data": extra
                 })
+=======
+                messages_list.append(
+                    {
+                        "message": message_content,
+                        "type": msg_type,
+                        "tool_data": extra,
+                        "id": msg["id"][0],
+                        "thumb": msg.get("thumb", None),
+                    }
+                )
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
 
         return messages_list
     
@@ -643,4 +831,80 @@ class ContentReferenceRepository:
 
     @staticmethod
     def get_all_references_by_knowledge_repository(knowledge_repository_id):
+<<<<<<< HEAD
         return ContentReference.objects.filter(knowledge_repository_id_id=knowledge_repository_id)
+=======
+        return ContentReference.objects.filter(
+            knowledge_repository_id_id=knowledge_repository_id
+        )
+
+
+class ABTestingLLMCommunicationWrapper(LLMCommunicationWrapper):
+
+    def __init__(
+        self,
+        user_id,
+        experiment_name=None,
+        chat_history_id=None,
+        default_prompt_template_name=None,
+        initialize=True,
+        initializing_context_vars=None,
+        response_format_class: type[BaseModel] | None = None,
+    ):
+        # Take the values from the llm_config_v2 file
+        self.posthog_api_key = settings.POSTHOG_API_KEY
+        self.default_prompt_template_name = default_prompt_template_name
+        # Initialize PostHog
+        posthog.api_key = self.posthog_api_key
+        posthog.host = "https://us.i.posthog.com"
+
+        self.user_id = user_id  # Added to store user_id
+        prompt_template_name = self.get_prompt_template_name_from_experiment(
+            experiment_name
+        )
+        logger.info(f"Prompt template name from experiment: {prompt_template_name}")
+        try:
+            super().__init__(
+                prompt_name=prompt_template_name,
+                chat_history_id=chat_history_id,
+                initialize=initialize,
+                initializing_context_vars=initializing_context_vars,
+                response_format_class=response_format_class,
+            )
+        except PromptTemplate.DoesNotExist:
+            logger.error(
+                f"Prompt template from experimentation does not exist. Prompt name: {prompt_template_name}"
+            )
+            super().__init__(
+                prompt_name=default_prompt_template_name,
+                chat_history_id=chat_history_id,
+                initialize=initialize,
+                initializing_context_vars=initializing_context_vars,
+                response_format_class=response_format_class,
+            )
+
+    def get_prompt_template_name_from_experiment(self, experiment_name):
+        try:
+            # Fetch the feature flag value for the user
+            feature_flag_variant_name = (
+                ExperimentHelper().get_feature_flag_variant_name(
+                    flag_key=experiment_name, user_id=self.user_id
+                )
+            )
+            if not feature_flag_variant_name:
+                logging.error(
+                    f"Feature flag was returned None. User id: {self.user_id}, experiment name: {experiment_name}"
+                )
+                return self.default_prompt_template_name
+            # feature_flag_payload = ExperimentHelper().get_feature_flag_payload(
+            #     flag_key=experiment_name, user_id=self.user_id
+            # )
+
+            # prompt_template_name = feature_flag_payload.get("prompt_template_name") # type: ignore
+
+            # Map feature flag value to experiment groups
+            return feature_flag_variant_name
+        except Exception as e:
+            logging.error(f"Error determining experiment group from feature flag: {e}")
+            return self.default_prompt_template_name
+>>>>>>> 1e6f91b (Implement usage of LLMCommunicationWrapper with json mode in code processors)
