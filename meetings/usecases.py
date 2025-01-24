@@ -659,11 +659,38 @@ class MeetingAttendanceUseCase:
     def mark_meeting_attendance(attendance_id):
         attendance_record = AttendaceRecordRepository.get_attendance_record(attendance_id)
         if attendance_record is not None:
-            AttendaceRecordRepository.mark_attendance(attendance_record)
+            # Check if the meeting's start date is today
             meeting_link = attendance_record.meeting.link
-            return meeting_link
+            if attendance_record.meeting.start_date == timezone.now().date():
+                AttendaceRecordRepository.mark_attendance(attendance_record)
+                
+                return meeting_link
+            else:
+                return meeting_link
+    
+    def mark_meeting_attendance_common_link(user):
+        user_id=user.id
+        next_meeting_for_user=MeetingRepository.get_next_meeting_for_user(user_id)
+        if next_meeting_for_user is not None:
+            meeting_id=next_meeting_for_user.get('meeting_id')
+            # Get or create attendance record
+            attendance_record, created = AttendaceRecordRepository.get_or_create_attendance_record(
+                user_id=user,
+                meeting_id=meeting_id
+            )
+            attendance_record=AttendaceRecordRepository.get_attendance_record_by_user_and_meeting_id(user_id,meeting_id)
+            meeting_link = attendance_record.meeting.link
+            if attendance_record.meeting.start_date == timezone.now().date():
+                AttendaceRecordRepository.mark_attendance(attendance_record)
+                return meeting_link
+            else:
+                return meeting_link
+
+    
+    def get_common_joining_url():
+        joining_url = f"{settings.BACKEND_BASE_URL}/en/meeting/join-meeting/"
         
-            
+        return joining_url
 
     def get_joining_url(user_id, meeting_id):
         user=User.objects.get(id=user_id)

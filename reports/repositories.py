@@ -31,7 +31,9 @@ class DailyAggregationRepository:
             course_id=course_id,
             date=date,
             type_of_aggregation=type_of_aggregation,
-            defaults={'time_spent': time_spent,'reference_id':reference_id,'resource_name':resource_name}
+            reference_id=reference_id,
+            resource_name=resource_name,
+            defaults={'time_spent': time_spent}
         )
         
         if not created:

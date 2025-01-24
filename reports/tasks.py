@@ -30,12 +30,12 @@ def generate_student_report(user_id):
 @shared_task(queue='reporting_queue')
 def process_aggregation():
     student_users=User.objects.filter(is_student=True)
+    current_date = datetime.now().date()
     for user in student_users:
-        generate_user_activites_aggregation.delay(user.id)
+        generate_user_activites_aggregation.delay(user.id,current_date)
 
 @shared_task(queue='reporting_queue') 
-def generate_user_activites_aggregation(user_id):
-    current_date = datetime.now().date()
+def generate_user_activites_aggregation(user_id,current_date):
     DailyAggregationUsecase.create_daily_aggregation_entries_for_user(user_id,current_date)
     
 

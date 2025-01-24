@@ -49,7 +49,7 @@ class DailyAggregation(models.Model):
     reference_id = models.IntegerField(null=True)
     resource_name=models.CharField(max_length=500,null=True)
     class Meta:
-        unique_together = ('user', 'date', 'type_of_aggregation', 'course')
+        unique_together = ('user', 'date', 'type_of_aggregation', 'course','reference_id','resource_name')
         indexes = [
             models.Index(fields=['user_id', 'date']),
             models.Index(fields=['type_of_aggregation'])

@@ -26,6 +26,26 @@ class MarkAttendanceAndRedirect(APIView):
             return Response({'error':'meeting link not generated yet'},status=status.HTTP_400_BAD_REQUEST)
         return redirect(meeting_link)
 
+class MarkAttendanceCommonURLAndRedirect(APIView):
+    def get(self, request):
+        user=request.user
+        meeting_link=MeetingAttendanceUseCase.mark_meeting_attendance_common_link(user)
+        if meeting_link is None or len(meeting_link) <5:
+            return Response({'error':'meeting link not generated yet'},status=status.HTTP_400_BAD_REQUEST)
+        return redirect(meeting_link)
+
+class GetCommonJoiningUrl(APIView):
+    permission_classes = [IsLoggedIn]
+    authentication_classes = [FirebaseAuthentication]
+    def get(self, request):
+        user_id=request.user.id
+        joining_url=MeetingAttendanceUseCase.get_common_joining_url()
+        
+        return Response({
+            'joining_url': joining_url
+        }, status=status.HTTP_200_OK)
+
+
 class GetJoiningUrl(APIView):
     permission_classes = [IsLoggedIn]
     authentication_classes = [FirebaseAuthentication]

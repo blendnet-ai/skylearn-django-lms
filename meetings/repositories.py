@@ -186,6 +186,41 @@ class MeetingRepository:
             start_date__range=(start_time, end_time)
         ).select_related("series")
 
+    
+    def get_next_meeting_for_user(user_id: int):
+        """
+        Get the next meeting aligned for a user along with its link.
+        
+        Args:
+            user_id (int): The user's ID
+        
+        Returns:
+            dict: A dictionary containing meeting details or None if no upcoming meeting.
+        """
+        # Get the current time
+        now = datetime.now(ist)
+        now_date=now.date()
+        date_after_one_day=now.date()+timedelta(days=1)
+        # Find the next meeting for the user
+        # Get all meetings for the courses the user is enrolled in
+        upcoming_meetings = Meeting.objects.filter(
+            series__course_enrollments__batch__student__student_id=user_id,
+            start_date__gte=now_date,  # Only future meetings
+            start_date__lte=date_after_one_day
+            
+        ).order_by('start_date')[:10]
+        
+        # Iterate through the meetings to check if the meeting has not yet finished
+        for meeting in upcoming_meetings:
+            # Calculate the meeting's end time by adding the duration to the start time
+            end_time = meeting.end_time.astimezone(ist) if meeting.end_time.tzinfo else ist.localize(meeting.end_time)
+            # Check if the meeting has finished or not
+            if end_time > now:
+                return {'meeting_id':meeting.id,'meeting_link':meeting.link}
+        
+        # If no meeting has yet to finish, return None
+        return None
+
 
 class AttendaceRecordRepository:
     @staticmethod
@@ -212,6 +247,10 @@ class AttendaceRecordRepository:
     @staticmethod
     def get_attendance_record(attendance_id):
         return AttendanceRecord.objects.filter(attendance_id=attendance_id).first()
+
+    @staticmethod
+    def get_attendance_record_by_user_and_meeting_id(user_id,meeting_id):
+        return AttendanceRecord.objects.filter(user_id_id=user_id,meeting_id=meeting_id).first()
 
     @staticmethod
     def mark_attendance(attendance_record):
