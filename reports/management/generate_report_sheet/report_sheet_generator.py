@@ -15,7 +15,7 @@ import json
 from datetime import datetime
 
 User = get_user_model()
-date=datetime.now()
+date=datetime.now().date()
 # Optimized function to get all required data at once
 def fetch_all_required_data():
     # Fetch all students
