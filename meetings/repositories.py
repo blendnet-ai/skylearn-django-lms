@@ -204,7 +204,8 @@ class MeetingRepository:
         # Find the next meeting for the user
         # Get all meetings for the courses the user is enrolled in
         upcoming_meetings = Meeting.objects.filter(
-            series__course_enrollments__batch__student__student_id=user_id,
+            Q(series__course_enrollments__batch__student__student_id=user_id) | 
+            Q(series__course_enrollments__batch__lecturer_id=user_id),
             start_date__gte=now_date,  # Only future meetings
             start_date__lte=date_after_one_day
             
