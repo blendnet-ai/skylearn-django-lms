@@ -200,16 +200,16 @@ class MeetingRepository:
         # Get the current time
         now = datetime.now(ist)
         now_date=now.date()
-        date_after_one_day=now.date()+timedelta(days=3)
+        date_after_three_day=now.date()+timedelta(days=3)
         # Find the next meeting for the user
         # Get all meetings for the courses the user is enrolled in
         upcoming_meetings = Meeting.objects.filter(
             Q(series__course_enrollments__batch__student__student_id=user_id) | 
             Q(series__course_enrollments__batch__lecturer_id=user_id),
             start_date__gte=now_date,  # Only future meetings
-            start_date__lte=date_after_one_day
+            start_date__lte=date_after_three_day
             
-        ).order_by('start_date')[:10]
+        ).distinct().order_by('start_date')[:10]
         
         # Iterate through the meetings to check if the meeting has not yet finished
         for meeting in upcoming_meetings:
