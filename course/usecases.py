@@ -25,7 +25,6 @@ import io
 from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from course.models import Course, Module, Upload, UploadVideo
 from storage_service.azure_storage import AzureStorageService
-from .services import MessageService
 from telegram_bot.repositories import TelegramChatDataRepository
 from notifications_manager.usecases import NotificationManagerUsecase
 from django.utils import timezone

@@ -2100,3 +2100,40 @@ class AssessmentReportUsecase:
 
         return report
 
+
+class AssessmentGenerationConfigUsecase:
+    def get_total_assessment_duration_by_course_and_user(course_id,user_id): 
+        total_duration = timedelta()
+        completed_count = 0
+        assessment_details = []
+        assessment_configs=AssessmentGenerationConfigRepository.get_total_assessment_by_course_id(course_id)
+        for config in assessment_configs:
+            # Get completed assessment attempt for this config and user
+            assessment_attempt = AssessmentAttempt.objects.filter(
+                assessment_generation_config_id=config.assessment_generation_id,
+                user_id=user_id,
+                status=AssessmentAttempt.Status.COMPLETED
+            ).first()
+
+            if assessment_attempt:
+                # If there's a completed attempt, add test duration directly
+                test_duration = config.test_duration
+                
+                total_duration += test_duration
+                completed_count += 1
+                
+                assessment_details.append({
+                    'assessment_id': assessment_attempt.assessment_id,
+                    'assessment_name': config.assessment_display_name,
+                    'duration': test_duration,
+                    'start_time': assessment_attempt.start_time,
+                    'completion_time': assessment_attempt.updated_at,
+                    'status': 'completed'
+                })
+
+        return {
+            'total_duration': total_duration,
+            'completed_count': completed_count,
+            'total_count': assessment_configs.count(),
+            'assessment_details': assessment_details
+        }
