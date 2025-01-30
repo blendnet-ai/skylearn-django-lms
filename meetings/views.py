@@ -22,15 +22,27 @@ logger = logging.getLogger(__name__)
 
 class MarkAttendanceAndRedirect(APIView):
     def get(self, request, attendance_id):
-        meeting_link=MeetingAttendanceUseCase.mark_meeting_attendance(attendance_id)
-        if meeting_link is None or len(meeting_link) <5:
+        # Check if request is from Telegram bot
+        user_agent = request.headers.get('User-Agent', '').lower()
+        if 'telegram' in user_agent or 'telegrambot' in user_agent:
+            return redirect(settings.FRONTEND_BASE_URL)
+        else:
+            meeting_link = MeetingAttendanceUseCase.mark_meeting_attendance(attendance_id)
+            
+        if meeting_link is None or len(meeting_link) < 5:
             return redirect(settings.FRONTEND_BASE_URL)
         return redirect(meeting_link)
 
 class MarkAttendanceCommonURLAndRedirect(APIView):
     def get(self, request, reference_id):
-        meeting_link=MeetingAttendanceUseCase.mark_meeting_attendance_common_link(reference_id)
-        if meeting_link is None or len(meeting_link) <5:
+        # Check if request is from Telegram bot
+        user_agent = request.headers.get('User-Agent', '').lower()
+        if 'telegram' in user_agent or 'telegrambot' in user_agent:
+            return redirect(settings.FRONTEND_BASE_URL)
+        else:
+            meeting_link = MeetingAttendanceUseCase.mark_meeting_attendance_common_link(reference_id)
+            
+        if meeting_link is None or len(meeting_link) < 5:
             return redirect(settings.FRONTEND_BASE_URL)
         return redirect(meeting_link)
 
