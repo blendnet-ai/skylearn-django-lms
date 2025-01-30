@@ -174,7 +174,7 @@ def populate_AFH_reporting_data(data):
             "College Name": UserProfileRepository.fetch_value_from_form('College Name', user_profile.user_data),
             "Highest Qualification": UserProfileRepository.fetch_value_from_form('highestQualification', user_profile.user_data),
             "Annual Income in INR": UserProfileRepository.fetch_value_from_form('annualIncome', user_profile.user_data),
-            "Center Name": UserProfileRepository.fetch_value_from_form('Center Name', user_profile.user_data),
+            "Center Name": UserProfileRepository.fetch_value_from_form('Center Name', user_profile.user_data) or UserProfileRepository.fetch_value_from_form('Centre Name', user_profile.user_data),
             "Training Location District Name": UserProfileRepository.fetch_value_from_form('Training Location District Name', user_profile.user_data),
             "Training Location City Name": UserProfileRepository.fetch_value_from_form('Training Location City Name', user_profile.user_data),
             "DOB": UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
