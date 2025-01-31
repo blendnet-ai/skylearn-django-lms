@@ -905,4 +905,5 @@ class AssessmentModuleUsecase:
             }
 
             resp_data.append(resp_obj)
+        resp_data.sort(key=lambda x: x["assessment_generation_id"])
         return resp_data
