@@ -128,7 +128,6 @@ class Meeting(models.Model):
         batch_allocations = self.series.course_enrollments.all()
         for allocation in batch_allocations:
             students = allocation.batch.students.all()
-            print(students)
             participants.update([student.student for student in students])
             
             # Add the lecturer

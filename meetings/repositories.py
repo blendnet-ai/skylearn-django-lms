@@ -359,29 +359,82 @@ class AttendaceRecordRepository:
     def get_all_attendance_records_data():
         """
         Get all attendance records with associated meeting and batch information.
+        Includes virtual attendance records (attendance=False) for participants without records.
         
         Returns:
-            QuerySet of AttendanceRecord instances with related Meeting and Series.
+            List of AttendanceRecord instances with related Meeting and Series.
         """
-        return AttendanceRecord.objects.filter(
-            meeting__series__course_enrollments__isnull=False  # Only records for enrolled courses
+        # Get all meetings with enrollments
+        meetings = Meeting.objects.filter(
+            series__course_enrollments__isnull=False
+        ).select_related('series').distinct()
+        
+        # Get existing attendance records
+        existing_records = AttendanceRecord.objects.filter(
+            meeting__series__course_enrollments__isnull=False
         ).select_related('meeting', 'meeting__series').distinct()
+        
+        # Create a map of (meeting_id, user_id) to attendance record
+        attendance_map = {(record.meeting_id, record.user_id_id): record for record in existing_records}
+        
+        # Build complete list including virtual records
+        all_records = list(existing_records)
+        for meeting in meetings:
+            participants = meeting.get_participants
+            for participant in participants:
+                if (meeting.id, participant.id) not in attendance_map:
+                    # Create virtual record without saving to database
+                    virtual_record = AttendanceRecord(
+                        meeting=meeting,
+                        user_id=participant,
+                        attendance=False
+                    )
+                    all_records.append(virtual_record)
+        
+        return all_records
         
     @staticmethod
     def get_attendance_records_by_date(target_date):
         """
         Get attendance records for a specific date with associated meeting and batch information.
+        Includes virtual attendance records (attendance=False) for participants without records.
         
         Args:
             target_date (date): The date to filter attendance records for
                 
         Returns:
-            QuerySet of AttendanceRecord instances with related Meeting and Series.
+            List of AttendanceRecord instances with related Meeting and Series.
         """
-        return AttendanceRecord.objects.filter(
+        # Get meetings for the target date
+        meetings = Meeting.objects.filter(
+            series__course_enrollments__isnull=False,
+            start_date=target_date
+        ).select_related('series').distinct()
+        
+        # Get existing attendance records
+        existing_records = AttendanceRecord.objects.filter(
             meeting__series__course_enrollments__isnull=False,
             meeting__start_date=target_date
         ).select_related('meeting', 'meeting__series').distinct()
+        
+        # Create a map of (meeting_id, user_id) to attendance record
+        attendance_map = {(record.meeting_id, record.user_id_id): record for record in existing_records}
+        
+        # Build complete list including virtual records
+        all_records = list(existing_records)
+        for meeting in meetings:
+            participants = meeting.get_participants
+            for participant in participants:
+                if (meeting.id, participant.id) not in attendance_map:
+                    # Create virtual record without saving to database
+                    virtual_record = AttendanceRecord(
+                        meeting=meeting,
+                        user_id=participant,
+                        attendance=False
+                    )
+                    all_records.append(virtual_record)
+        
+        return all_records
 
     @staticmethod
     def get_completed_meetings_in_past_24_hours_with_recordings():
