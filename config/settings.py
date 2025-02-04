@@ -22,7 +22,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost:3000"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -99,8 +99,10 @@ PROJECT_APPS = [
     "reports.apps.ReportsConfig",
     "events_logger.apps.EventsLoggerConfig",
     "notifications_manager.apps.NotificationsManagerConfig",
-    "notifications.apps.NotificationsConfig"
+    "notifications.apps.NotificationsConfig",
+    "Feedback.apps.FeedbackConfig"
 ]
+
 
 # apps from speechai
 INTEGRATED_APPS = [

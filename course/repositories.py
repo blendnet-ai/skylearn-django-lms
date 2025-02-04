@@ -91,8 +91,15 @@ class BatchRepository:
         batch.save()
         return batch
     
+    @staticmethod
     def get_all_batches():
         return Batch.objects.all()
+    
+    @staticmethod
+    def get_batch_by_user_id_and_course_id(user_id, course_id):
+        return Batch.objects.filter(student__student_id=user_id, course_id=course_id).first()
+
+
 
 
 class LiveClassSeriesBatchAllocationRepository:

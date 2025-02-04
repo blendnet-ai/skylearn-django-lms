@@ -1,7 +1,6 @@
-from datetime import datetime
+from datetime import datetime,timedelta
 from email import message
 from django.utils import timezone
-from datetime import timedelta
 import logging
 import firebase_admin
 
@@ -14,18 +13,11 @@ from data_repo.repositories import ConfigMapRepository
 from evaluation.management.register.utils import Utils
 from evaluation.repositories import AssessmentAttemptRepository
 from config.settings import TELEGRAM_BOT_NAME, TWO_Factor_SMS_API_KEY
-
-# from DoubtSolving.usecases import UserMappingUseCase
-from evaluation.management.generate_status_sheet.gd_wrapper import GDWrapper
 from services.sms_service import SMS2FactorService
-import re
-from datetime import timedelta
-import datetime
-import pytz
 
 logger = logging.getLogger(__name__)
 SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)  # 2
-# GDWrapperIntance=GDWrapper("1gKG2xj6o5xiHV6NexfWowh8FNuVAK_ZOQWoPc05CjYs")
+from Feedback.usecases import FeedbackResponseUsecase
 
 
 class BetaUserlistUsecase:
@@ -148,6 +140,18 @@ class OnBoardingUsecase:
                 f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
             )
             onboarding_status["role"] = role
+            # Get all batch IDs for the student
+            batch_ids = user.student.batches.all().values_list('id', flat=True)
+            # Check if there are any pending forms for any batch
+            has_pending_forms = False
+            for batch_id in batch_ids:
+                forms = FeedbackResponseUsecase.check_if_any_pending_mandatory_forms(
+                    user.id, batch_id, datetime.now().date()
+                )
+                if forms:
+                    has_pending_forms = True
+                    break
+            onboarding_status["pending_forms"] = has_pending_forms
             return onboarding_status
         elif user.is_lecturer:
             onboarding_status = UserProfileRepository.get_onboarding_status_details(
