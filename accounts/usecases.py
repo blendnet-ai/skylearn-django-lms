@@ -18,6 +18,12 @@ from datetime import datetime,timedelta
 from evaluation.repositories import AssessmentAttemptRepository
 from meetings.repositories import AttendaceRecordRepository
 from events_logger.repositories import PageEventRepository
+from datetime import datetime, timedelta
+from Feedback.repositories import FeedbackFormRepository
+import logging
+from meetings.repositories import MeetingRepository
+
+logger = logging.getLogger(__name__)
 
 class BatchAllocationUsecase:
     @staticmethod
@@ -228,6 +234,7 @@ class StudentProfileUsecase:
             college=UserProfileRepository.fetch_value_from_form('College Name',user_profile.user_data)
             phone=user_profile.phone
             return {
+                "status": student.status_string,
                 "user_stats": {
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
@@ -247,3 +254,118 @@ class StudentProfileUsecase:
             
         except Student.DoesNotExist:
             raise ValueError("Student not found")
+
+
+class StudentStatusUsecase:
+    @staticmethod
+    def update_status_based_on_attendance(consecutive_absences=3):
+        """
+        Update student status (active/inactive) based on attendance records
+        """
+        try:
+            current_date = datetime.now().date()
+            
+            # Check active students for inactivation
+            active_students = StudentRepository.get_active_students()
+            for student in active_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                
+                for batch in batches:
+                    recent_meetings = MeetingRepository.get_recent_meetings_for_batch(
+                        batch, current_date, consecutive_absences
+                    )
+                    
+
+                    logger.info(f"Recent meetings: {recent_meetings} {len(recent_meetings)}")
+
+                    if len(recent_meetings) >= consecutive_absences:
+                        attendance_records = AttendaceRecordRepository.get_attendance_records_for_meetings(
+                            recent_meetings, student.student
+                        )
+                        
+                        attendance_map = {record.meeting_id: record.attendance 
+                                       for record in attendance_records}
+                        logger.info(f"Attendance map: {attendance_map}")
+                        
+                        all_absent = True
+                        for meeting in recent_meetings:
+                            if attendance_map.get(meeting.id, False):
+                                all_absent = False
+                                break
+                        
+                        if all_absent:
+                            StudentRepository.mark_student_inactive(student.student.id)
+                            logger.info(f"Marked student {user_id} inactive due to consecutive absences")
+                            break
+            
+            # Check inactive students for reactivation
+            inactive_students = StudentRepository.get_inactive_students()
+            for student in inactive_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                
+                for batch in batches:
+                    if AttendaceRecordRepository.check_student_attendance_in_period(
+                        student.student, batch, consecutive_absences
+                    ):
+                        StudentRepository.mark_student_active(student.student.id)
+
+                        logger.info(f"Reactivated student {user_id} due to recent attendance")
+                        break
+                            
+        except (Student.DoesNotExist, ValueError, AttributeError) as e:
+            logger.error(f"Error in update_status_based_on_attendance: {str(e)}")
+
+class StudentFeedbackStatusUsecase:
+    @staticmethod
+    def update_status_based_on_feedback():
+        """
+        Update student status based on pending mandatory feedback forms
+        """
+        try:
+            current_date = datetime.now().date()
+            
+            # Check active students for inactivation
+            active_students = StudentRepository.get_active_students()
+            for student in active_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                
+                for batch in batches:
+                    has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
+                        user_id=user_id,
+                        batch_id=batch.id,
+                        current_date=current_date
+                    )
+                    
+                    if has_pending_forms:
+                        StudentRepository.mark_student_inactive(student.student.id)
+                        logger.info(f"Marked student {user_id} inactive due to pending feedback forms")
+                        break
+            
+            # Check inactive students for reactivation
+            inactive_students = StudentRepository.get_inactive_students()
+            for student in inactive_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                all_forms_completed = True
+                
+                for batch in batches:
+                    has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
+                        user_id=user_id,
+                        batch_id=batch.id,
+                        current_date=current_date
+                    )
+                    
+                    if has_pending_forms:
+                        all_forms_completed = False
+                        break
+                
+                if all_forms_completed:
+                    StudentRepository.mark_student_active(student.student.id)
+                    logger.info(f"Reactivated student {user_id} due to feedback completion")
+                    
+        except (Student.DoesNotExist, ValueError, AttributeError) as e:
+            logger.error(f"Error in update_status_based_on_feedback: {str(e)}")
+

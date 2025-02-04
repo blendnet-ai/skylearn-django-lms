@@ -2,7 +2,7 @@ from meetings.models import Meeting, MeetingSeries,AttendanceRecord
 import typing
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, DatabaseError
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import pytz
 from django.db.models import Q,Count
 
@@ -139,6 +139,7 @@ class MeetingRepository:
             blob_url__gt=''
         ).distinct())
 
+    @staticmethod
     def get_meetings_with_recordings_by_role(user_id: int, role:str):
         """
         Get meetings with recordings based on user role
@@ -172,6 +173,7 @@ class MeetingRepository:
 
         return Meeting.objects.none()
     
+    @staticmethod
     def get_completed_meetings_in_past_24_hours_with_recordings():
         now = datetime.now(ist)
         potential_meetings = Meeting.objects.filter(
@@ -181,12 +183,13 @@ class MeetingRepository:
         ).select_related("series")
         return potential_meetings
     
+    @staticmethod
     def get_meetings_in_time_range(start_time, end_time):
         return Meeting.objects.filter(
             start_date__range=(start_time, end_time)
         ).select_related("series")
 
-    
+    @staticmethod
     def get_next_meeting_for_user(user_id: int):
         """
         Get the next meeting aligned for a user along with its link.
@@ -221,6 +224,19 @@ class MeetingRepository:
         
         # If no meeting has yet to finish, return None
         return None
+    
+    
+    @staticmethod
+    def get_recent_meetings_for_batch(batch, current_date, days_back):
+        """Get recent meetings for a batch within specified date range"""
+        date_barrier = current_date - timedelta(days=days_back)
+        return Meeting.objects.filter(
+            series__course_enrollments__batch=batch,
+            start_date__lte=current_date,
+            start_date__gt=date_barrier
+        ).order_by('-start_date')[:days_back]
+
+
 
 
 class AttendaceRecordRepository:
@@ -487,3 +503,34 @@ class AttendaceRecordRepository:
                 absent_records.append(virtual_record)
         
         return absent_records
+    
+    @staticmethod
+    def get_attendance_records_for_meetings(meetings, student):
+        """Get attendance records for specific meetings and student"""
+        return AttendanceRecord.objects.filter(
+            meeting__in=meetings,
+            user_id=student
+        )
+    
+    @staticmethod
+    def check_student_attendance_in_period(student, batch, consecutive_absences):
+        """Check if student has attended any classes in recent period"""
+        current_date = datetime.now().date()
+        date_barrier = current_date - timedelta(days=consecutive_absences)
+        
+        latest_meetings = Meeting.objects.filter(
+            series__course_enrollments__batch=batch,
+            start_date__lte=current_date,
+            start_date__gte=date_barrier    
+        ).order_by('-start_date')[:consecutive_absences]
+
+        for latest_meeting in latest_meetings:
+            attendance_record = AttendanceRecord.objects.filter(
+                meeting=latest_meeting,
+                user_id=student,
+                attendance=True
+            ).exists()
+            
+            if attendance_record:
+                return True
+        return False

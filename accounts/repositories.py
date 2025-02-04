@@ -26,9 +26,37 @@ class StudentRepository:
     def get_all_students():
         return Student.objects.all()
 
+    @staticmethod
+    def get_active_students():
+        """Get all students with active status"""
+        return Student.objects.filter(status=Student.Status.ACTIVE)
+    
+    @staticmethod
+    def get_inactive_students():
+        """Get all students with inactive status"""
+        return Student.objects.filter(status=Student.Status.INACTIVE)
+
+    @staticmethod
+    def mark_student_inactive(student_id):
+        """Mark a student as inactive"""
+        student = Student.objects.get(student_id=student_id)
+        student.status = Student.Status.INACTIVE
+        student.save()
+
+    @staticmethod   
+    def mark_student_active(student_id):
+        """Mark a student as active"""
+        student = Student.objects.get(student_id=student_id)
+        student.status = Student.Status.ACTIVE
+        student.save()
+    
+
+
+
 
 class UserRepository:
     @staticmethod
+
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
 
@@ -110,7 +138,15 @@ class UserConfigMappingRepository:
         )
     
     @staticmethod
+    def update_or_create(email: str, config: dict):
+        return UserConfigMapping.objects.update_or_create(
+            email=email,
+            defaults={"config": config}
+        )
+    
+    @staticmethod
     def get_user_config_mapping(email: str):
+
         try:
             return UserConfigMapping.objects.get(email=email)
         except UserConfigMapping.DoesNotExist:

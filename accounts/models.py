@@ -72,8 +72,14 @@ class User(AbstractUser):
 
 
 class Student(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = 0, "Active"
+        INACTIVE = 1, "Inactive"
+        SUSPENDED = 2, "Suspended"
+       
     student = models.OneToOneField(User, on_delete=models.CASCADE)
     batches = models.ManyToManyField(Batch, blank=True)
+    status = models.IntegerField(choices=Status.choices, default=int(Status.ACTIVE))
 
     class Meta:
         ordering = ("-student__date_joined",)
@@ -91,6 +97,15 @@ class Student(models.Model):
     def delete(self, *args, **kwargs):
         self.student.delete()
         super().delete(*args, **kwargs)
+
+    @property
+    def status_string(self):
+        status_map = {
+            0: "Active",
+            1: "Inactive",
+            2: "Suspended"
+        }
+        return status_map.get(self.status, "Unknown")
 
 
 class CourseProviderAdmin(models.Model):

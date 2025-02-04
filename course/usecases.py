@@ -400,6 +400,7 @@ class BatchUseCase:
                     "id": student.student.id,
                     "name": f"{student.student.first_name} {student.student.last_name}",
                     "email": student.student.email,
+                    "status": student.status_string,
                     "batch_id": batch.id,
                     "batch_title": batch.title,
                     "course_id": batch.course.id,
