@@ -87,8 +87,26 @@ class NotificationManagerUsecase:
             notification_type__startswith='meeting_'
         )
 
+        # If ECF deployment, get all inactive student IDs upfront
+        inactive_student_ids = set()
+        if settings.DEPLOYMENT_TYPE == "ECF":
+            inactive_students = StudentRepository.get_inactive_students()
+            inactive_student_ids = {student.student.id for student in inactive_students}
+
         for meeting in upcoming_meetings:
             participants = meeting.get_participants
+            
+            # Filter out inactive students if this is ECF deployment
+            if settings.DEPLOYMENT_TYPE == "ECF":
+                filtered_participants = [
+                    participant for participant in participants
+                    if not (participant.is_student and participant.id in inactive_student_ids)
+                ]
+                participants = filtered_participants
+
+            # Skip if no eligible participants
+            if not participants:
+                continue
             
             # Prepare common variables
             variables = NotificationManagerUsecase._prepare_meeting_variables(meeting, participants)
