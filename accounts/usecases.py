@@ -22,10 +22,13 @@ from datetime import datetime, timedelta
 from Feedback.repositories import FeedbackFormRepository
 import logging
 from meetings.repositories import MeetingRepository
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
 class BatchAllocationUsecase:
+
     @staticmethod
     def enroll_students_in_batch(batch_id, student_ids):
         batch = BatchRepository.get_batch_by_id(batch_id)
@@ -109,15 +112,19 @@ class RoleAssignmentUsecase:
             student_id=user.id
             user_profile = UserProfileRepository.get(user.id)
 
-            batch=BatchRepository.get_batch_by_id(batch_id)
-            StudentRepository.create_student(user)
-
-            StudentRepository.add_batch_by_student_id(student_id, batch)
+            if settings.DEPLOYMENT_TYPE == "ECF":
+                StudentRepository.create_student(user)
+            else:
+                batch=BatchRepository.get_batch_by_id(batch_id)
+                StudentRepository.create_student(user)
+                StudentRepository.add_batch_by_student_id(student_id, batch)
+                
             if user_data is not None:
                 # Transform user_data into the required format
                 user_data=user_data[0]
                 formatted_user_data = {"fields":[]}
                 if isinstance(user_data, dict):
+
                     for key, value in user_data.items():
                         formatted_user_data["fields"].append({
                             "name": key,
@@ -285,7 +292,6 @@ class StudentStatusUsecase:
                     recent_meetings = MeetingRepository.get_recent_meetings_for_batch(
                         batch, current_date, consecutive_absences
                     )
-                    
                     if len(recent_meetings) >= consecutive_absences:
                         attendance_records = AttendaceRecordRepository.get_attendance_records_for_meetings(
                             recent_meetings, student.student
@@ -329,7 +335,6 @@ class StudentStatusUsecase:
                 
                 for batch in batches:
                     # Both conditions must be met for each batch
-                    
                     # Condition 1: All feedback forms must be filled
                     has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
                         user_id=user_id,
@@ -342,14 +347,11 @@ class StudentStatusUsecase:
                         break
                     
                     # Condition 2: Must have attended last scheduled class
-                    last_meeting = MeetingRepository.get_last_meeting_for_batch(batch)
-                    if last_meeting:
-                        attended = AttendaceRecordRepository.check_attendance_for_meeting(
-                            student.student, last_meeting
-                        )
-                        if not attended:
-                            can_activate = False
-                            break
+                    if AttendaceRecordRepository.check_student_attendance_in_period(
+                        student.student, batch, consecutive_absences
+                    ):
+                        StudentRepository.mark_student_active(student.student.id)
+                        break
                     
                 if can_activate:
                     StudentRepository.mark_student_active(student.student.id)
@@ -357,4 +359,3 @@ class StudentStatusUsecase:
                     
         except (Student.DoesNotExist, ValueError, AttributeError) as e:
             logger.error(f"Error in update_student_status: {str(e)}")
-

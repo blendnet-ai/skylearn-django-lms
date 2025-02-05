@@ -43,9 +43,6 @@ class UserFeedbackStatusView(APIView):
     authentication_classes = [FirebaseAuthentication]
 
     def get(self, request, _=None):
-        #from django.contrib.auth import get_user_model
-        # User = get_user_model()
-        # user_id = User.objects.get(id=31)
         user=request.user
         current_date = datetime.now().date()
         data=FeedbackResponseUsecase.get_forms_status(user, current_date)

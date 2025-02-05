@@ -8,7 +8,8 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes, permission_classes
 from accounts.authentication import FirebaseAuthentication
 from accounts.models import Student
-from accounts.repositories import StudentRepository
+from accounts.repositories import StudentRepository, LecturerRepository
+from accounts.models import User
 
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
@@ -86,5 +87,23 @@ def update_student_status(request, student_id):
         return Response(
             {"error": "Student not found"}, 
             status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def get_lecturers_by_provider(request, course_provider_id):
+    """Get all lecturers for a specific course provider"""
+    try:
+        lecturers = LecturerRepository.get_lecturers_by_course_provider_id(course_provider_id)
+        return Response({
+            "lecturers": list(lecturers),
+            "total_count": len(lecturers)
+        }, status=status.HTTP_200_OK)
+    except (ValueError, User.DoesNotExist) as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
