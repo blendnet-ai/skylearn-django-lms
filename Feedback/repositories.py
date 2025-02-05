@@ -34,7 +34,7 @@ class FeedbackFormRepository:
         # Get all form entries for this batch
         form_entries = CourseFormEntry.objects.filter(
             batch_id=batch_id
-        ).select_related('form')
+        ).select_related('form').order_by('id')
         
         # Get all responses for this user
         filled_forms = FeedbackResponse.objects.filter(
@@ -48,10 +48,11 @@ class FeedbackFormRepository:
             'form_id': entry.id,
             'start_date': entry.start_date,
             'end_date': entry.end_date,
-            'is_overdue': entry.end_date <=current_date and entry.id not in filled_forms,
+            'is_overdue': entry.end_date <= current_date and entry.id not in filled_forms,
             'is_filled': entry.id in filled_forms,
-            'is_unlocked':entry.start_date <= current_date 
-        } for entry in form_entries]
+            'is_unlocked': entry.start_date <= current_date,
+            'week_label': f'Week {index + 1}'
+        } for index, entry in enumerate(form_entries)]
         
         return forms
     

@@ -3,7 +3,8 @@ from django.urls import path, include
 from .views import (
     enroll_students_in_batch,
     get_course_provider,
-    update_student_status
+    update_student_status,
+    get_lecturers_by_provider
 )
 
 
@@ -20,4 +21,10 @@ urlpatterns = [
         update_student_status,
         name='update_student_status'
     ),
+    path(
+        'course-provider/<int:course_provider_id>/lecturers/',
+        get_lecturers_by_provider,
+        name='get_lecturers_by_provider'
+    )
+
 ]

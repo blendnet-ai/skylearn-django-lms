@@ -6,19 +6,34 @@ from accounts.models import (
     CourseProviderAdmin,
     UserConfigMapping,
 )
-
+from course.repositories import BatchRepository
+from django.db.models import F
+from django.db.models import Q
 
 class StudentRepository:
     def get_student_by_student_id(student_id):
         return Student.objects.get(student_id=student_id)
+    
+    def get_students_by_student_ids(student_ids):
+        return Student.objects.filter(student_id__in=student_ids)
 
     def add_batch_by_student_id(student_id, batch):
         student = StudentRepository.get_student_by_student_id(student_id)
+
         student.batches.add(batch)
         student.save()
 
+    def add_students_to_batch(batch_id, student_ids):
+        batch = BatchRepository.get_batch_by_id(batch_id)
+        students = StudentRepository.get_students_by_student_ids(student_ids)
+        
+        for student in students:
+            student.batches.add(batch)
+            student.save()
+
     def get_batches_by_student_id(student_id):
         return Student.objects.get(student_id=student_id).batches.all()
+
 
     def create_student(user):
         return Student.objects.create(student=user)
@@ -128,6 +143,20 @@ class LecturerRepository:
             lecturer=user, guid=guid, upn=upn, course_provider=course_provider
         )
 
+    @staticmethod
+    def get_lecturers_by_course_provider_id(course_provider_id):
+        """Get all lecturers associated with a course provider"""
+        return Lecturer.objects.filter(
+            course_provider_id=course_provider_id
+        ).select_related('lecturer').values(
+            'lecturer_id',
+            'guid',
+            'upn',
+            first_name=F('lecturer__first_name'),
+            last_name=F('lecturer__last_name'),
+            email=F('lecturer__email')
+        )
+
 
 class UserConfigMappingRepository:
     @staticmethod
@@ -136,9 +165,15 @@ class UserConfigMappingRepository:
             email=email,
             config=config
         )
-    
+    @staticmethod
+    def get_or_create(email: str, config: dict):
+        return UserConfigMapping.objects.get_or_create(
+            email=email,
+            defaults={"config": config}
+        )
     @staticmethod
     def update_or_create(email: str, config: dict):
+
         return UserConfigMapping.objects.update_or_create(
             email=email,
             defaults={"config": config}
@@ -155,4 +190,13 @@ class UserConfigMappingRepository:
     @staticmethod
     def bulk_create_user_config_mappings(config_mappings: list):
         return UserConfigMapping.objects.bulk_create(config_mappings)
+
+    @staticmethod
+    def get_configs_by_course_code(course_code: str):        
+        # Match course_code exactly (between commas or at the start/end of the string)
+        regex_pattern = rf'(^|,){course_code}($|,)'
+
+        return UserConfigMapping.objects.filter(
+            Q(config__course_codes__regex=regex_pattern)
+        )
 
