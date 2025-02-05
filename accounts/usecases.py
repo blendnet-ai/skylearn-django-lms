@@ -258,9 +258,16 @@ class StudentProfileUsecase:
 
 class StudentStatusUsecase:
     @staticmethod
-    def update_status_based_on_attendance(consecutive_absences=3):
+    def update_student_status(consecutive_absences=3, feedback_days=7):
         """
-        Update student status (active/inactive) based on attendance records
+        Update student status based on:
+        Active to Inactive if EITHER:
+        - Absent in last N classes (N=3) OR
+        - Not filled feedback form in past X days (X=7)
+        
+        Inactive to Active if BOTH:
+        - All due feedback forms are filled AND
+        - Attended the last scheduled live class
         """
         try:
             current_date = datetime.now().date()
@@ -272,13 +279,13 @@ class StudentStatusUsecase:
                 batches = student.batches.all()
                 
                 for batch in batches:
+                    should_inactivate = False
+                    
+                    # Check attendance (Condition 1)
                     recent_meetings = MeetingRepository.get_recent_meetings_for_batch(
                         batch, current_date, consecutive_absences
                     )
                     
-
-                    logger.info(f"Recent meetings: {recent_meetings} {len(recent_meetings)}")
-
                     if len(recent_meetings) >= consecutive_absences:
                         attendance_records = AttendaceRecordRepository.get_attendance_records_for_meetings(
                             recent_meetings, student.student
@@ -286,7 +293,6 @@ class StudentStatusUsecase:
                         
                         attendance_map = {record.meeting_id: record.attendance 
                                        for record in attendance_records}
-                        logger.info(f"Attendance map: {attendance_map}")
                         
                         all_absent = True
                         for meeting in recent_meetings:
@@ -295,77 +301,60 @@ class StudentStatusUsecase:
                                 break
                         
                         if all_absent:
-                            StudentRepository.mark_student_inactive(student.student.id)
-                            logger.info(f"Marked student {user_id} inactive due to consecutive absences")
-                            break
-            
-            # Check inactive students for reactivation
-            inactive_students = StudentRepository.get_inactive_students()
-            for student in inactive_students:
-                user_id = student.student.id
-                batches = student.batches.all()
-                
-                for batch in batches:
-                    if AttendaceRecordRepository.check_student_attendance_in_period(
-                        student.student, batch, consecutive_absences
-                    ):
-                        StudentRepository.mark_student_active(student.student.id)
-
-                        logger.info(f"Reactivated student {user_id} due to recent attendance")
-                        break
-                            
-        except (Student.DoesNotExist, ValueError, AttributeError) as e:
-            logger.error(f"Error in update_status_based_on_attendance: {str(e)}")
-
-class StudentFeedbackStatusUsecase:
-    @staticmethod
-    def update_status_based_on_feedback():
-        """
-        Update student status based on pending mandatory feedback forms
-        """
-        try:
-            current_date = datetime.now().date()
-            
-            # Check active students for inactivation
-            active_students = StudentRepository.get_active_students()
-            for student in active_students:
-                user_id = student.student.id
-                batches = student.batches.all()
-                
-                for batch in batches:
-                    has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
-                        user_id=user_id,
-                        batch_id=batch.id,
-                        current_date=current_date
-                    )
+                            should_inactivate = True
                     
-                    if has_pending_forms:
+                    # Check feedback forms (Condition 2)
+                    if not should_inactivate:  # Only check if not already marked for inactivation
+                        feedback_cutoff_date = current_date - timedelta(days=feedback_days)
+                        has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
+                            user_id=user_id,
+                            batch_id=batch.id,
+                            current_date=feedback_cutoff_date
+                        )
+                        
+                        if has_pending_forms:
+                            should_inactivate = True
+                    
+                    if should_inactivate:
                         StudentRepository.mark_student_inactive(student.student.id)
-                        logger.info(f"Marked student {user_id} inactive due to pending feedback forms")
-                        break
+                        logger.info(f"Marked student {user_id} inactive due to attendance/feedback criteria")
+                        break  # Exit batch loop once marked inactive
             
             # Check inactive students for reactivation
             inactive_students = StudentRepository.get_inactive_students()
             for student in inactive_students:
                 user_id = student.student.id
                 batches = student.batches.all()
-                all_forms_completed = True
+                can_activate = True
                 
                 for batch in batches:
+                    # Both conditions must be met for each batch
+                    
+                    # Condition 1: All feedback forms must be filled
                     has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
                         user_id=user_id,
                         batch_id=batch.id,
-                        current_date=current_date
+                        current_date=current_date  # Check all forms up to current date
                     )
                     
                     if has_pending_forms:
-                        all_forms_completed = False
+                        can_activate = False
                         break
-                
-                if all_forms_completed:
+                    
+                    # Condition 2: Must have attended last scheduled class
+                    last_meeting = MeetingRepository.get_last_meeting_for_batch(batch)
+                    if last_meeting:
+                        attended = AttendaceRecordRepository.check_attendance_for_meeting(
+                            student.student, last_meeting
+                        )
+                        if not attended:
+                            can_activate = False
+                            break
+                    
+                if can_activate:
                     StudentRepository.mark_student_active(student.student.id)
-                    logger.info(f"Reactivated student {user_id} due to feedback completion")
+                    logger.info(f"Reactivated student {user_id} - all criteria met")
                     
         except (Student.DoesNotExist, ValueError, AttributeError) as e:
-            logger.error(f"Error in update_status_based_on_feedback: {str(e)}")
+            logger.error(f"Error in update_student_status: {str(e)}")
 
