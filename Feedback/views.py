@@ -8,7 +8,7 @@ from django.conf import settings
 
 from Feedback.serializers import FeedbackResponseSerializer
 from Feedback.usecases import FeedbackFormUsecase,FeedbackResponseUsecase
-from custom_auth.authentication import FirebaseAuthentication
+from accounts.authentication import FirebaseAuthentication
 from Feedback.repositories import FeedbackFormRepository
 from datetime import datetime
 
