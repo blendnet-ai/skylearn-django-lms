@@ -32,7 +32,7 @@ from course.usecases import (
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
-
+from Feedback.repositories import FeedbackFormRepository
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -43,6 +43,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
+from django.conf import settings
 
 # admin/course provider
 @api_view(["POST"])
@@ -515,6 +516,7 @@ def send_course_personal_message(request):
 def create_batch_with_students(request, course_id):
     """Create a batch and assign students to it"""
     serializer = BatchWithStudentsSerializer(data=request.data)
+    form = FeedbackFormRepository.get(id=1)
     
     if serializer.is_valid():
         try:
@@ -524,7 +526,8 @@ def create_batch_with_students(request, course_id):
                 title=serializer.validated_data["title"],
                 lecturer_id=serializer.validated_data["lecturer_id"],
                 start_date=serializer.validated_data.get("start_date"),
-                end_date=serializer.validated_data.get("end_date")
+                end_date=serializer.validated_data.get("end_date"),
+                form=form
             )
 
             
