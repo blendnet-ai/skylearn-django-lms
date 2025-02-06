@@ -69,8 +69,8 @@ class CourseRepository:
 
 class BatchRepository:
     @staticmethod
-    def create_batch(course, title, lecturer, start_date=None, end_date=None):
-        return Batch.objects.get_or_create(course=course, title=title, lecturer=lecturer, start_date=start_date, end_date=end_date)
+    def create_batch(course, title, lecturer, start_date=None, end_date=None,form=None):
+        return Batch.objects.get_or_create(course=course, title=title, lecturer=lecturer, start_date=start_date, end_date=end_date,form=form)
 
     @staticmethod
     def get_batch_by_id(batch_id):
