@@ -517,6 +517,11 @@ def create_batch_with_students(request, course_id):
     """Create a batch and assign students to it"""
     serializer = BatchWithStudentsSerializer(data=request.data)
     form = FeedbackFormRepository.get(id=1)
+    if form is None:
+        return Response(
+            {"error": "Error in creating Batch : Specified Feedback Form doesnot exists"}, 
+                status=status.HTTP_400_BAD_REQUEST
+        )
     
     if serializer.is_valid():
         try:
