@@ -1,19 +1,18 @@
 from rest_framework import serializers
 
-from Feedback.repositories import FeedbackFormRepository, FeedbackResponseRepository
+from Feedback.repositories import FeedbackFormRepository, FeedbackResponseRepository, CourseFormEntryRepository
 from .models import FeedbackResponse
 
 
 class FeedbackResponseSerializer(serializers.ModelSerializer):
-    form_id = serializers.IntegerField(write_only=True)
+    course_feedback_entry_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = FeedbackResponse
-        fields = ["form_id", "data"]
+        fields = ["data","course_feedback_entry_id"]
 
     def create(self, validated_data):
-        form_id = validated_data.pop("form_id")
-        form = FeedbackFormRepository.get(form_id)
-        validated_data["form"] = form
+        form_id = validated_data.pop("course_feedback_entry_id")
+        validated_data["course_feedback_entry"] = CourseFormEntryRepository.get(form_id)
 
         return FeedbackResponseRepository.create(**validated_data)

@@ -37,19 +37,26 @@ class FeedbackFormRepository:
         ).select_related('form').order_by('id')
         
         # Get all responses for this user
-        filled_forms = FeedbackResponse.objects.filter(
+        filled_forms_ids = FeedbackResponse.objects.filter(
             user_id=user_id,
             course_feedback_entry__batch_id=batch_id
         ).values_list('course_feedback_entry_id', flat=True)
         
+        filled_forms = FeedbackResponse.objects.filter(
+            user_id=user_id,
+            course_feedback_entry__batch_id=batch_id
+        )
+        
         # Format the response
         forms = [{
             'form_name': entry.form.name,
-            'form_id': entry.id,
+            "form_id":entry.form_id,
+            'entry_form_id': entry.id,
             'start_date': entry.start_date,
             'end_date': entry.end_date,
-            'is_overdue': entry.end_date <= current_date and entry.id not in filled_forms,
-            'is_filled': entry.id in filled_forms,
+            'is_overdue': entry.end_date <= current_date and entry.id not in filled_forms_ids,
+            'is_filled': entry.id in filled_forms_ids,
+            'filled_on': filled_forms.filter(course_feedback_entry_id=entry.id).first().created_at if filled_forms.filter(course_feedback_entry_id=entry.id).exists() else None,
             'is_unlocked': entry.start_date <= current_date,
             'week_label': f'Week {index + 1}'
         } for index, entry in enumerate(form_entries)]
@@ -98,3 +105,9 @@ class FeedbackResponseRepository:
     @staticmethod
     def create(**data):
         return FeedbackResponse.objects.create(**data)
+
+
+class CourseFormEntryRepository:
+    @staticmethod
+    def get(id):
+        return CourseFormEntry.objects.get(id=id)
