@@ -159,12 +159,14 @@ def populate_AFH_reporting_data(data):
     profile_data = []
     for user_id, user_profile in data['user_profiles_map'].items():
         user = user_profile.user_id
+        dob_value = UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data)
         # Get list of course info for this user
         course_info_list = data['user_course_batch_map'].get(user.id, [])
         
         # Create base user info
         base_profile_info = {
             "Beneficiary ID (Full Adhaar Number)": UserProfileRepository.fetch_value_from_form('beneficiaryId', user_profile.user_data),
+            "Enrollment Date (DD/MM/YY)": None,
             "Name": user.get_full_name,
             "Age": StudentProfileUsecase._calculate_age(user_profile.user_data),
             "Gender": UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
@@ -177,15 +179,20 @@ def populate_AFH_reporting_data(data):
             "Center Name": UserProfileRepository.fetch_value_from_form('Center Name', user_profile.user_data) or UserProfileRepository.fetch_value_from_form('Centre Name', user_profile.user_data),
             "Training Location District Name": UserProfileRepository.fetch_value_from_form('Training Location District Name', user_profile.user_data),
             "Training Location City Name": UserProfileRepository.fetch_value_from_form('Training Location City Name', user_profile.user_data),
-            "DOB": UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
+            "Date of Birth (DD/MM/YY)": datetime.strptime(str(dob_value), '%Y-%m-%d').strftime('%d/%m/%y') if dob_value else None,
             "Email ID": user.email,
             "Parent/Guardian Name": UserProfileRepository.fetch_value_from_form('parentGuardianName', user_profile.user_data),
             "Parent/Guardian Phone Number": UserProfileRepository.fetch_value_from_form('parentGuardianPhone', user_profile.user_data),
             "Parent / Guardian Occupation": UserProfileRepository.fetch_value_from_form('parentGuardianOccupation', user_profile.user_data),
             "Beneficiary Work Experience (in Years)": UserProfileRepository.fetch_value_from_form('workExperience', user_profile.user_data),
             "Enrollment Status": UserProfileRepository.fetch_value_from_form('Enrollment Status', user_profile.user_data),
+            "Course ID": None,
+            "Course Name": None,
+            "Batch ID": None,
+            "Onboarding Source":UserProfileRepository.fetch_value_from_form('Onboarding Source', user_profile.user_data),
             "PWD (Status)": UserProfileRepository.fetch_value_from_form('pwdStatus', user_profile.user_data),
             "Is a family member govt. employee?": UserProfileRepository.fetch_value_from_form('isFamilyMemberGovtEmployee', user_profile.user_data),
+
         }
 
         if course_info_list:
@@ -195,21 +202,24 @@ def populate_AFH_reporting_data(data):
                 entry.update({
                     "Course Name": course_info.get("course_name"),
                     "Course ID": course_info.get("course_id"),
-                    "Course Provider ID":course_info.get("course_provider_id"),
+                    # "Course Provider ID":course_info.get("course_provider_id"),
                     "Batch ID": course_info.get("batch_id"),
-                    "Enrollment Date":  course_info.get("enrolled date").date().strftime("%d/%m/%y")
+                    "Enrollment Date (DD/MM/YY)":  course_info.get("enrolled date").date().strftime("%d/%m/%y")
                 })
                 profile_data.append(entry)
+
         else:
             # If no courses, add entry with None for course fields
             entry = base_profile_info.copy()
             entry.update({
                 "Course Name": None,
                 "Course ID": None,
-                "Course Provider ID":None,
-                "Batch ID": None
+                # "Course Provider ID":None,
+                "Batch ID": None,
+                "Enrollment Date (DD/MM/YY)": None
             })
             profile_data.append(entry)
+
 
     return profile_data
 
