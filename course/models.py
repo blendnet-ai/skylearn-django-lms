@@ -11,6 +11,7 @@ from course.utils import unique_slug_generator
 from meetings.models import MeetingSeries,Meeting
 
 
+
 class Module(models.Model):
     title = models.CharField(max_length=200)
     course = models.ForeignKey('Course', related_name='modules_list', on_delete=models.CASCADE)
@@ -44,7 +45,11 @@ class Batch(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    form=models.ForeignKey('Feedback.FeedbackForm', on_delete=models.CASCADE, null=True, blank=True)
     
+
     @property
     def students(self):
         return self.student_set.all()

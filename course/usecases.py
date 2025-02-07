@@ -1,4 +1,4 @@
-from accounts.repositories import StudentRepository, UserRepository, LecturerRepository
+from accounts.repositories import StudentRepository, UserConfigMappingRepository, UserRepository, LecturerRepository
 from config import settings
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
@@ -28,10 +28,13 @@ from storage_service.azure_storage import AzureStorageService
 from telegram_bot.repositories import TelegramChatDataRepository
 from notifications_manager.usecases import NotificationManagerUsecase
 from django.utils import timezone
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class LiveClassUsecase:
     class UserNotInBatchOfCourseException(Exception):
@@ -330,12 +333,14 @@ class BatchUseCase:
             super().__init__("User is not a lecturer")
 
     @staticmethod
-    def create_batch(course_id, title, lecturer_id):
+    def create_batch(course_id, title, lecturer_id, start_date=None, end_date=None,form=None):
         course = CourseRepository.get_course_by_id(course_id)
         lecturer = UserRepository.get_user_by_id(lecturer_id)
         if not lecturer.is_lecturer:
+
             raise BatchUseCase.UserIsNotLecturerException()
-        return BatchRepository.create_batch(course, title, lecturer)
+        return BatchRepository.create_batch(course, title, lecturer, start_date, end_date,form)
+
 
     @staticmethod
     def get_batch_by_user_id_and_course_id(user_id, course_id):
@@ -400,6 +405,7 @@ class BatchUseCase:
                     "id": student.student.id,
                     "name": f"{student.student.first_name} {student.student.last_name}",
                     "email": student.student.email,
+                    "status": student.status_string,
                     "batch_id": batch.id,
                     "batch_title": batch.title,
                     "course_id": batch.course.id,
@@ -411,10 +417,15 @@ class BatchUseCase:
         # Remove duplicates based on student ID
         unique_students = {student["id"]: student for student in students_data}.values()
         return list(unique_students)
+    
+    @staticmethod
+    def add_students_to_batch(batch_id, student_ids):
+        return StudentRepository.add_students_to_batch(batch_id, student_ids)
 
 
 class CourseUseCase:
     def get_courses_by_course_provider(course_provider_id):
+
         courses = list(
             CourseRepository.get_courses_by_course_provider(course_provider_id).values()
         )
@@ -907,3 +918,38 @@ class AssessmentModuleUsecase:
             resp_data.append(resp_obj)
         resp_data.sort(key=lambda x: x["assessment_generation_id"])
         return resp_data
+    
+class UnassignedStudentsUsecase:
+    @staticmethod
+    def get_unassigned_students_for_course(course_code: str):
+        """Get students who have the course code in their config but aren't assigned to a batch"""
+        # Get all user configs with this course code
+        configs = UserConfigMappingRepository.get_configs_by_course_code(course_code)
+        print(configs)
+        unassigned_students = []
+        for config in configs:
+            user = User.objects.filter(email=config.email).first()
+            if not user or not user.is_student:
+                continue
+                
+            # Check if student is already assigned to a batch for this course
+            course = CourseRepository.get_course_by_code(course_code)
+            if not course:
+                continue
+                
+            student = StudentRepository.get_student_by_student_id(user.id)
+            if not student:
+                continue
+                
+            # Check if student is already in a batch for this course
+            is_assigned = student.batches.filter(course=course).exists()
+            
+            if not is_assigned:
+                unassigned_students.append({
+                    "id": user.id,
+                    "email": user.email,
+                    "name": f"{user.first_name} {user.last_name}".strip(),
+                    "course_codes": config.config.get("course_codes", "").split(",")
+                })
+                
+        return unassigned_students

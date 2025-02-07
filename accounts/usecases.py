@@ -18,8 +18,17 @@ from datetime import datetime,timedelta
 from evaluation.repositories import AssessmentAttemptRepository
 from meetings.repositories import AttendaceRecordRepository
 from events_logger.repositories import PageEventRepository
+from datetime import datetime, timedelta
+from Feedback.repositories import FeedbackFormRepository
+import logging
+from meetings.repositories import MeetingRepository
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 class BatchAllocationUsecase:
+
     @staticmethod
     def enroll_students_in_batch(batch_id, student_ids):
         batch = BatchRepository.get_batch_by_id(batch_id)
@@ -103,15 +112,19 @@ class RoleAssignmentUsecase:
             student_id=user.id
             user_profile = UserProfileRepository.get(user.id)
 
-            batch=BatchRepository.get_batch_by_id(batch_id)
-            StudentRepository.create_student(user)
-
-            StudentRepository.add_batch_by_student_id(student_id, batch)
+            if settings.DEPLOYMENT_TYPE == "ECF":
+                StudentRepository.create_student(user)
+            else:
+                batch=BatchRepository.get_batch_by_id(batch_id)
+                StudentRepository.create_student(user)
+                StudentRepository.add_batch_by_student_id(student_id, batch)
+                
             if user_data is not None:
                 # Transform user_data into the required format
                 user_data=user_data[0]
                 formatted_user_data = {"fields":[]}
                 if isinstance(user_data, dict):
+
                     for key, value in user_data.items():
                         formatted_user_data["fields"].append({
                             "name": key,
@@ -228,6 +241,7 @@ class StudentProfileUsecase:
             college=UserProfileRepository.fetch_value_from_form('College Name',user_profile.user_data)
             phone=user_profile.phone
             return {
+                "status": student.status_string,
                 "user_stats": {
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
@@ -247,3 +261,101 @@ class StudentProfileUsecase:
             
         except Student.DoesNotExist:
             raise ValueError("Student not found")
+
+
+class StudentStatusUsecase:
+    @staticmethod
+    def update_student_status(consecutive_absences=3, feedback_days=7):
+        """
+        Update student status based on:
+        Active to Inactive if EITHER:
+        - Absent in last N classes (N=3) OR
+        - Not filled feedback form in past X days (X=7)
+        
+        Inactive to Active if BOTH:
+        - All due feedback forms are filled AND
+        - Attended the last scheduled live class
+        """
+        try:
+            current_date = datetime.now().date()
+            
+            # Check active students for inactivation
+            active_students = StudentRepository.get_active_students()
+            for student in active_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                
+                for batch in batches:
+                    should_inactivate = False
+                    
+                    # Check attendance (Condition 1)
+                    recent_meetings = MeetingRepository.get_recent_meetings_for_batch(
+                        batch, current_date, consecutive_absences
+                    )
+                    if len(recent_meetings) >= consecutive_absences:
+                        attendance_records = AttendaceRecordRepository.get_attendance_records_for_meetings(
+                            recent_meetings, student.student
+                        )
+                        
+                        attendance_map = {record.meeting_id: record.attendance 
+                                       for record in attendance_records}
+                        
+                        all_absent = True
+                        for meeting in recent_meetings:
+                            if attendance_map.get(meeting.id, False):
+                                all_absent = False
+                                break
+                        
+                        if all_absent:
+                            should_inactivate = True
+                    
+                    # Check feedback forms (Condition 2)
+                    if not should_inactivate:  # Only check if not already marked for inactivation
+                        feedback_cutoff_date = current_date - timedelta(days=feedback_days)
+                        has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
+                            user_id=user_id,
+                            batch_id=batch.id,
+                            current_date=feedback_cutoff_date
+                        )
+                        
+                        if has_pending_forms:
+                            should_inactivate = True
+                    
+                    if should_inactivate:
+                        StudentRepository.mark_student_inactive(student.student.id)
+                        logger.info(f"Marked student {user_id} inactive due to attendance/feedback criteria")
+                        break  # Exit batch loop once marked inactive
+            
+            # Check inactive students for reactivation
+            inactive_students = StudentRepository.get_inactive_students()
+            for student in inactive_students:
+                user_id = student.student.id
+                batches = student.batches.all()
+                can_activate = True
+                
+                for batch in batches:
+                    # Both conditions must be met for each batch
+                    # Condition 1: All feedback forms must be filled
+                    has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
+                        user_id=user_id,
+                        batch_id=batch.id,
+                        current_date=current_date  # Check all forms up to current date
+                    )
+                    
+                    if has_pending_forms:
+                        can_activate = False
+                        break
+                    
+                    # Condition 2: Must have attended last scheduled class
+                    if AttendaceRecordRepository.check_student_attendance_in_period(
+                        student.student, batch, consecutive_absences
+                    ):
+                        StudentRepository.mark_student_active(student.student.id)
+                        break
+                    
+                if can_activate:
+                    StudentRepository.mark_student_active(student.student.id)
+                    logger.info(f"Reactivated student {user_id} - all criteria met")
+                    
+        except (Student.DoesNotExist, ValueError, AttributeError) as e:
+            logger.error(f"Error in update_student_status: {str(e)}")

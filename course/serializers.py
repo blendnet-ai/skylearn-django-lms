@@ -78,3 +78,14 @@ class CourseMessageSerializer(serializers.Serializer):
 class PersonalMessageSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     message = serializers.CharField()
+
+
+class BatchWithStudentsSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
+    lecturer_id = serializers.IntegerField()
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+    student_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False
+    )

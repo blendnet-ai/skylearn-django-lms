@@ -22,8 +22,10 @@ urlpatterns += i18n_patterns(
     path("accounts/", include("accounts.urls")),
     path("programs/", include("course.urls")),
     path("event-logger/", include("events_logger.urls")),
-    path("meeting/",include('meetings.urls'))
+    path("meeting/",include('meetings.urls')),
+    path("feedback/",include('Feedback.urls'))
 )
+
 
 
 if settings.DEBUG:

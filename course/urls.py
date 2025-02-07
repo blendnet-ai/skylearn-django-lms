@@ -92,4 +92,14 @@ urlpatterns = [
         views.send_course_personal_message,
         name="send_course_personal_message",
     ),
+    path(
+        'course/<course_id>/batch/create-with-students/', 
+         views.create_batch_with_students, 
+         name='create_batch_with_students'
+    ),
+    path(
+        'course/<course_code>/get-unassigned-students/', 
+        views.get_unassigned_students, 
+        name='get_unassigned_students'
+    )
 ]

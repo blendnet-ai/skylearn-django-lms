@@ -69,8 +69,8 @@ class CourseRepository:
 
 class BatchRepository:
     @staticmethod
-    def create_batch(course, title, lecturer):
-        return Batch.objects.create(course=course, title=title, lecturer=lecturer)
+    def create_batch(course, title, lecturer, start_date=None, end_date=None,form=None):
+        return Batch.objects.get_or_create(course=course, title=title, lecturer=lecturer, start_date=start_date, end_date=end_date,form=form)
 
     @staticmethod
     def get_batch_by_id(batch_id):
@@ -91,8 +91,15 @@ class BatchRepository:
         batch.save()
         return batch
     
+    @staticmethod
     def get_all_batches():
         return Batch.objects.all()
+    
+    @staticmethod
+    def get_batch_by_user_id_and_course_id(user_id, course_id):
+        return Batch.objects.filter(student__student_id=user_id, course_id=course_id).first()
+
+
 
 
 class LiveClassSeriesBatchAllocationRepository:

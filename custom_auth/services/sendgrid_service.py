@@ -15,7 +15,7 @@ class SendgridService:
         template_id,
     ):
         message = Mail(
-            from_email=("sakshm@blendnet.ai", "Sakshm"),
+            from_email=(settings.DEFAULT_FROM_EMAIL, "Sakshm LMS"),
             to_emails=user_email,
             is_multiple=True,
         )
@@ -23,11 +23,12 @@ class SendgridService:
         message.template_id = template_id
 
         try:
-            sendgrid_client = SendGridAPIClient(settings.SENDGRID_KEY)
+            sendgrid_client = SendGridAPIClient(settings.SENDGRID_API_KEY)
             response = sendgrid_client.send(message)
             logger.info(
                 f"Request sent to sendgrid for sending email. User Email: {user_email}, Template ID: {template_id}. Response status code: ${str(response.status_code)}"
             )
+
         except Exception as e:
             # Log and re-raise the exception to get reported on sentry
             logger.error(

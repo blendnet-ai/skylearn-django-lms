@@ -18,6 +18,7 @@ from course.serializers import (
     LiveClassSeriesSerializer,
     LiveClassUpdateSerializer,
     PersonalMessageSerializer,
+    BatchWithStudentsSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -26,11 +27,12 @@ from course.usecases import (
     LiveClassUsecase,
     BatchMessageUsecase,
     PersonalMessageUsecase,
-    AssessmentModuleUsecase
+    AssessmentModuleUsecase,
+    UnassignedStudentsUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
-
+from Feedback.repositories import FeedbackFormRepository
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -41,6 +43,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
+from django.conf import settings
 
 # admin/course provider
 @api_view(["POST"])
@@ -402,7 +405,6 @@ def get_live_class_details(request, series_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_sas_url(request):
-    # Get the meeting_blob_url from query parameters
     blob_url = request.query_params.get("blob_url")
 
     if not blob_url:
@@ -414,7 +416,7 @@ def get_sas_url(request):
     try:
         sas_url = MeetingUsecase.get_sas_url_for_recording(blob_url)
         return Response({"url": sas_url}, status=status.HTTP_200_OK)
-    except Exception as e:
+    except (ValueError, KeyError, AttributeError) as e:
         return Response(
             {"error": f"Error generating SAS URL: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -484,12 +486,10 @@ def send_course_batch_message(request):
             subject=serializer.validated_data["subject"],
             message=serializer.validated_data["message"],
         )
-
         return Response(
             {"message": "Messages sent", "stats": stats}, status=status.HTTP_200_OK
         )
-
-    except Exception as e:
+    except (ValueError, BatchUseCase.BatchDoesNotExist) as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["POST"])
@@ -507,6 +507,63 @@ def send_course_personal_message(request):
         return Response(
             {"message": "Messages sent"}, status=status.HTTP_200_OK
         )
-    except Exception as e:
+    except (ValueError, User.DoesNotExist) as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def create_batch_with_students(request, course_id):
+    """Create a batch and assign students to it"""
+    serializer = BatchWithStudentsSerializer(data=request.data)
+    form = FeedbackFormRepository.get(id=1)
+    if form is None:
+        return Response(
+            {"error": "Error in creating Batch : Specified Feedback Form doesnot exists"}, 
+                status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if serializer.is_valid():
+        try:
+            # Create batch
+            batch, created = BatchUseCase.create_batch(
+                course_id=course_id,
+                title=serializer.validated_data["title"],
+                lecturer_id=serializer.validated_data["lecturer_id"],
+                start_date=serializer.validated_data.get("start_date"),
+                end_date=serializer.validated_data.get("end_date"),
+                form=form
+            )
+
+            
+            # Assign students
+            student_ids = serializer.validated_data.get("student_ids", [])
+            BatchUseCase.add_students_to_batch(
+                batch.id, 
+                student_ids
+            )
+
+            
+            return Response({
+                "message": "Batch created successfully",
+                "batch_id": batch.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except (ValueError, Course.DoesNotExist, User.DoesNotExist, BatchUseCase.UserIsNotLecturerException) as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def get_unassigned_students(request, course_code):
+    """Get students who have the course code but aren't assigned to a batch"""
+    students = UnassignedStudentsUsecase.get_unassigned_students_for_course(course_code)
+    return Response({
+        "students": students,
+        "total_count": len(students)
+    }, status=status.HTTP_200_OK)

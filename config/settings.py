@@ -22,7 +22,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost:3000"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost"]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -99,8 +99,10 @@ PROJECT_APPS = [
     "reports.apps.ReportsConfig",
     "events_logger.apps.EventsLoggerConfig",
     "notifications_manager.apps.NotificationsManagerConfig",
-    "notifications.apps.NotificationsConfig"
+    "notifications.apps.NotificationsConfig",
+    "Feedback.apps.FeedbackConfig"
 ]
+
 
 # apps from speechai
 INTEGRATED_APPS = [
@@ -349,7 +351,7 @@ GLOT_URL = os.environ["GLOT_URL"]
 SELF_HOSTED_GLOT_KEY = os.environ["SELF_HOSTED_GLOT_KEY"]
 SELF_HOSTED_GLOT_URL = os.environ["SELF_HOSTED_GLOT_URL"]
 
-SENDGRID_KEY = os.environ.get("SENDGRID_KEY")
+SENDGRID_API_KEY = os.environ["SENDGRID_API_KEY"]
 CREDS_EMAIL_TEMPLATE_ID = os.environ.get("CREDS_EMAIL_TEMPLATE_ID")
 PASSWORD_EMAIL_TEMPLATE_ID = os.environ.get("PASSWORD_EMAIL_TEMPLATE_ID")
 
@@ -551,3 +553,6 @@ RECORDINGS_CONTAINER_NAME=os.environ.get("RECORDINGS_CONTAINER_NAME")
 AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME")
 REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID")
 FRONTEND_BASE_URL=os.environ.get("FRONTEND_BASE_URL","https://lms.sakshm.com")
+
+DEPLOYMENT_TYPE = os.environ.get("DEPLOYMENT_TYPE", "DEFAULT")
+
