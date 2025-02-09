@@ -416,20 +416,19 @@ CELERY_BEAT_SCHEDULE = {
     'schedule-meeting-notifications': { 
         'task': 'notifications_manager.tasks.schedule_meeting_notifications_task', 
         'schedule': crontab(hour=18, minute=35),  #  Executes at 6:35 PM UTC (12:05 AM IST next day)
-    }, 
-
+    },         
     'schedule-missed-lecture-notifications': { 
         'task': 'notifications_manager.tasks.schedule_missed_lecture_notifications_task', 
-        'schedule': crontab(hour=18, minute=40),  # Executes at 6:40 PM UTC (12:10 AM IST next day)
+        'schedule': crontab(hour=3, minute=30),  # Executes at 6:40 PM UTC (12:10 AM IST next day)
     }, 
 
     'schedule-inactive-user-notifications': { 
         'task': 'notifications_manager.tasks.schedule_inactive_user_notifications_task', 
-        'schedule': crontab(hour=19, minute=45),  # Executes at 6:45 PM UTC (12:15 AM IST next day)
+        'schedule': crontab(hour=4, minute=30),  # Executes at 6:45 PM UTC (12:15 AM IST next day)
     }, 
     'schedule-pending-assessments-notifications': { 
         'task': 'notifications_manager.tasks.schedule_pending_assessments_notifications_task', 
-        'schedule': crontab(hour=19, minute=50),  # Executes at 6:50 PM UTC (12:20 AM IST next day)
+        'schedule': crontab(hour=4, minute=35),  # Executes at 6:50 PM UTC (12:20 AM IST next day)
     },
     'check-for-pending-intents': { 
         'task': 'notifications.tasks.process_notification_intents', 
