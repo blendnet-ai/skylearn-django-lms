@@ -98,7 +98,7 @@ class GenerateUserCourseReportsUseCase:
             'classes_attended': total_classes_attended,
             'time_spent_in_live_classes':time_spent_live_classes,
             'time_spent_in_recording_classes':time_spent_recording_classes,
-            'total_time_spent': time_spent_live_classes + resource_reading_time+resource_video_time+time_spent_recording_classes
+            'total_time_spent': time_spent_live_classes + resource_reading_time+resource_video_time+time_spent_recording_classes+assessment_time
         }
 
         return UserCourseReportRepository.get_or_create(
