@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, DatabaseError
 from datetime import datetime, timedelta
 import pytz
-from django.db.models import Q,Count
+from django.db.models import Q,Count, F
 
 # Define the Indian timezone
 ist = pytz.timezone('Asia/Kolkata')
@@ -235,6 +235,39 @@ class MeetingRepository:
             start_date__lte=current_date,
             start_date__gt=date_barrier
         ).order_by('-start_date')[:days_back]
+
+    @staticmethod
+    def get_recent_meetings_for_batches(batch_ids, current_date, days_back):
+        """Get recent meetings for multiple batches within specified date range
+        
+        Args:
+            batch_ids (list): List of batch IDs
+            current_date (date): Current date to calculate range from
+            days_back (int): Number of days to look back
+            
+        Returns:
+            QuerySet: Meetings within the date range for the specified batches
+        """
+        date_barrier = current_date - timedelta(days=days_back)
+        return Meeting.objects.filter(
+            series__course_enrollments__batch_id__in=batch_ids,
+            start_date__lte=current_date,
+            start_date__gt=date_barrier
+        ).select_related(
+            'series'
+        ).order_by('-start_date')
+
+    @staticmethod
+    def get_recent_meetings_for_batches_bulk(batch_ids, current_date, limit):
+        """Get recent meetings for multiple batches in one query"""
+        return Meeting.objects.filter(
+            series__course_enrollments__batch_id__in=batch_ids,
+            start_date__lte=current_date
+        ).select_related(
+            'series'
+        ).prefetch_related(
+            'series__course_enrollments'
+        ).order_by('-start_date')[:limit]
 
 
 
@@ -534,3 +567,18 @@ class AttendaceRecordRepository:
             if attendance_record:
                 return True
         return False
+
+    @staticmethod
+    def get_attendance_records_bulk(student_ids, meeting_ids):
+        return AttendanceRecord.objects.filter(
+            user_id__id__in=student_ids,
+            meeting_id__in=meeting_ids
+        ).select_related('user_id', 'meeting')
+
+    @staticmethod
+    def get_recent_attendance_bulk(student_ids, meeting_ids):
+        """Get attendance records for multiple students and meetings in one query"""
+        return AttendanceRecord.objects.filter(
+            user_id__id__in=student_ids,
+            meeting_id__in=meeting_ids
+        ).select_related('user_id', 'meeting')

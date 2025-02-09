@@ -279,83 +279,149 @@ class StudentStatusUsecase:
         try:
             current_date = datetime.now().date()
             
-            # Check active students for inactivation
-            active_students = StudentRepository.get_active_students()
+            # Get all active and inactive students in one query with their batches
+            active_students = StudentRepository.get_active_students().prefetch_related('batches')
+            inactive_students = StudentRepository.get_inactive_students().prefetch_related('batches')
+            
+            # Get all relevant batch IDs and student IDs
+            all_batch_ids = set()
+            all_student_ids = set()
+            active_student_ids = set()
+            inactive_student_ids = set()
+            
+            for student in active_students:
+                student_id = student.student.id
+                all_student_ids.add(student_id)
+                active_student_ids.add(student_id)
+                all_batch_ids.update(batch.id for batch in student.batches.all())
+                
+            for student in inactive_students:
+                student_id = student.student.id
+                all_student_ids.add(student_id)
+                inactive_student_ids.add(student_id)
+                all_batch_ids.update(batch.id for batch in student.batches.all())
+
+            # Fetch all meetings for these batches in one query
+            meetings_by_batch = {}
+            recent_meetings = MeetingRepository.get_recent_meetings_for_batches_bulk(
+                list(all_batch_ids),
+                current_date,
+                consecutive_absences
+            )
+            
+            # Organize meetings by batch
+            for meeting in recent_meetings:
+                batch_id = meeting.series.course_enrollments.first().batch_id
+                if batch_id not in meetings_by_batch:
+                    meetings_by_batch[batch_id] = []
+                meetings_by_batch[batch_id].append(meeting)
+
+            # Get all attendance records in one query
+            attendance_records = AttendaceRecordRepository.get_recent_attendance_bulk(
+                list(all_student_ids),
+                [meeting.id for meeting in recent_meetings]
+            )
+            
+            # Create attendance lookup dictionary
+            attendance_lookup = {}
+            for record in attendance_records:
+                key = (record.user_id.id, record.meeting_id)
+                attendance_lookup[key] = record.attendance
+
+            # Get all pending feedback forms and create lookup
+            form_entries, filled_forms = FeedbackFormRepository.get_pending_mandatory_forms_bulk(
+                list(all_student_ids),
+                list(all_batch_ids),
+                current_date
+            )
+            
+            # Create pending forms lookup
+            user_filled_forms = {}
+            for user_id, form_entry_id in filled_forms:
+                if user_id not in user_filled_forms:
+                    user_filled_forms[user_id] = set()
+                user_filled_forms[user_id].add(form_entry_id)
+
+            pending_forms_lookup = {}
+            for student_id in all_student_ids:
+                student_filled_forms = user_filled_forms.get(student_id, set())
+                pending_forms = [entry for entry in form_entries 
+                               if entry.id not in student_filled_forms]
+                pending_forms_lookup[student_id] = pending_forms
+            
+            # Track students to be updated
+            students_to_inactivate = set()
+            students_to_activate = set()
+            
+            # Process active students for inactivation
             for student in active_students:
                 user_id = student.student.id
-                batches = student.batches.all()
                 
-                for batch in batches:
+                for batch in student.batches.all():
                     should_inactivate = False
+                    batch_meetings = meetings_by_batch.get(batch.id, [])
                     
-                    # Check attendance (Condition 1)
-                    recent_meetings = MeetingRepository.get_recent_meetings_for_batch(
-                        batch, current_date, consecutive_absences
-                    )
-                    if len(recent_meetings) >= consecutive_absences:
-                        attendance_records = AttendaceRecordRepository.get_attendance_records_for_meetings(
-                            recent_meetings, student.student
-                        )
-                        
-                        attendance_map = {record.meeting_id: record.attendance 
-                                       for record in attendance_records}
-                        
+                    # Check attendance
+                    if len(batch_meetings) >= consecutive_absences:
                         all_absent = True
-                        for meeting in recent_meetings:
-                            if attendance_map.get(meeting.id, False):
+                        for meeting in batch_meetings:
+                            if attendance_lookup.get((user_id, meeting.id), False):
                                 all_absent = False
                                 break
                         
                         if all_absent:
                             should_inactivate = True
                     
-                    # Check feedback forms (Condition 2)
-                    if not should_inactivate:  # Only check if not already marked for inactivation
-                        feedback_cutoff_date = current_date - timedelta(days=feedback_days)
-                        has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
-                            user_id=user_id,
-                            batch_id=batch.id,
-                            current_date=feedback_cutoff_date
-                        )
-                        
+                    # Check pending forms
+                    if not should_inactivate:
+                        user_pending_forms = pending_forms_lookup.get(user_id, [])
+                        has_pending_forms = any(form.batch_id == batch.id for form in user_pending_forms)
                         if has_pending_forms:
                             should_inactivate = True
                     
                     if should_inactivate:
-                        StudentRepository.mark_student_inactive(student.student.id)
-                        logger.info(f"Marked student {user_id} inactive due to attendance/feedback criteria")
-                        break  # Exit batch loop once marked inactive
-            
-            # Check inactive students for reactivation
-            inactive_students = StudentRepository.get_inactive_students()
+                        students_to_inactivate.add(user_id)
+                        break
+
+            # Process inactive students for reactivation
             for student in inactive_students:
                 user_id = student.student.id
-                batches = student.batches.all()
                 can_activate = True
                 
-                for batch in batches:
-                    # Both conditions must be met for each batch
-                    # Condition 1: All feedback forms must be filled
-                    has_pending_forms = FeedbackFormRepository.check_if_any_pending_mandatory_forms(
-                        user_id=user_id,
-                        batch_id=batch.id,
-                        current_date=current_date  # Check all forms up to current date
-                    )
+                for batch in student.batches.all():
+                    batch_meetings = meetings_by_batch.get(batch.id, [])
                     
+                    # Condition 1: Check if all feedback forms are filled
+                    user_pending_forms = pending_forms_lookup.get(user_id, [])
+                    has_pending_forms = any(form.batch_id == batch.id for form in user_pending_forms)
                     if has_pending_forms:
                         can_activate = False
                         break
                     
-                    # Condition 2: Must have attended last scheduled class
-                    if AttendaceRecordRepository.check_student_attendance_in_period(
-                        student.student, batch, consecutive_absences
-                    ):
-                        StudentRepository.mark_student_active(student.student.id)
-                        break
-                    
+                    # Condition 2: Must have attended at least one recent class
+                    if batch_meetings:
+                        has_recent_attendance = False
+                        for meeting in batch_meetings:
+                            if attendance_lookup.get((user_id, meeting.id), False):
+                                has_recent_attendance = True
+                                break
+                        
+                        if not has_recent_attendance:
+                            can_activate = False
+                            break
+                
                 if can_activate:
-                    StudentRepository.mark_student_active(student.student.id)
-                    logger.info(f"Reactivated student {user_id} - all criteria met")
+                    students_to_activate.add(user_id)
+
+            # Perform bulk updates
+            if students_to_inactivate:
+                StudentRepository.mark_students_inactive(list(students_to_inactivate))
+                logger.info(f"Marked {len(students_to_inactivate)}: {students_to_inactivate} students inactive")
+            
+            if students_to_activate:
+                StudentRepository.mark_students_active(list(students_to_activate))
+                logger.info(f"Reactivated {len(students_to_activate)} : {students_to_activate} students")
                     
         except (Student.DoesNotExist, ValueError, AttributeError) as e:
             logger.error(f"Error in update_student_status: {str(e)}")
+            raise

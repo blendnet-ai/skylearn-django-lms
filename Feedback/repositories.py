@@ -84,6 +84,31 @@ class FeedbackFormRepository:
         # Check if any mandatory forms are pending
         return any(entry.id not in filled_forms for entry in form_entries)
     
+    @staticmethod
+    def get_pending_mandatory_forms_bulk(student_ids, batch_ids, cutoff_date):
+        """Get all pending mandatory feedback forms and filled responses for multiple students and batches
+        
+        Args:
+            student_ids (list): List of student IDs
+            batch_ids (list): List of batch IDs
+            cutoff_date (date): Date before which forms should have been filled
+            
+        Returns:
+            tuple: (mandatory_forms QuerySet, filled_forms QuerySet)
+        """
+        form_entries = CourseFormEntry.objects.filter(
+            batch_id__in=batch_ids,
+            form__is_mandatory=True,
+            end_date__lte=cutoff_date,
+        ).select_related('form', 'batch')
+
+        filled_forms = FeedbackResponse.objects.filter(
+            user_id__in=student_ids,
+            course_feedback_entry__batch_id__in=batch_ids
+        ).values_list('user_id', 'course_feedback_entry_id')
+
+        return form_entries, filled_forms
+
 
 class FeedbackResponseRepository:
     @staticmethod

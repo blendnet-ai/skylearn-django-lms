@@ -6,6 +6,8 @@ import requests
 import urllib.parse
 from datetime import datetime, timedelta
 from typing import List, Dict
+import csv
+from pathlib import Path
 
 from dotenv import load_dotenv
 from accounts.repositories import UserConfigMappingRepository
@@ -34,6 +36,11 @@ ECF_API_KEY = "5432109876"
 
 course_codes = ['12', '15L', '16']
 logger = logging.getLogger(__name__)
+
+# Add these constants after the existing constants
+LOG_DIR = "logs"
+LOG_FILE = "user_registration_log.csv"
+HEADERS = ["Timestamp", "Email", "Password", "Status", "Error Message"]
 
 class UserRegistrationData:
     def __init__(self, email: str, course_codes: str, user_data: dict):
@@ -140,6 +147,36 @@ def process_registration_data(csc_data: List[Dict],ecf_data: List[Dict]) -> Dict
 
     return user_registrations
 
+def setup_log_file():
+    """Initialize log file if it doesn't exist"""
+    try:
+        # Get current directory path
+        current_dir = Path(__file__).parent
+        log_path = current_dir / LOG_FILE
+        
+        # Create file with headers if it doesn't exist
+        if not log_path.exists():
+            with open(log_path, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(HEADERS)
+        
+        return str(log_path)
+    except Exception as e:
+        logger.error(f"Failed to setup log file: {str(e)}")
+        return None
+
+def log_user_creation(email: str, password: str, status: str, error_msg: str = ""):
+    """Log user creation details to CSV file"""
+    try:
+        log_path = setup_log_file()
+        if log_path:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(log_path, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([timestamp, email, password, status, error_msg])
+    except Exception as e:
+        logger.error(f"Failed to log to CSV: {str(e)}")
+
 def create_firebase_user(email: str, config: dict) -> tuple:
     """Creates a user in Firebase, assigns role in DB, and sends credentials"""
     password = Utils.generate_random_password()
@@ -148,16 +185,21 @@ def create_firebase_user(email: str, config: dict) -> tuple:
         firebase_id = CustomAuth.create_user(email=email, password=password)
         create_user_and_assign_role(firebase_id, email, config)
 
-
         # Send credentials since this is a new user
         SendgridService.send_password_email(email, password)
-
+        
+        # Log successful user creation
+        log_user_creation(email, password, "Success")
         return True, "User created in Firebase and credentials sent"
     
     except firebase_admin.auth.EmailAlreadyExistsError:
+        # Log existing user
+        log_user_creation(email, "", "Already Exists", "User already exists in Firebase")
         return True, "User already exists in Firebase"
     
-    except ValueError:
+    except ValueError as e:
+        # Log invalid email error
+        log_user_creation(email, "", "Failed", f"Invalid email format: {str(e)}")
         return False, "Invalid email format"
 
 def update_user_config_mapping(registrations: Dict[str, UserRegistrationData]) -> List[Dict[str, str]]:
