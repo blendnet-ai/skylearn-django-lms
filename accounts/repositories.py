@@ -9,6 +9,9 @@ from accounts.models import (
 from course.repositories import BatchRepository
 from django.db.models import F
 from django.db.models import Q
+import logging
+
+logger = logging.getLogger(__name__)
 
 class StudentRepository:
     def get_student_by_student_id(student_id):
@@ -64,7 +67,30 @@ class StudentRepository:
         student = Student.objects.get(student_id=student_id)
         student.status = Student.Status.ACTIVE
         student.save()
-    
+
+    @staticmethod
+    def mark_students_inactive(student_ids):
+        """
+        Bulk update to mark multiple students as inactive
+        Args:
+            student_ids (list): List of student user IDs to mark as inactive
+        """
+        try:
+            Student.objects.filter(student_id__in=student_ids).update(status=Student.Status.INACTIVE)
+        except Exception as e:
+            logger.error(f"Error marking students inactive in bulk: {str(e)}")
+
+    @staticmethod
+    def mark_students_active(student_ids):
+        """
+        Bulk update to mark multiple students as active
+        Args:
+            student_ids (list): List of student user IDs to mark as active
+        """
+        try:
+            Student.objects.filter(student_id__in=student_ids).update(status=Student.Status.ACTIVE)
+        except Exception as e:
+            logger.error(f"Error marking students active in bulk: {str(e)}")
 
 
 
