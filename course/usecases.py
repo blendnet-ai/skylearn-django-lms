@@ -9,6 +9,7 @@ from course.repositories import (
     UploadRepository,
     UploadVideoRepository
 )
+from custom_auth.repositories import UserProfileRepository
 from meetings.repositories import MeetingSeriesRepository
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from accounts.repositories import CourseProviderRepository
@@ -34,6 +35,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
+from reports.repositories import UserCourseReportRepository
 User = get_user_model()
 
 class LiveClassUsecase:
@@ -953,3 +955,35 @@ class UnassignedStudentsUsecase:
                 })
                 
         return unassigned_students
+    
+
+class StudentDashboardUsecase:
+    @staticmethod
+    def compute_course_hours(user):
+        """Compute the total hours of a course"""
+        user_id=user.id
+        reports = UserCourseReportRepository.get_reports_data_by_user_id(user_id)
+        form_link=""
+        if settings.DEPLOYMENT_TYPE=="DEFAULT":
+            user_profile=UserProfileRepository.get(user_id)
+            user_data=user_profile.user_data
+            aadhar_number=UserProfileRepository.fetch_value_from_form('beneficiaryId',user_data)
+            name=user.get_full_name
+            email=user.email
+            phone=user_profile.phone
+            form_link=f"https://docs.google.com/forms/d/e/1FAIpQLSePJK1BHFMtPrZgrLJT98NUrvn78oxhf9UmQzH21EcSlkLO8A/viewform?usp=pp_url&entry.1785019217={aadhar_number}&entry.112616835={name}&entry.1447575587={phone}&entry.1182700804={email}"
+        data = {}
+        for report in reports:
+            # Initialize the dictionary for this course if not done already
+            if report.course_id not in data:
+                data[report.course_id] = {}
+            data[report.course_id]['course_name'] = report.course.title
+            data[report.course_id]['course_hours'] = report.course.course_hours
+            data[report.course_id]['total_time_spent'] = report.total_time_spent/3600
+            data[report.course_id]['updated_at']=report.last_updated
+            if settings.DEPLOYMENT_TYPE=="DEFAULT":
+                data[report.course_id]['concent_form_link']=form_link
+        return data
+
+
+

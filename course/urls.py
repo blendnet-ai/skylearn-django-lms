@@ -101,5 +101,11 @@ urlpatterns = [
         'course/<course_code>/get-unassigned-students/', 
         views.get_unassigned_students, 
         name='get_unassigned_students'
-    )
+    ),
+    path(
+        'student-dashboard/', 
+        views.get_student_dashboard_data, 
+        name='get_student_dashboard_data'
+    )   
+
 ]
