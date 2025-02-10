@@ -18,6 +18,7 @@ from services.sms_service import SMS2FactorService
 logger = logging.getLogger(__name__)
 SMS2FactorService = SMS2FactorService(api_key=TWO_Factor_SMS_API_KEY)  # 2
 from Feedback.usecases import FeedbackResponseUsecase
+from django.conf import settings
 
 
 class BetaUserlistUsecase:
@@ -136,6 +137,8 @@ class OnBoardingUsecase:
             onboarding_status = UserProfileRepository.get_onboarding_status_details(
                 user.id
             )
+            if settings.DEPLOYMENT_TYPE == "ECF":
+                onboarding_status["onboarding_status"]=True
             onboarding_status["telegram_url"] = (
                 f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
             )
@@ -171,7 +174,6 @@ class OnBoardingUsecase:
                 "otp": "000000",
                 "role": role,
             }
-
     @staticmethod
     def determine_onboarding_step(user_id):
         onboarding_details = UserProfileRepository.get_onboarding_status_details(
@@ -181,27 +183,35 @@ class OnBoardingUsecase:
             return "mobile_verification"
 
         elif (
-            onboarding_details["mobile_verification_status"]
+            onboarding_details["mobile_verification_status"] 
             and not onboarding_details["onboarding_status"]
+            and settings.DEPLOYMENT_TYPE != "ECF"
         ):
             return "onboarding_form"
 
         elif (
             onboarding_details["mobile_verification_status"]
-            and onboarding_details["onboarding_status"]
+            and (onboarding_details["onboarding_status"] or settings.DEPLOYMENT_TYPE == "ECF")
             and not onboarding_details["telegram_status"]
         ):
             return "telegram_onboarding"
         
         elif (
             onboarding_details["mobile_verification_status"]
-            and onboarding_details["onboarding_status"]
+            and (onboarding_details["onboarding_status"] or settings.DEPLOYMENT_TYPE == "ECF")
             and onboarding_details["telegram_status"]
             and not onboarding_details["onboarding_cv_status"]
         ):
             return "cv_upload"
 
     def handle_otp_sending(user, phone_number):
+        if UserProfileRepository.is_phone_taken(phone_number):
+            return {
+                "otp_sent": False,
+                "status": False,
+                "message": "Phone Number already taken",
+            }
+
         if phone_number:
             status, message, code = SMS2FactorService.send_otp(phone_number)
             # status,message=True,"OTP Sent Successfully"

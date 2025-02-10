@@ -6,6 +6,7 @@ from custom_auth.repositories import UserProfileRepository
 from telegram_bot.interfaces import TelegramMessage
 from telegram_bot.repositories import TelegramChatDataRepository
 from notifications.repositories import UserRepository
+from django.conf import settings
 
 class TelegramCommandHandler:
     def __init__(self):
@@ -46,9 +47,13 @@ class TelegramCommandHandler:
             # If we get here, either:
             # 1. This is a new connection
             # 2. This is the same user reconnecting with the same Telegram account
+            if setting.DEPLOYMENT_TYPE=="ECF"
+                welcome_platform= "Udaan 2.0"
+            else:
+                welcome_platform="Sakshm AI"
             welcome_message = TelegramMessage(
                 chat_id=str(chat_id),
-                text=f"Hey! 👋 Welcome to Sakshm AI! 🎉\nYour Telegram onboarding is now complete ✅. You can return to the LMS to continue your course and access all the learning materials. \nHappy learning! 🚀✨"
+                text=f"Hey! 👋 Welcome to {welcome_platform}! 🎉\nYour Telegram onboarding is now complete ✅. You can return to the LMS to continue your course and access all the learning materials. \nHappy learning! 🚀✨"
             )
             
             # Save/update the chat_id

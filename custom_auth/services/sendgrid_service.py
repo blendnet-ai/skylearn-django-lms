@@ -14,8 +14,14 @@ class SendgridService:
         template_data,
         template_id,
     ):
+        if settings.DEPLOYMENT_TYPE=="ECF":
+            from_name="Earth Care Foundation"
+            from_email="lms.noreply@theearthcarefoundation.org"
+        else:
+            from_name="Sakshm LMS"
+            from_email=settings.DEFAULT_FROM_EMAIL
         message = Mail(
-            from_email=(settings.DEFAULT_FROM_EMAIL, "Sakshm LMS"),
+            from_email=(from_email, from_name),
             to_emails=user_email,
             is_multiple=True,
         )
@@ -40,6 +46,6 @@ class SendgridService:
     def send_password_email(email, password):
         SendgridService._send_email(
             user_email=email,
-            template_data={"password": password},
+            template_data={"email":email,"password": password},
             template_id=settings.PASSWORD_EMAIL_TEMPLATE_ID,
         )

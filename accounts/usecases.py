@@ -112,7 +112,7 @@ class RoleAssignmentUsecase:
             student_id=user.id
             user_profile = UserProfileRepository.get(user.id)
 
-            if settings.DEPLOYMENT_TYPE == "ECF":
+            if settings.DEPLOYMENT_TYPE == "ECF" and batch_id is None:
                 StudentRepository.create_student(user)
             else:
                 batch=BatchRepository.get_batch_by_id(batch_id)
@@ -159,8 +159,7 @@ class RoleAssignmentUsecase:
             course = Course.objects.get(code=course_code) 
             # Create a new course allocation for the lecturer
             course_allocation = CourseAllocation.objects.create(
-                lecturer=user,
-                session=None
+                lecturer=user
             )
 
             # Allocate courses to the lecturer

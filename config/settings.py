@@ -22,7 +22,7 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost","orbit-lms.sakshm.com"]
 
 LOCAL_MEM_CACHE = {
     "default": {
