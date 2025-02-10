@@ -19,21 +19,17 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             decoded_token = auth.verify_id_token(id_token)
             uid = decoded_token["uid"]
 
-            try:
-                user = User.objects.get(firebase_uid=uid)
-            except User.DoesNotExist:
-                # Create user if not exists
-                email = decoded_token["email"]
-                first_name = decoded_token.get("name", "").split()[0] if decoded_token.get("name") else ""
-                last_name = " ".join(decoded_token.get("name", "").split()[1:]) if decoded_token.get("name") else ""
-                user = User.objects.create(
-                    firebase_uid=uid,
-                    email=email,
-                    is_active=True,
-                    username=uid,
-                    first_name=first_name,
-                    last_name=last_name
-                )
+            user, created = User.objects.get_or_create(
+                firebase_uid=uid,
+                defaults={
+                    "email": decoded_token["email"],
+                    "is_active": True,
+                    "username": uid,
+                    "first_name": decoded_token.get("name", "").split()[0] if decoded_token.get("name") else "",
+                    "last_name": " ".join(decoded_token.get("name", "").split()[1:]) if decoded_token.get("name") else ""
+                }
+            )
+            if created:
                 user.set_password(generate_password())
                 user.save()
             user_profile = UserProfileRepository.create_user_profile(user_id=user.id)

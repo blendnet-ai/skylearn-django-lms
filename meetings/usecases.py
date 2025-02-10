@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
 User = get_user_model()
 from custom_auth.utils import CryptographyHandler
-
+import time
 storage_service = AzureStorageService()
 
 class MeetingSeriesUsecase:
@@ -241,6 +241,7 @@ class MeetingSeriesUsecase:
              meetings_to_create.append(Meeting(series=meeting_series, start_date=meeting_date, link=""))
         
         created_meetings=MeetingRepository.create_bulk_meetings(meetings_to_create)
+        time.sleep(10)
         for meeting in created_meetings:
             create_teams_meeting_task.delay(meeting.id)
         return meeting_series
