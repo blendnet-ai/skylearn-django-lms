@@ -28,6 +28,7 @@ from course.usecases import (
     BatchMessageUsecase,
     PersonalMessageUsecase,
     AssessmentModuleUsecase,
+    StudentDashboardUsecase,
     UnassignedStudentsUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
@@ -567,3 +568,13 @@ def get_unassigned_students(request, course_code):
         "students": students,
         "total_count": len(students)
     }, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsStudent])
+def get_student_dashboard_data(request):
+    """Get student dashboard data"""
+    data=StudentDashboardUsecase.compute_course_hours(request.user)
+    return Response(data, status=status.HTTP_200_OK)
+
+
