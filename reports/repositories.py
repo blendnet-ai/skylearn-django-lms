@@ -18,8 +18,13 @@ class UserCourseReportRepository:
         
         return report, created
     
+    @staticmethod
     def get_reports_data():
         return UserCourseReport.objects.all()
+    
+    @staticmethod
+    def get_reports_data_by_user_id(user_id):
+        return UserCourseReport.objects.filter(user_id=user_id)
     
     
     
