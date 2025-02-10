@@ -986,6 +986,7 @@ class StudentDashboardUsecase:
             )
             if not course_data:
                 course_data = {
+                    "card_type":"certificate",
                     "course_id": report.course_id,
                     "course_name": report.course.title,
                     "course_hours": report.course.course_hours,
@@ -994,7 +995,7 @@ class StudentDashboardUsecase:
                 }
                 data.append(course_data)
                 if settings.DEPLOYMENT_TYPE == "DEFAULT":
-                    data.append({"concent_form_link": form_link})
+                    data.append({"card_type":"form", "concent_form_link": form_link})
             else:
                 # If data for the course already exists, there's nothing extra to update
                 # as the original logic simply overwrites. Adjust if aggregation is needed.
