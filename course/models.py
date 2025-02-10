@@ -29,6 +29,7 @@ class Course(models.Model):
     summary = models.TextField(max_length=200, blank=True)
     course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
     drive_folder_link = models.CharField(max_length=255, blank=True)
+    course_hours=models.IntegerField(default=0)
 
 
     def __str__(self):
