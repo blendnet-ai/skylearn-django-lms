@@ -992,9 +992,9 @@ class StudentDashboardUsecase:
                     "total_time_spent": report.total_time_spent / 3600,
                     "updated_at": report.last_updated,
                 }
-                if settings.DEPLOYMENT_TYPE == "DEFAULT":
-                    course_data["concent_form_link"] = form_link
                 data.append(course_data)
+                if settings.DEPLOYMENT_TYPE == "DEFAULT":
+                    data.append({"concent_form_link": form_link})
             else:
                 # If data for the course already exists, there's nothing extra to update
                 # as the original logic simply overwrites. Adjust if aggregation is needed.
