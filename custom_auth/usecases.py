@@ -137,6 +137,7 @@ class OnBoardingUsecase:
             onboarding_status = UserProfileRepository.get_onboarding_status_details(
                 user.id
             )
+            user_name = user.get_full_name
             if settings.DEPLOYMENT_TYPE == "ECF":
                 onboarding_status["onboarding_status"]=True
             onboarding_status["telegram_url"] = (
@@ -155,6 +156,7 @@ class OnBoardingUsecase:
                     has_pending_forms = True
                     break
             onboarding_status["pending_forms"] = has_pending_forms
+            onboarding_status["user_name"] = user_name
             return onboarding_status
         elif user.is_lecturer:
             onboarding_status = UserProfileRepository.get_onboarding_status_details(
