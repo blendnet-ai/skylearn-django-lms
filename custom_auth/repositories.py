@@ -144,6 +144,13 @@ class UserProfileRepository:
         user_profile = UserProfile.objects.get(user_id=user_id)
         user_profile.phone = phone
         user_profile.save()
+    
+    def is_phone_taken(phone):
+        """
+        Check if the given phone number is already registered.
+        Returns True if the phone number exists, otherwise False.
+        """
+        return UserProfile.objects.filter(phone=phone).exists()
 
     @staticmethod
     def set_name(user_id, name):
@@ -245,6 +252,7 @@ class UserProfileRepository:
             "status": status,
         }
         user_profile.save()
+        
         
     # @staticmethod
     # def update_doubt_solving_token(user_id, doubt_solving_uuid,doubt_solving_mapping_created,doubt_solving_token,token_expiration_time):
