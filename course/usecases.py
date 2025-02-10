@@ -990,7 +990,7 @@ class StudentDashboardUsecase:
                     "course_id": report.course_id,
                     "course_name": report.course.title,
                     "course_hours": report.course.course_hours,
-                    "total_time_spent": report.total_time_spent / 3600,
+                    "total_time_spent": report.total_time_spent / 60,
                     "updated_at": report.last_updated,
                 }
                 data.append(course_data)
