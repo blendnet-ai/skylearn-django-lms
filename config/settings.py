@@ -507,7 +507,8 @@ ANYMAIL = {
 
 #EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
 EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
-DEFAULT_FROM_EMAIL = "contact@sakshm.com"
+DEPLOYMENT_TYPE = os.environ.get("DEPLOYMENT_TYPE", "DEFAULT")
+DEFAULT_FROM_EMAIL = "lms.noreply@theearthcarefoundation.org" if DEPLOYMENT_TYPE == "ECF" else "contact@sakshm.com"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 ADMINS = os.environ["ADMINS"]
@@ -553,5 +554,5 @@ AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COUR
 REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID")
 FRONTEND_BASE_URL=os.environ.get("FRONTEND_BASE_URL","https://lms.sakshm.com")
 
-DEPLOYMENT_TYPE = os.environ.get("DEPLOYMENT_TYPE", "DEFAULT")
+
 

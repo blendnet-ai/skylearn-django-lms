@@ -396,7 +396,12 @@ def report_sheet_generator():
     gd_wrapper.append_to_sheet('LMS Activity Logs', lms_activity_logs_data)
     gd_wrapper.append_to_sheet('LMS Live Class Logs', lms_live_class_logs_data)
     gd_wrapper.append_to_sheet('LMS Assessment Logs', lms_assessment_logs_data)
-    new_spreadsheet_name = (
-        f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
-    )
+    if settings.DEPLOYMENT_TYPE == "ECF":
+        new_spreadsheet_name = (
+            f"ORBIT/ECF LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
+        )
+    else:
+        new_spreadsheet_name = (
+            f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
+        )
     gd_wrapper.rename_spreadsheet(new_spreadsheet_name)
