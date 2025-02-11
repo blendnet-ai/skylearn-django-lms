@@ -46,7 +46,7 @@ class Orchestrator(BaseLoggerMixin):
 
         logger.info(f"OrchestratorLog:[{ef.id}]:Created processors states for event flow = {ef}. Type-{eventflow_type}.")
         
-        Orchestrator(eventflow_id=ef.id, root_args=root_args, initial=True)
+        Orchestrator(eventflow=ef, root_args=root_args, initial=True)
         return ef.id
     
     @staticmethod
@@ -98,15 +98,17 @@ class Orchestrator(BaseLoggerMixin):
                 continue
             self.call_next_processor(processor_name)
 
-    def __init__(self, *, eventflow_id: str, root_args: typing.Dict|None, initial: bool = False):
-        self.id = str(eventflow_id)
-        self.ef_db_helper = EventFlowDbHelper(eventflow_id)
+    def __init__(self, *, eventflow: EventFlow, root_args: typing.Dict | None, initial: bool = False):
+        self.id = str(eventflow.id)
+        self.ef_db_helper = EventFlowDbHelper(eventflow)
+
         if root_args is None:
-            #TODO - Ideally init should not have root arguments param and should always be fetched from db
-            self.root_args = self.ef_db_helper.eventflow_root_args
+            # TODO - Ideally init should not have root arguments param and should always be fetched from db
+            self.root_args = self.ef_db_helper.eventflow.root_arguments
         else:
             self.root_args = root_args
-        self.dag = Orchestrator.get_dag_from_eventflow_type(self.ef_db_helper.eventflow_type)
+
+        self.dag = Orchestrator.get_dag_from_eventflow_type(self.ef_db_helper.eventflow.type)
         
         self.provider_to_dependents_dict = defaultdict(list)
         
@@ -119,7 +121,6 @@ class Orchestrator(BaseLoggerMixin):
         if initial:
             root_processors = [k for k, v in self.dag["processors"].items() if len(v["depends_on"]) == 0]
             self.log_debug(f"Initial processors being called - {root_processors}")
-            
             for processor in root_processors:
                 self.call_next_processor(processor)
 

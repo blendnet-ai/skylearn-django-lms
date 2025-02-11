@@ -112,8 +112,8 @@ def evaluate_grammar(user_answer, llm_object, question_type):
     response = llm_object.get_completion_from_messages(messages)
     try:
         response_json = json.loads(response)
-    except json.JSONDecodeError:
-        response_json = response
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Failed to decode JSON from LLM response: {response}") from exc
         
     errors = response_json.get("errors") if isinstance(response_json, dict) else response_json
 
