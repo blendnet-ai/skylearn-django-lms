@@ -3,6 +3,7 @@ import logging
 import traceback
 import typing
 
+from evaluation.models import EventFlow
 import openai
 
 from common.mixins import BaseLoggerMixin
@@ -23,6 +24,7 @@ class EventProcessor(abc.ABC, BaseLoggerMixin):
         self.inputs = inputs
         self.root_arguments = root_arguments
         self.eventflow_id = eventflow_id
+        self.eventflow = EventFlow.objects.get(id=eventflow_id)
         self.log_debug(f"Init function of processor called - {self.__class__.__name__}")
 
     def get_formatted_msg(self, msg):
@@ -67,23 +69,23 @@ class EventProcessor(abc.ABC, BaseLoggerMixin):
     def submit_error(self, stacktrace, retriable=False):
         from evaluation.event_flow.core.orchestrator import Orchestrator
         if retriable:
-            Orchestrator(eventflow_id=self.eventflow_id, root_args=self.root_arguments).submit_retriable_error(
+            Orchestrator(eventflow=self.eventflow, root_args=self.root_arguments).submit_retriable_error(
                 processor_name=self.__class__.__name__,
                 stacktrace=stacktrace)
         else:
-            Orchestrator(eventflow_id=self.eventflow_id, root_args=self.root_arguments).submit_error(
+            Orchestrator(eventflow=self.eventflow, root_args=self.root_arguments).submit_error(
             processor_name=self.__class__.__name__,
             stacktrace=stacktrace, abort_flow=True)
 
     def submit_result(self, results: typing.Dict, error_stacktrace=None):
         from evaluation.event_flow.core.orchestrator import Orchestrator
-        Orchestrator(eventflow_id=self.eventflow_id, root_args=self.root_arguments).submit_result(
+        Orchestrator(eventflow=self.eventflow, root_args=self.root_arguments).submit_result(
             processor_name=self.__class__.__name__,
             result_dict=results, error_stacktrace=error_stacktrace)
     
     def handle_critical_exception(self, stacktrace):
         from evaluation.event_flow.core.orchestrator import Orchestrator
-        Orchestrator(eventflow_id=self.eventflow_id, root_args=self.root_arguments).submit_error(
+        Orchestrator(eventflow=self.eventflow, root_args=self.root_arguments).submit_error(
             processor_name=self.__class__.__name__,
             stacktrace=stacktrace,
             abort_flow=True)

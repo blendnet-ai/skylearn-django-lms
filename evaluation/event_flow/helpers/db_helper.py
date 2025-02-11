@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class EventFlowDbHelper:
 
-    def __init__(self, event_flow_id: str) -> None:
-        self.eventflow: EventFlow = EventFlow.objects.get(id=event_flow_id)
+    def __init__(self, event_flow: EventFlow) -> None:
+        self.eventflow = event_flow
 
     @property
     def eventflow_type(self):
