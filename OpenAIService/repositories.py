@@ -84,6 +84,9 @@ class ValidPromptTemplates:
     CODE_REVISION_TOPIC_PROCESSOR = "code_revision_topic_processor"
     CODE_SUMMARY_PROCESSOR = "code_summary_processor"
     APPROACH_CODE_SUMMARY_PROCESSOR = "approach_code_summary_processor"
+    SENTIMENT_PROCESSOR = "sentiment_processor"
+    COHERENCE_PROCESSOR = "coherence_processor"
+    GRAMMAR_PROCESSOR = "grammar_processor"
 
     @classmethod
     def get_all_valid_prompts(cls) -> list:

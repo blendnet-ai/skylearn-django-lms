@@ -1,62 +1,50 @@
 import logging
 import requests
-import json
 
-from evaluation.event_flow.helpers.coherence import evaluate_coherence
-from evaluation.event_flow.processors.base_event_processor import EventProcessor
-from evaluation.event_flow.processors.expections import ProcessorException
-from evaluation.event_flow.services.llm_service.openai_service import OpenAIService
+from openai import BaseModel
+
+from OpenAIService.repositories import (
+    ValidPromptTemplates,
+)
+from evaluation.event_flow.helpers.sentiment import evaluate_sentiment
+from evaluation.event_flow.processors.base_llm_processor import BaseLLMProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class Coherence(EventProcessor):
+class Response(BaseModel):
+    Completeness: str
+    Completeness_Reason: str
+    Relevance: str
+    Relevance_Reason: str
+    Logical: str
+    Logical_Reason: str
+    Overall: str
+    Overall_Reason: str
 
-    def get_fallback_result(self):
-        return self._fallback_result
 
-    def initialize_v2(self):
-        self.user_answer = self.root_arguments.get("text")
-        if self.user_answer is None:
-            self.transcript_url = self.inputs["SpeechToText"]["output_transcript_url"]
-            response = requests.get(self.transcript_url, allow_redirects=True)
-            # if response.status_code!=200:
-            #     raise Exception(f"Error in reading transcript. Response code = {response.status_code}. Response - {response.content}")
-            self.user_answer = str(response.content)
-        
-        self.log_info(f"Extracted text - {self.user_answer}")
-        self.question = self.root_arguments["question"]
+class Coherence(BaseLLMProcessor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prompt_template = ValidPromptTemplates.COHERENCE_PROCESSOR
+        self.response_format_class = Response
 
     def initialize(self):
-        self.user_answer = self.root_arguments.get("text")
-        if self.user_answer is None:
+        super().initialize()
+        user_answer = self.root_arguments.get("text")
+        if user_answer is None:
             self.transcript_url = self.inputs["SpeechToText"]["output_transcript_url"]
             response = requests.get(self.transcript_url, allow_redirects=True)
-            if response.status_code!=200:
-                raise Exception(f"Error in reading transcript. Response code = {response.status_code}. Response - {response.content}")
-            self.user_answer = response.content.decode('utf-8')
-        self.log_info(f"Extracted text - {self.user_answer}")
-        self.question = self.root_arguments["question"]
+            if response.status_code != 200:
+                raise Exception(
+                    f"Error in reading transcript. Response code = {response.status_code}. Response - {response.content}"
+                )
+            user_answer = response.content.decode("utf-8")
+        self.log_info(f"Extracted text - {user_answer}")
 
-    def _execute(self):
-        self.initialize()
-        llm_object = OpenAIService()
-        response = evaluate_coherence(self.question, self.user_answer, llm_object)
-        try:
-            response_json = json.loads(response)
-        except Exception as e:
-            self.log_info(f"Got exception while decoding LLM response -{e} .LLM RESPONSE was \n{response}.\n")
-            self._fallback_result = {"response": {"Completeness" : "",
-                                "Completeness_Reason" : "",
-                                "Relevance" : "",
-                                "Relevance_Reason" : "",
-                                "Logical":"",
-                                "Logical_Reason":"",
-                                "Overall" : "Good",
-                                "Overall_Reason" : ""},
-                                "score": 0}
-            raise ProcessorException(message="Coherence error while parsing llm response", original_error=e,
-                                     extra_info={})
+        self.context["user_answer"] = user_answer
+        self.context["question"] = self.root_arguments["question"]
 
-        overall_score = response_json.get("Overall")
-        return {"response": response_json, "score":overall_score}
+    def format_response(self, response: dict) -> dict:
+        overall_score = response.get("Overall")
+        return {"response": response, "score": overall_score}
