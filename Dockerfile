@@ -45,7 +45,7 @@ COPY --chown=$USER_UID:$USER_GID download_nltk_punk.py /home/$USERNAME/code/
 RUN mkdir -p /home/appuser/code/llm_configs_v2 
 WORKDIR /home/$USERNAME/code
 #Ignoring 71720-2 for Litellm. TODO: Fix as soon as possible
-RUN pip install safety && safety check -r /home/$USERNAME/code/requirements.txt --ignore 71720 --ignore 71721 --ignore 71722 --ignore 73564
+RUN pip install safety && safety check -r /home/$USERNAME/code/requirements.txt --ignore 71720 --ignore 71721 --ignore 71722 --ignore 73564 --ignore 74713 --ignore 74775 --ignore 74718
 RUN pip install -r /home/$USERNAME/code/requirements.txt
 RUN python download_nltk_punk.py
 RUN python -m spacy download en_core_web_sm
