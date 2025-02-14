@@ -88,6 +88,7 @@ def create_live_class_series(request):
             # Sanchit -  these could have inherited a single exception and then that be caught here
             # Also, it would be cleaner if all these exceptions are raised internally in a single validation function
             # somewhere
+            MeetingSeriesUsecase.LecturerNotAssigned,
             MeetingSeriesUsecase.WeekdayScheduleNotSet,
             MeetingSeriesUsecase.MonthlyDayNotSet,
             MeetingSeriesUsecase.InvalidWeekdaySchedule,

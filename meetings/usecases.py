@@ -52,6 +52,10 @@ class MeetingSeriesUsecase:
     class EndDateSmallerThanStartDate(Exception):
         def __init__(self):
             super().__init__("End date must be greater than start date")
+    
+    class LecturerNotAssigned(Exception):
+        def __init__(self):
+            super().__init__("Lecturer Not Assigned Yet to Batch")
 
     @staticmethod
     def renew_meeting_series(

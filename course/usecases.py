@@ -204,9 +204,13 @@ class LiveClassSeriesPresenterAssignmentUseCase:
         assignment_results = {}
         for batch in batches_allocated:
             batch = BatchRepository.get_batch_by_id(batch)
-            presenter_details = LecturerRepository.get_presenter_details_by_lecturer_id(
-                batch.lecturer.id
-            )
+            if batch.lecturer:
+                presenter_details = LecturerRepository.get_presenter_details_by_lecturer_id(
+                    batch.lecturer.id
+                )
+            else:
+                raise MeetingSeriesUsecase.LecturerNotAssigned
+
 
             if presenter_details:
                 # Convert presenter_details to a serializable format if needed
