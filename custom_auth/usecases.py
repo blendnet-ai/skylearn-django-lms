@@ -140,6 +140,7 @@ class OnBoardingUsecase:
             user_name = user.get_full_name
             if settings.DEPLOYMENT_TYPE == "ECF":
                 onboarding_status["onboarding_status"]=True
+                onboarding_status["mobile_verification_status"]=True
             onboarding_status["telegram_url"] = (
                 f"https://t.me/{TELEGRAM_BOT_NAME}?start={onboarding_status['otp']}"
             )
@@ -181,25 +182,25 @@ class OnBoardingUsecase:
         onboarding_details = UserProfileRepository.get_onboarding_status_details(
             user_id
         )
-        if not onboarding_details["mobile_verification_status"]:
+        if not onboarding_details["mobile_verification_status"] and settings.DEPLOYMENT_TYPE != "ECF":
             return "mobile_verification"
 
         elif (
-            onboarding_details["mobile_verification_status"] 
+            (onboarding_details["mobile_verification_status"] or settings.DEPLOYMENT_TYPE == "ECF")
             and not onboarding_details["onboarding_status"]
             and settings.DEPLOYMENT_TYPE != "ECF"
         ):
             return "onboarding_form"
 
         elif (
-            onboarding_details["mobile_verification_status"]
+            (onboarding_details["mobile_verification_status"]or settings.DEPLOYMENT_TYPE == "ECF")
             and (onboarding_details["onboarding_status"] or settings.DEPLOYMENT_TYPE == "ECF")
             and not onboarding_details["telegram_status"]
         ):
             return "telegram_onboarding"
         
         elif (
-            onboarding_details["mobile_verification_status"]
+            (onboarding_details["mobile_verification_status"]or settings.DEPLOYMENT_TYPE == "ECF")
             and (onboarding_details["onboarding_status"] or settings.DEPLOYMENT_TYPE == "ECF")
             and onboarding_details["telegram_status"]
             and not onboarding_details["onboarding_cv_status"]
