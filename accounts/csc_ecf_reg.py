@@ -21,6 +21,7 @@ from evaluation.management.register.utils import Utils
 import firebase_admin
 from accounts.usecases import RoleAssignmentUsecase
 from django.contrib.auth import get_user_model
+from django.conf import settings
 
 User = get_user_model()
 
@@ -34,7 +35,7 @@ CSC_URL = "https://csc.theearthcarefoundation.org/api/user_details"
 ECF_URL = "https://theearthcarefoundation.org/userdetails.php"
 ECF_API_KEY = "5432109876"
 
-course_codes = ['12', '15L', '16']
+course_codes = settings.ORBIT_COURSE_CODES
 logger = logging.getLogger(__name__)
 
 # Add these constants after the existing constants
@@ -212,6 +213,9 @@ def update_user_config_mapping(registrations: Dict[str, UserRegistrationData]) -
         if mapping is None:
             # New user: Create config mapping and Firebase user
             config = {
+                "first_name": reg_data.user_data.get("fname", ""),
+                "last_name": reg_data.user_data.get("lname", ""),
+                "email_address": email,
                 "role": "student",
                 "course_codes": reg_data.course_codes,
                 "user_data": [reg_data.user_data]
