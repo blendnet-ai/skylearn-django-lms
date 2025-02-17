@@ -69,6 +69,11 @@ class LiveClassUsecase:
             )
         )
 
+        for batch_id in batch_ids:
+             batch = BatchRepository.get_batch_by_id(batch_id)
+             if not batch.lecturer:
+                raise MeetingSeriesUsecase.LecturerNotAssigned
+
         batches_allocated, batches_failed_to_allocate = (
             LiveClassSeriesBatchAllocationUseCase.allocate_batches_to_live_series(
                 batch_ids, live_class_series
