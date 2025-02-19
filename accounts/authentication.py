@@ -33,7 +33,7 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
                 user.set_password(generate_password())
                 user.save()
             user_profile = UserProfileRepository.create_user_profile(user_id=user.id)
-            if not user.is_student and not user.is_lecturer and not user.is_course_provider_admin:
+            if (not user.is_student and not user.is_lecturer and not user.is_course_provider_admin) or (user.needs_role_assignment):
                 RoleAssignmentUsecase.assign_role_from_config(user)
             update_last_login(None, user)
             return (user, None)

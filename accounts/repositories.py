@@ -39,7 +39,7 @@ class StudentRepository:
 
 
     def create_student(user):
-        return Student.objects.create(student=user)
+        return Student.objects.get_or_create(student=user)
     
     def get_all_students():
         return Student.objects.all()

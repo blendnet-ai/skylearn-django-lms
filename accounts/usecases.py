@@ -115,9 +115,12 @@ class RoleAssignmentUsecase:
             if settings.DEPLOYMENT_TYPE == "ECF" and batch_id is None:
                 StudentRepository.create_student(user)
             else:
-                batch=BatchRepository.get_batch_by_id(batch_id)
+                batch_ids = batch_id.split(",")  # Convert to a list of batch IDs
                 StudentRepository.create_student(user)
-                StudentRepository.add_batch_by_student_id(student_id, batch)
+                for batch_id in batch_ids:
+                    batch = BatchRepository.get_batch_by_id(batch_id.strip())
+                    if batch:
+                        StudentRepository.add_batch_by_student_id(student_id, batch)
                 
             if user_data is not None:
                 # Transform user_data into the required format
@@ -136,6 +139,7 @@ class RoleAssignmentUsecase:
                 
                 user_profile.user_data = existing_data
                 user_profile.save()
+            user.needs_role_assignment = False
             user.save()
                     
             
