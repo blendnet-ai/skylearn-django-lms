@@ -41,6 +41,7 @@ class User(AbstractUser):
     is_lecturer = models.BooleanField(default=False)
     is_course_provider_admin = models.BooleanField(default=False)
     email = models.EmailField(blank=True, null=True)
+    needs_role_assignment = models.BooleanField(default=False)
     objects = CustomUserManager()
 
     class Meta:
