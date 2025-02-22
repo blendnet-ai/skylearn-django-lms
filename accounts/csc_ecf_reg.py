@@ -90,8 +90,8 @@ def create_user_and_assign_role(firebase_id, email, config: dict):
             email=email,
             is_active=True,
             username=firebase_id,
-            first_name=config.get("fname", ""),
-            last_name=config.get("lname", "")
+            first_name=config.get("first_name", ""),
+            last_name=config.get("last_name", "")
         )
     UserProfileRepository.create_user_profile(user_id=user.id)
     RoleAssignmentUsecase.assign_role_from_config(user)
@@ -152,7 +152,7 @@ def setup_log_file():
     """Initialize log file if it doesn't exist"""
     try:
         # Get current directory path
-        current_dir = Path(__file__).parent
+        current_dir = Path(os.getcwd())
         log_path = current_dir / LOG_FILE
         
         # Create file with headers if it doesn't exist
@@ -267,8 +267,6 @@ def main():
         )
     
 
-
-    ecf_data_list = []
     if "data" in ecf_data_list:
         ecf_data_list = list(ecf_data_list["data"])
 
