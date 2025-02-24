@@ -98,6 +98,48 @@ class NotificationIntentRepository:
         intent.processed = True
         intent.save()
 
+    @staticmethod
+    def delete_intents_by_reference(reference_id, notification_types):
+        """
+        Delete all notification intents for a given reference_id and notification types
+        
+        Args:
+            reference_id: The reference ID (e.g., meeting_id)
+            notification_types: List of notification types to delete
+        """
+        return NotificationIntent.objects.filter(
+            reference_id=reference_id,
+            notification_type__in=notification_types
+        ).delete()
+
+    @staticmethod
+    def get_pending_intents_by_reference(reference_id, notification_types):
+        """
+        Get pending notification intents for a given reference_id and notification types
+        
+        Args:
+            reference_id: The reference ID (e.g., meeting_id)
+            notification_types: List of notification types to fetch
+        """
+        return NotificationIntent.objects.filter(
+            reference_id=reference_id,
+            notification_type__in=notification_types,
+            state='pending'
+        )
+
+    @staticmethod
+    def update_intent_schedule(intent_id, scheduled_at):
+        """
+        Update the scheduled time for a notification intent
+        
+        Args:
+            intent_id: ID of the intent to update
+            scheduled_at: New scheduled datetime
+        """
+        NotificationIntent.objects.filter(id=intent_id).update(
+            scheduled_at=scheduled_at
+        )
+
 
 class NotificationRecordRepository:
     @staticmethod

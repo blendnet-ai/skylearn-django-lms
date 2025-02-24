@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
 User = get_user_model()
 from custom_auth.utils import CryptographyHandler
+from notifications.repositories import NotificationIntentRepository
 import time
 storage_service = AzureStorageService()
+import pytz
 
 class MeetingSeriesUsecase:
     class WeekdayScheduleNotSet(Exception):
@@ -513,7 +515,49 @@ class MeetingUsecase:
       
     @staticmethod
     def update_meeting(id, start_time_override, duration_override, start_date):
+        """
+        Update meeting details and handle notification updates if timing changes
+        """
         meeting = MeetingRepository.get_meeting_by_id(id)
+        
+        # Check if date or time is changing
+        time_changed = (
+            (start_time_override != meeting.start_time_override) or 
+            (duration_override != meeting.duration_override)
+        )
+        date_changed = start_date != meeting.start_date
+        
+        # If either time or date changed, update notification schedules
+        if time_changed or date_changed:
+            # Calculate new meeting start datetime in IST
+            ist_tz = pytz.timezone('Asia/Kolkata')
+            new_start_time = start_time_override or meeting.series.start_time
+            new_start_datetime_ist = ist_tz.localize(datetime.combine(start_date, new_start_time))
+            
+            # Convert to UTC for database storage
+            new_start_datetime_utc = new_start_datetime_ist.astimezone(pytz.UTC)
+            current_time_utc = timezone.now()
+            
+            # Update pending notification schedules
+            pending_intents = NotificationIntentRepository.get_pending_intents_by_reference(
+                reference_id=id,
+                notification_types=['meeting_24h', 'meeting_30m']
+            )
+            
+            for intent in pending_intents:
+                if intent.notification_type == 'meeting_24h':
+                    new_scheduled_time = new_start_datetime_utc - timedelta(hours=24)
+                elif intent.notification_type == 'meeting_30m':
+                    new_scheduled_time = new_start_datetime_utc - timedelta(minutes=30)
+                    
+                # Only update if the notification time is in the future
+                if new_scheduled_time > current_time_utc:
+                    NotificationIntentRepository.update_intent_schedule(
+                        intent_id=intent.id,
+                        scheduled_at=new_scheduled_time
+                    )                    
+        
+        # Update meeting details
         meeting.start_time_override = start_time_override
         meeting.duration_override = duration_override
         meeting.start_date = start_date
@@ -522,6 +566,14 @@ class MeetingUsecase:
     @staticmethod
     def delete_meeting(id):
         meeting = MeetingRepository.get_meeting_by_id(id)
+        # Delete all associated notification intents
+        NotificationIntentRepository.delete_intents_by_reference(
+            reference_id=id,
+            notification_types=[
+                'meeting_24h',
+                'meeting_30m',
+            ]
+        )
         meeting.delete()
 
     @staticmethod
