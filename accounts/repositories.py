@@ -97,17 +97,54 @@ class StudentRepository:
 
 class UserRepository:
     @staticmethod
-
     def get_user_by_id(user_id):
         return User.objects.get(id=user_id)
 
     @staticmethod
     def get_inactive_users(days: int):
+        """
+        Get inactive student users who:
+        1. Haven't logged in for specified number of days
+        2. Are enrolled in an active batch based on dates:
+        - If both dates null: consider active
+        - If only start_date: check if started
+        - If only end_date: check if not ended
+        - If both dates: check if current date is between them
+        3. Are students
+        
+        Args:
+            days (int): Number of days of inactivity to check
+            
+        Returns:
+            QuerySet: Filtered User objects
+        """
         from django.utils import timezone
         from datetime import timedelta
+        from django.db.models import Q
 
+        current_date = timezone.now().date()
         threshold_date = timezone.now() - timedelta(days=days)
-        return User.objects.filter(last_login__lt=threshold_date,is_student=True)
+
+        # Build batch date conditions
+        batch_conditions = Q(
+            # Case 1: Both dates are null - consider active
+            Q(student__batches__start_date__isnull=True, 
+            student__batches__end_date__isnull=True) |
+            # Case 2: Only start_date exists - check if started
+            Q(student__batches__start_date__lte=current_date,
+            student__batches__end_date__isnull=True) |
+            # Case 3: Only end_date exists - check if not ended
+            Q(student__batches__start_date__isnull=True,
+            student__batches__end_date__gte=current_date) |
+            # Case 4: Both dates exist - check if current date is between them
+            Q(student__batches__start_date__lte=current_date,
+            student__batches__end_date__gte=current_date)
+        )
+
+        return User.objects.filter(
+            last_login__lt=threshold_date,
+            is_student=True
+        ).filter(batch_conditions).distinct()
 
 class CourseProviderAdminRepository:
     @staticmethod
