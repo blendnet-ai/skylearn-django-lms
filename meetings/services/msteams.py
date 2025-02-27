@@ -6,7 +6,9 @@ from django.core.cache import cache
 from django.conf import settings
 from .base import BaseConferencePlatformService, MeetingDetails, Presenter
 from storage_service.azure_storage import AzureStorageService
-
+import os
+import subprocess
+import tempfile
 
 class MSTeamsConferencePlatformService(BaseConferencePlatformService):
     AUTH_URL = f"https://login.microsoftonline.com/{settings.MS_TEAMS_TENANT_ID}/oauth2/v2.0/token"
@@ -300,56 +302,78 @@ class MSTeamsConferencePlatformService(BaseConferencePlatformService):
                 return self.get_meeting_attendance(presenter, meeting_id)
             raise
 
-    def download_and_upload_recording(self, meeting_id: str, recording_metadata: dict, container_name: str) -> str:
+
+    def download_and_upload_recording(self, meeting_id: str, recording_metadata: list, container_name: str) -> str:
         """
-        Downloads a meeting recording using metadata and uploads to Azure storage.
-        First tries the download URL from metadata, falls back to generating new URL if needed.
-        
+        Downloads a meeting recording using metadata, merges them, and uploads to Azure storage.
+
         Args:
-            recording_metadata (dict): Recording metadata from Teams
-            container_name (str): Azure storage container name
-            
+            meeting_id (str): ID of the meeting.
+            recording_metadata (list): List of recording metadata from Teams.
+            container_name (str): Azure storage container name.
+
         Returns:
-            str: The uploaded blob URL
+            str: The uploaded blob URL.
         """
         try:
-            # First try using the download URL from metadata
-            download_url = recording_metadata.get("@microsoft.graph.downloadUrl")
-            if download_url:
-                try:
-                    response = requests.get(download_url, stream=True)
-                    response.raise_for_status()
-                    # If successful, proceed with this content
-                    file_content = response.content
-                except requests.exceptions.HTTPError as e:
-                    if e.response.status_code == 401 or e.response.status_code == 403:  # Forbidden/expired URL
-                        logger.info("Download URL expired, generating new one")
-                        file_content = self.download_meeting_recording_using_graph_api(recording_metadata)
-                    else:
-                        raise
-            else:
-                # If no download URL in metadata, use Graph API
-                file_content = self.download_meeting_recording_using_graph_api(recording_metadata)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                recording_files = []
 
-            # Generate blob name with timestamp
-            file_name = recording_metadata["name"]
-            blob_name = f"recordings/{meeting_id}_{file_name}"
-            
-            # Upload to Azure storage
-            storage_service = AzureStorageService()
-            blob_url = storage_service.upload_blob(
-                container_name=container_name,
-                blob_name=blob_name,
-                content=file_content,
-                overwrite=True
-            )
-            
-            
-            return blob_url
-            
+                # Fetch all recordings and save to temp files
+                for index, recording_data in enumerate(recording_metadata):
+                    logger.info(f"Fetching recording {index + 1}...")
+                    download_url = recording_data.get("@microsoft.graph.downloadUrl")
+
+                    # Try to download content from metadata, fallback to Graph API
+                    if download_url:
+                        try:
+                            response = requests.get(download_url, stream=True)
+                            response.raise_for_status()
+                            file_content = response.content
+                        except requests.exceptions.HTTPError as e:
+                            if e.response.status_code in (401, 403):
+                                logger.info("Download URL expired, generating new one")
+                                file_content = self.download_meeting_recording_using_graph_api(recording_data)
+                            else:
+                                raise
+                    else:
+                        file_content = self.download_meeting_recording_using_graph_api(recording_data)
+
+                    # Generate a unique filename for each recording
+                    local_path = os.path.join(temp_dir, f"recording_{meeting_id}_index{index}.mp4")
+
+                    with open(local_path, "wb") as f:
+                        f.write(file_content)
+
+                    recording_files.append(local_path)
+
+                # Create input.txt for ffmpeg
+                input_file_path = os.path.join(temp_dir, f"input_recording_files_{meeting_id}.txt")
+                with open(input_file_path, "w") as input_file:
+                    for recording in recording_files:
+                        input_file.write(f"file '{recording}'\n")
+
+                # Generate unique merged output filename
+                unique_output_filename = f"merged_recording_{meeting_id}.mp4"
+                output_file = os.path.join(temp_dir, unique_output_filename)
+
+                # Merge recordings using ffmpeg
+                subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", input_file_path, "-c", "copy", output_file], check=True)
+
+                # Upload merged recording to Azure
+                blob_name = f"recordings/{meeting_id}/{unique_output_filename}"
+                storage_service = AzureStorageService()
+                with open(output_file, "rb") as merged_file:
+                    blob_url = storage_service.upload_blob(container_name=container_name, blob_name=blob_name, content=merged_file, overwrite=True)
+
+                logger.info(f"Merged recording uploaded to: {blob_url}")
+
+                return blob_url
+
         except Exception as e:
             logger.error(f"Error downloading/uploading recording: {str(e)}")
             raise
+
 
     def download_meeting_recording_using_graph_api(self, recording_metadata: dict) -> bytes:
         """

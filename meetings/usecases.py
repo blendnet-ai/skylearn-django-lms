@@ -443,7 +443,7 @@ class MeetingUsecase:
         
         try:
             # Get recording metadata
-            recording_data = meeting.recording_metadata[0]  # Get first recording
+            recording_data = meeting.recording_metadata
             
             # Download and upload using Teams service
             teams_service = MSTeamsConferencePlatformService()
