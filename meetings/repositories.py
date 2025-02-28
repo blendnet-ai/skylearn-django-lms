@@ -259,15 +259,42 @@ class MeetingRepository:
 
     @staticmethod
     def get_recent_meetings_for_batches_bulk(batch_ids, current_date, limit):
-        """Get recent meetings for multiple batches in one query"""
-        return Meeting.objects.filter(
+        """
+        Get recent meetings for multiple batches, returning last N meetings per batch
+        
+        Args:
+            batch_ids (list): List of batch IDs to get meetings for
+            current_date (date): Current date to filter meetings up to
+            limit (int): Number of recent meetings to fetch per batch
+            
+        Returns:
+            QuerySet: Recent meetings for each batch, ordered by date descending
+        """
+        from django.db.models import Window, F, Subquery, OuterRef
+        from django.db.models.functions import RowNumber
+        
+        # Create a subquery to get the latest N meetings per batch
+        latest_meetings = Meeting.objects.filter(
             series__course_enrollments__batch_id__in=batch_ids,
             start_date__lte=current_date
+        ).values(
+            'series__course_enrollments__batch_id'
+        ).annotate(
+            row_num=Window(
+                expression=RowNumber(),
+                partition_by=[F('series__course_enrollments__batch_id')],
+                order_by=F('start_date').desc()
+            )
+        ).filter(row_num__lte=limit)
+
+        # Use the subquery to fetch the actual meetings
+        return Meeting.objects.filter(
+            id__in=Subquery(latest_meetings.values('id'))
         ).select_related(
             'series'
         ).prefetch_related(
             'series__course_enrollments'
-        ).order_by('-start_date')[:limit]
+        ).order_by('-start_date')
 
 
 
