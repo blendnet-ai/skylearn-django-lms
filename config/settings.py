@@ -433,6 +433,10 @@ CELERY_BEAT_SCHEDULE = {
     'check-for-pending-intents': { 
         'task': 'notifications.tasks.process_notification_intents', 
         'schedule': crontab(minute='*/5'),  # Runs every 5 minutes
+    },
+    'check-for-student-status': { 
+        'task': 'accounts.tasks.update_student_status_task', 
+        'schedule': crontab(hour=18, minute=35),  # Executes at 6:00 PM UTC (11:30 PM IST)
     }
 }
 
