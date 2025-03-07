@@ -242,7 +242,7 @@ class StudentProfileUsecase:
             user_profile = UserProfileRepository.get(user.id)
             gender=UserProfileRepository.fetch_value_from_form('gender',user_profile.user_data)
             college=UserProfileRepository.fetch_value_from_form('College Name',user_profile.user_data)
-            phone=user_profile.phone
+            phone=user_profile.phone if user_profile.phone else UserProfileRepository.fetch_value_from_form('Phone', user_profile.user_data),  # From UserProfile
             return {
                 "status": student.status_string,
                 "user_stats": {

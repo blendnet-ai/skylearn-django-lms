@@ -11,6 +11,7 @@ from reports.repositories import UserCourseReportRepository, DailyAggregationRep
 from accounts.usecases import StudentProfileUsecase
 from evaluation.repositories import AssessmentAttemptRepository, AssessmentGenerationConfigRepository
 from evaluation.models import AssessmentGenerationConfig
+from Feedback.repositories import FeedbackResponseRepository
 import json
 from datetime import datetime
 
@@ -23,7 +24,7 @@ def fetch_all_required_data():
 
     # Fetch user IDs for profiles
     user_ids = [student.student.id for student in students]
-
+    feedback_responses = FeedbackResponseRepository.get_feedback_responses_by_user_ids(user_ids)
     # Fetch all user profiles in one query
     user_profiles = UserProfileRepository.get_all_profiles_for_user_ids(user_ids)
 
@@ -80,7 +81,8 @@ def fetch_all_required_data():
         'activity_data': activity_data,
         'meetings_data':meetings_data,
         'assessments_data': assessments_data,
-        'course_providers_data':course_providers_data
+        'course_providers_data':course_providers_data,
+        'feedback_responses':feedback_responses
     }
 
 def populate_course_provider_sheet(data):
@@ -105,7 +107,7 @@ def populate_lms_users_reporting_data(data):
             "Last Name": user.last_name,
             "Full Name": UserProfileRepository.fetch_value_from_form('name', user_profile.user_data),
             "Email": user.email,
-            "Phone": user_profile.phone,
+            "Phone": user_profile.phone if user_profile.phone else UserProfileRepository.fetch_value_from_form('Phone', user_profile.user_data),  # From UserProfile,
             'Project': UserProfileRepository.fetch_value_from_form('project', user_profile.user_data),
             "DOB": UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
             "Gender": UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
@@ -170,7 +172,7 @@ def populate_AFH_reporting_data(data):
             "Name": user.get_full_name,
             "Age": StudentProfileUsecase._calculate_age(user_profile.user_data),
             "Gender": UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
-            "Contact (10-Digit)": user_profile.phone,
+            "Contact (10-Digit)": user_profile.phone if user_profile.phone else UserProfileRepository.fetch_value_from_form('Phone', user_profile.user_data),  # From UserProfile,
             "State": UserProfileRepository.fetch_value_from_form('State', user_profile.user_data),
             "District": UserProfileRepository.fetch_value_from_form('District', user_profile.user_data),
             "College Name": UserProfileRepository.fetch_value_from_form('College Name', user_profile.user_data),
@@ -240,7 +242,7 @@ def populate_course_provider_reporting_data(data):
             'DOB': UserProfileRepository.fetch_value_from_form('dob', user_profile.user_data),
             'Gender': UserProfileRepository.fetch_value_from_form('gender', user_profile.user_data),
             'Email': user.email,  # From User model
-            'Phone Number': user_profile.phone,  # From UserProfile
+            'Phone Number': user_profile.phone if user_profile.phone else UserProfileRepository.fetch_value_from_form('Phone', user_profile.user_data),  # From UserProfile
             'Department': UserProfileRepository.fetch_value_from_form('department', user_profile.user_data),
             'State': UserProfileRepository.fetch_value_from_form('State', user_profile.user_data),
             'District': UserProfileRepository.fetch_value_from_form('District', user_profile.user_data),
@@ -366,6 +368,34 @@ def populate_lms_assessments_logs_data(data):
             'Comments': comments
         })
     return final_data
+
+def populate_lms_feedback_responses_data(data):
+    
+    final_data = []
+    feedback_responses=data['feedback_responses']
+    for response in feedback_responses:
+        user_profile = data['user_profiles_map'].get(response.user_id)
+        user = user_profile.user_id if user_profile else None
+        
+        response_data = {
+            'Student ID': response.user_id,
+            'Student Name': user.get_full_name if user else None,
+            'Student Email': user.email if user else None,
+            'Batch ID': response.course_feedback_entry.batch_id,
+            'Submitted Date': response.created_at
+        }
+
+        # Extract and directly append feedback fields
+        for section in response.data:
+            for field in section.get('fields', []):
+                label = field.get('label', '')
+                value = field.get('value', '')
+                if label:  # Only add if label exists
+                    response_data[label] = value
+        
+        final_data.append(response_data)
+    
+    return final_data
     
 def report_sheet_generator():
     # Fetch all data once
@@ -382,6 +412,7 @@ def report_sheet_generator():
     lms_activity_logs_data = populate_lms_activity_logs_data(all_data)
     lms_live_class_logs_data = populate_lms_live_classes_logs_data(all_data)  # Assuming you have this function
     lms_assessment_logs_data = populate_lms_assessments_logs_data(all_data)  # Assuming you have this function
+    lms_feedback_data=populate_lms_feedback_responses_data(all_data)
 
     # Initialize GDWrapper
     gd_wrapper = GDWrapper(speadsheet_id=settings.REPORT_SPEADSHEET_ID)
@@ -396,6 +427,7 @@ def report_sheet_generator():
     gd_wrapper.append_to_sheet('LMS Activity Logs', lms_activity_logs_data)
     gd_wrapper.append_to_sheet('LMS Live Class Logs', lms_live_class_logs_data)
     gd_wrapper.append_to_sheet('LMS Assessment Logs', lms_assessment_logs_data)
+    gd_wrapper.update_sheet('LMS Feedback',lms_feedback_data)
     if settings.DEPLOYMENT_TYPE == "ECF":
         new_spreadsheet_name = (
             f"ORBIT/ECF LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
