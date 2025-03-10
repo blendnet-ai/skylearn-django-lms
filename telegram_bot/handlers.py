@@ -47,7 +47,7 @@ class TelegramCommandHandler:
             # If we get here, either:
             # 1. This is a new connection
             # 2. This is the same user reconnecting with the same Telegram account
-            if settings.DEPLOYMENT_TYPE=="ECF"
+            if settings.DEPLOYMENT_TYPE=="ECF":
                 welcome_platform= "Udaan 2.0"
             else:
                 welcome_platform="Sakshm AI"
