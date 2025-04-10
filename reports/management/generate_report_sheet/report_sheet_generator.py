@@ -18,60 +18,82 @@ from datetime import datetime
 User = get_user_model()
 # Optimized function to get all required data at once
 def fetch_all_required_data():
-    date=datetime.now().date()
+    date = datetime.now().date()
+    excluded_emails = settings.TEST_EMAILS
+
     # Fetch all students
     students = StudentRepository.get_all_students()
-
-    # Fetch user IDs for profiles
     user_ids = [student.student.id for student in students]
+    email_map = {student.student.id: student.student.email for student in students}
+
     feedback_responses = FeedbackResponseRepository.get_feedback_responses_by_user_ids(user_ids)
-    # Fetch all user profiles in one query
     user_profiles = UserProfileRepository.get_all_profiles_for_user_ids(user_ids)
-
-    # Map user_id to profile for quick lookup
-    user_profiles_map = {profile.user_id_id: profile for profile in user_profiles}
-
-    # Fetch all courses and batches
     courses = CourseRepository.get_all_courses()
     batches = BatchRepository.get_all_batches()
 
-    # Create a map of course details by course_id for quick lookup
+    activity_data = DailyAggregationRepository.get_aggregations_by_date(date)
+    meetings_data = AttendaceRecordRepository.get_attendance_records_by_date(date)
+    assessments_data = AssessmentAttemptRepository.fetch_assessments_attempts_data_by_date(date)
+    course_providers_data = CourseProviderRepository.get_all_course_providers()
+
+    # Maps for quick lookup
+    user_profiles_map = {profile.user_id_id: profile for profile in user_profiles}
     course_map = {course.get('id'): course for course in courses}
-
-    # Create a map of batch details by batch_id for quick lookup
     batch_map = {batch.id: batch for batch in batches}
-  
-    #assessments_configs=AssessmentGenerationConfigRepository.fetch_assessment_configs_with_course_details()
- 
 
-
-    # Create a map of user_id to course_name and batch_id for each student
+    # Build user_course_batch_map
     user_course_batch_map = {}
     for student in students:
-        # Fetch all related batches
-        batches = list(student.batches.all())  
+        batches_for_student = list(student.batches.all())
         user_course_batch_map[student.student.id] = []
 
-        for batch in batches:
-            batch_id = batch.id
-            course_name,course_id,course_provider_id = batch_map.get(batch_id).course.title,batch_map.get(batch_id).course.id,batch_map.get(batch_id).course.course_provider_id if batch_id in batch_map else None
+        for batch in batches_for_student:
+            if batch.id in batch_map:
+                course = batch_map[batch.id].course
+                user_course_batch_map[student.student.id].append({
+                    "course_name": course.title,
+                    "batch_id": batch.id,
+                    "course_id": course.id,
+                    "course_provider_id": course.course_provider_id,
+                    "enrolled date": batch.created_at
+                })
+    reports_data = UserCourseReportRepository.get_reports_data()
+    # Filtering if ECF
+    if settings.DEPLOYMENT_TYPE == "ECF":
+        filtered_students = [s for s in students if s.student.email not in excluded_emails]
+        filtered_user_ids = {s.student.id for s in filtered_students}
+        filtered_user_profiles_map = {
+            uid: profile for uid, profile in user_profiles_map.items() if uid in filtered_user_ids
+        }
+        filtered_feedback_responses = [
+            fr for fr in feedback_responses if fr.user_id in filtered_user_ids
+        ]
+        filtered_user_course_batch_map = {
+            uid: data for uid, data in user_course_batch_map.items() if uid in filtered_user_ids
+        }
 
-            # Add batch details to the student's list of batches
-            user_course_batch_map[student.student.id].append({
-                "course_name": course_name,
-                "batch_id": batch_id,
-                "course_id":course_id,
-                "course_provider_id":course_provider_id,
-                "enrolled date":batch.created_at
-            })
+        filtered_activity_data = [
+            a for a in activity_data if a.user_id in filtered_user_ids
+        ]
+        filtered_meetings_data = [
+            m for m in meetings_data if m.user_id_id in filtered_user_ids
+        ]
+        filtered_assessments_data = [
+            a for a in assessments_data if a.user_id_id in filtered_user_ids
+        ]
+        filtered_reports_data=[
+            r for r in reports_data if r.user_id in filtered_user_ids
+        ]
+    else:
+        filtered_students = students
+        filtered_user_profiles_map = user_profiles_map
+        filtered_feedback_responses = feedback_responses
+        filtered_user_course_batch_map = user_course_batch_map
+        filtered_activity_data = activity_data
+        filtered_meetings_data = meetings_data
+        filtered_assessments_data = assessments_data
+        filtered_reports_data=reports_data
 
-    activity_data=DailyAggregationRepository.get_aggregations_by_date(date)
-    meetings_data=AttendaceRecordRepository.get_attendance_records_by_date(date)
-    assessments_data=AssessmentAttemptRepository.fetch_assessments_attempts_data_by_date(date)
-    course_providers_data=CourseProviderRepository.get_all_course_providers()
-    
-    
-    # Return all the data as a dictionary for easy passing
     return {
         'students': students,
         'user_profiles_map': user_profiles_map,
@@ -79,10 +101,21 @@ def fetch_all_required_data():
         'batch_map': batch_map,
         'user_course_batch_map': user_course_batch_map,
         'activity_data': activity_data,
-        'meetings_data':meetings_data,
+        'meetings_data': meetings_data,
         'assessments_data': assessments_data,
-        'course_providers_data':course_providers_data,
-        'feedback_responses':feedback_responses
+        'course_providers_data': course_providers_data,
+        'feedback_responses': feedback_responses,
+        'reports_data':reports_data,
+
+        # Filtered values
+        'filtered_students': filtered_students,
+        'filtered_user_profiles_map': filtered_user_profiles_map,
+        'filtered_feedback_responses': filtered_feedback_responses,
+        'filtered_user_course_batch_map': filtered_user_course_batch_map,
+        'filtered_activity_data': filtered_activity_data,
+        'filtered_meetings_data': filtered_meetings_data,
+        'filtered_assessments_data': filtered_assessments_data,
+        'filtered_reports_data':filtered_reports_data
     }
 
 def populate_course_provider_sheet(data):
@@ -227,8 +260,7 @@ def populate_AFH_reporting_data(data):
 
 def populate_course_provider_reporting_data(data):
     final_data = []
-    reports_data = UserCourseReportRepository.get_reports_data()
-
+    reports_data=data['reports_data']
     for report in reports_data:
         user_profile = data['user_profiles_map'].get(report.user_id)
         course_info_list = data['user_course_batch_map'].get(report.user_id, [])
@@ -263,7 +295,7 @@ def populate_course_provider_reporting_data(data):
 
 def populate_lms_time_spent_reporting_data(data):
     final_data = []
-    reports_data = UserCourseReportRepository.get_reports_data()
+    reports_data = data['reports_data']
 
     for report in reports_data:
         user_profile = data['user_profiles_map'].get(report.user_id)
@@ -432,8 +464,62 @@ def report_sheet_generator():
         new_spreadsheet_name = (
             f"ORBIT/ECF LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
         )
+        generate_sheet_without_test_users(all_data)
     else:
         new_spreadsheet_name = (
             f"LMS Reporting - {Utils.format_datetime(datetime.utcnow())}"
+        )
+    gd_wrapper.rename_spreadsheet(new_spreadsheet_name)
+
+
+
+def generate_sheet_without_test_users(all_data):
+    filtered_data={
+        'students': all_data.get('filtered_students',[]),
+        'user_profiles_map': all_data.get('filtered_user_profiles_map',{}),
+        'course_map': all_data.get('course_map',{}),
+        'batch_map': all_data.get('batch_map',{}),
+        'user_course_batch_map': all_data.get('filtered_user_course_batch_map',{}),
+        'activity_data': all_data.get('filtered_activity_data',[]),
+        'meetings_data': all_data.get('filtered_meetings_data',[]),
+        'assessments_data': all_data.get('filtered_assessments_data',[]),
+        'course_providers_data': all_data.get('course_providers_data',[]),
+        'feedback_responses': all_data.get('filtered_feedback_responses',[]),
+        'reports_data':all_data.get('filtered_reports_data',[]),
+    }    
+    # Call functions to populate data for each sheet
+    # Populate data for each reporting type
+    lms_course_provider_data=populate_course_provider_sheet(filtered_data)
+    lms_users_reporting_data = populate_lms_users_reporting_data(filtered_data)
+    lms_batch_reporting_data = populate_lms_batch_reporting_data(filtered_data)
+    afh_reporting_data = populate_AFH_reporting_data(filtered_data)
+    course_provider_reporting_data = populate_course_provider_reporting_data(filtered_data)
+    lms_time_spent_reporting_data = populate_lms_time_spent_reporting_data(filtered_data)
+    lms_activity_logs_data = populate_lms_activity_logs_data(filtered_data)
+    lms_live_class_logs_data = populate_lms_live_classes_logs_data(filtered_data)  # Assuming you have this function
+    lms_assessment_logs_data = populate_lms_assessments_logs_data(filtered_data)  # Assuming you have this function
+    lms_feedback_data=populate_lms_feedback_responses_data(filtered_data)
+
+    # Initialize GDWrapper
+    gd_wrapper = GDWrapper(speadsheet_id=settings.REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS)
+
+    # Update the Google Sheets with the populated data
+    gd_wrapper.smart_update_sheet('LMS Course Providers', lms_course_provider_data,key_fields=['CourseProviderId','CourseProviderName'])
+    gd_wrapper.update_sheet('LMS Users Reporting', lms_users_reporting_data)
+    gd_wrapper.update_sheet('LMS Batch Reporting', lms_batch_reporting_data)
+    gd_wrapper.update_sheet('AFH Reporting', afh_reporting_data)
+    gd_wrapper.update_sheet('Course Provider Reporting', course_provider_reporting_data)
+    gd_wrapper.update_sheet('LMS Time Spent Reporting', lms_time_spent_reporting_data)
+    gd_wrapper.append_to_sheet('LMS Activity Logs', lms_activity_logs_data)
+    gd_wrapper.append_to_sheet('LMS Live Class Logs', lms_live_class_logs_data)
+    gd_wrapper.append_to_sheet('LMS Assessment Logs', lms_assessment_logs_data)
+    gd_wrapper.update_sheet('LMS Feedback',lms_feedback_data)
+    if settings.DEPLOYMENT_TYPE == "ECF":
+        new_spreadsheet_name = (
+            f"ORBIT/ECF LMS Reporting (WITHOUT TEST USERS) - {Utils.format_datetime(datetime.utcnow())}"
+        )
+    else:
+        new_spreadsheet_name = (
+            f"LMS Reporting (WITHOUT TEST USERS) - {Utils.format_datetime(datetime.utcnow())}"
         )
     gd_wrapper.rename_spreadsheet(new_spreadsheet_name)

@@ -127,7 +127,7 @@ class Upload(models.Model):
     #     ],
     #     null=True
     # )
-    blob_url = models.CharField(max_length=255, blank=True)
+    blob_url = models.CharField(max_length=510, blank=True)
     updated_date = models.DateTimeField(auto_now=True)
     upload_time = models.DateTimeField(auto_now_add=True)
 

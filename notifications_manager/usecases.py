@@ -310,6 +310,7 @@ class NotificationManagerUsecase:
 
     def schedule_assessment_notifications():
         logger.info("Checking for pending assessments to schedule")
+        current_date = datetime.now().date()
         students = StudentRepository.get_all_students()
         template_pending_assessments_email = (
             NotificationTemplateRepository.get_template_by_type(
@@ -324,20 +325,23 @@ class NotificationManagerUsecase:
         user_ids = []
         variables = []
         for student in students:
-            assessments = (
-                AssessmentGenerationConfigRepository.fetch_pending_assessments_for_user(
-                    student.student_id
-                )
-            )
-            if len(assessments) > 0:
-                user_ids.append(student.student_id)
-                variables.append(
-                    {
-                        "course_name": assessments[0].modules.first().course.title,
-                        "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}".replace(' ','-'),
-                        "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
-                    }
-                )
+            assessments = AssessmentGenerationConfigRepository.fetch_pending_assessments_for_user(student.student_id)
+            if assessments and student.batches.exists():
+                for batch in student.batches.all():
+                    start_date = batch.start_date
+                    end_date = batch.end_date
+                    
+                    # Check if start_date and end_date are not None
+                    if start_date is not None and end_date is not None:
+                        if start_date <= current_date <= end_date:
+                            user_ids.append(student.student_id)
+                            variables.append({
+                                "course_name": assessments[0].modules.first().course.title,
+                                "assessment_link": f"{settings.FRONTEND_BASE_URL}/modules/{assessments[0].modules.first().course.title}?courseId={assessments[0].modules.first().course.id}".replace(' ', '-'),
+                                "email_subject": "Reminder: Complete Your Assessment Today! 🎯"
+                            })
+                            break
+
         NotificationManagerUsecase.schedule_notification(
             None,
             template_pending_assessments_email.body,
