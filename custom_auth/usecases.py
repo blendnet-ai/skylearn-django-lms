@@ -149,13 +149,14 @@ class OnBoardingUsecase:
             batch_ids = user.student.batches.all().values_list('id', flat=True)
             # Check if there are any pending forms for any batch
             has_pending_forms = False
-            for batch_id in batch_ids:
-                forms = FeedbackResponseUsecase.check_if_any_pending_mandatory_forms(
-                    user.id, batch_id, datetime.now().date()
-                )
-                if forms:
-                    has_pending_forms = True
-                    break
+            if user.email not in settings.TEST_EMAILS:
+                for batch_id in batch_ids:
+                    forms = FeedbackResponseUsecase.check_if_any_pending_mandatory_forms(
+                        user.id, batch_id, datetime.now().date()
+                    )
+                    if forms:
+                        has_pending_forms = True
+                        break
             onboarding_status["pending_forms"] = has_pending_forms
             onboarding_status["user_name"] = user_name
             return onboarding_status
