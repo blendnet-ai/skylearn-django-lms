@@ -36,6 +36,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from custom_auth.utils import CryptographyHandler
 from notifications.repositories import NotificationIntentRepository
+from evaluation.usecases import AssessmentUseCase
 import time
 
 storage_service = AzureStorageService()
@@ -761,9 +762,7 @@ class MeetingUsecase:
         return sas_url
 
     @staticmethod
-    def upload_additional_recording(
-        meeting_id: int, file_content: bytes, filename: str, content_type: str
-    ) -> str:
+    def upload_additional_recording(meeting_id: int, filename: str) -> str:
         """
         Uploads an additional recording for a meeting
 
@@ -788,11 +787,8 @@ class MeetingUsecase:
             blob_path = f"meetings/{meeting.course.code if meeting.course else 'general'}/{meeting.id}/additional_recordings/{filename}"
 
             # Upload to blob storage
-            blob_url = CourseContentDriveUsecase()._upload_to_blob(
-                file_content=file_content,
-                filename=filename,
-                blob_path=blob_path,
-                content_type=content_type,
+            blob_url = AssessmentUseCase.fetch_azure_storage_url(
+                blob_name=blob_path, container_name=settings.RECORDINGS_CONTAINER_NAME
             )
 
             # Update meeting's additional_recordings
@@ -803,7 +799,6 @@ class MeetingUsecase:
                 "filename": filename,
                 "blob_url": blob_url,
                 "uploaded_at": timezone.now().isoformat(),
-                "content_type": content_type,
             }
 
             # Add new recording to the list

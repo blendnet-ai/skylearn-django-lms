@@ -134,14 +134,13 @@ class ModuleSerializer(serializers.ModelSerializer):
 
 
 class UploadMaterialSerializer(serializers.ModelSerializer):
-    file = serializers.FileField()
     file_type = serializers.ChoiceField(choices=["reading", "video"])
     course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
     module = serializers.PrimaryKeyRelatedField(queryset=Module.objects.all())
 
     class Meta:
         model = Upload  # or whichever model you're using
-        fields = ["title", "file", "course", "module", "file_type"]
+        fields = ["title", "course", "module", "file_type"]
 
     def validate_file_type(self, value):
         """
