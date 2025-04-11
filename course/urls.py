@@ -108,4 +108,9 @@ urlpatterns = [
         name="get_student_dashboard_data",
     ),
     path("bulk-enroll/", views.BulkEnrollmentView.as_view(), name="bulk-enroll"),
+    path(
+        "course/<int:course_id>/student/<int:student_id>/unenroll/",
+        views.remove_student_enrollment,
+        name="remove_student_enrollment",
+    ),
 ]
