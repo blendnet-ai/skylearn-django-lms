@@ -537,6 +537,35 @@ class CourseUseCase:
             )
         return module_data
 
+    @staticmethod
+    def create_course(
+        title: str, summary: str, code, course_hours: int, course_provider
+    ) -> Course:
+        """Create a new course"""
+        course = CourseRepository.create_course(
+            course_provider, code, title, summary, course_hours
+        )
+        return course
+
+    @staticmethod
+    def update_course(course_id: int, **kwargs) -> Course:
+        """Update an existing course"""
+        course = Course.objects.get(id=course_id)
+
+        # Update only provided fields
+        for field, value in kwargs.items():
+            if value is not None:
+                setattr(course, field, value)
+
+        course.save()
+        return course
+
+    @staticmethod
+    def delete_course(course_id: int) -> None:
+        """Delete a course"""
+        course = Course.objects.get(id=course_id)
+        course.delete()
+
 
 class CourseContentDriveUsecase:
     def __init__(self):

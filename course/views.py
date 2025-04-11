@@ -21,6 +21,7 @@ from course.serializers import (
     PersonalMessageSerializer,
     BatchWithStudentsSerializer,
     BulkEnrollmentSerializer,
+    CourseSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -56,6 +57,7 @@ from rest_framework.decorators import (
 from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
+from accounts.repositories import CourseProviderRepository
 
 
 # admin/course provider
@@ -655,3 +657,92 @@ def remove_student_enrollment(request, course_id, student_id):
         )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def create_course(request):
+    """Create a new course"""
+    serializer = CourseSerializer(data=request.data)
+
+    if serializer.is_valid():
+        try:
+            # Get course provider using CourseProviderUsecase
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+                request.user.id
+            )
+            if not course_provider:
+                return Response(
+                    {"error": "Course provider not found for this user"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            course = CourseUseCase.create_course(
+                title=serializer.validated_data["title"],
+                code=serializer.validated_data["code"],
+                summary=serializer.validated_data["summary"],
+                course_hours=serializer.validated_data["course_hours"],
+                course_provider=course_provider,
+            )
+
+            return Response(
+                {
+                    "message": "Course created successfully",
+                    "course": CourseSerializer(course).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["PUT"])
+@authentication_classes([HardcodedAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def update_course(request, course_id):
+    """Update an existing course"""
+    try:
+        course = Course.objects.get(id=course_id)
+
+        serializer = CourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_course = CourseUseCase.update_course(
+                course_id=course_id,
+                title=serializer.validated_data.get("title"),
+                summary=serializer.validated_data.get("summary"),
+                course_hours=serializer.validated_data.get("course_hours"),
+                code=serializer.validated_data.get("code"),
+            )
+            return Response(
+                {
+                    "message": "Course updated successfully",
+                    "course": CourseSerializer(updated_course).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def delete_course(request, course_id):
+    """Delete a course"""
+    try:
+        course = Course.objects.get(id=course_id)
+
+        CourseUseCase.delete_course(course_id)
+        return Response(
+            {"message": "Course deleted successfully"}, status=status.HTTP_200_OK
+        )
+
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)

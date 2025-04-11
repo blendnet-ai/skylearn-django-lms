@@ -113,4 +113,7 @@ urlpatterns = [
         views.remove_student_enrollment,
         name="remove_student_enrollment",
     ),
+    path("course/create/", views.create_course, name="create_course"),
+    path("course/<int:course_id>/update/", views.update_course, name="update_course"),
+    path("course/<int:course_id>/delete/", views.delete_course, name="delete_course"),
 ]

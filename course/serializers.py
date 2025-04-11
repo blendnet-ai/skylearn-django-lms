@@ -1,7 +1,7 @@
 from datetime import timedelta
 from rest_framework import serializers
 
-from course.models import Batch
+from course.models import Batch, Course
 from meetings.models import Meeting, MeetingSeries
 
 
@@ -106,4 +106,16 @@ class BulkEnrollmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Only Excel (.xlsx) files are supported")
         if value.size > 5242880:  # 5MB limit
             raise serializers.ValidationError("File size cannot exceed 5MB")
+        return value
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ["id", "title", "code", "summary", "course_hours"]
+        read_only_fields = ["id"]
+
+    def validate_duration(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Duration must be greater than 0")
         return value

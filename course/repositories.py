@@ -5,7 +5,7 @@ from course.models import (
     CourseAllocation,
     Module,
     Upload,
-    UploadVideo
+    UploadVideo,
 )
 from evaluation.models import AssessmentGenerationConfig
 from django.db.models import Prefetch, F, CharField, Value
@@ -13,6 +13,16 @@ from django.db.models.functions import Concat
 
 
 class CourseRepository:
+    @staticmethod
+    def create_course(course_provider, code, title, summary, course_hours):
+        return Course.objects.create(
+            title=title,
+            summary=summary,
+            code=code,
+            course_hours=course_hours,
+            course_provider=course_provider,
+        )
+
     @staticmethod
     def get_course_by_id(course_id):
         return Course.objects.get(id=course_id)
@@ -28,29 +38,29 @@ class CourseRepository:
     @staticmethod
     def get_courses_for_student(user_id):
         return (
-        Course.objects.filter(batch__student__student_id=user_id)
-        .prefetch_related(
-            Prefetch(
-                "allocated_course",
-                queryset=CourseAllocation.objects.select_related("lecturer"),
+            Course.objects.filter(batch__student__student_id=user_id)
+            .prefetch_related(
+                Prefetch(
+                    "allocated_course",
+                    queryset=CourseAllocation.objects.select_related("lecturer"),
+                )
             )
+            .annotate(
+                lecturer_full_name=Concat(
+                    F("batch__lecturer__first_name"),  # Use batch's lecturer
+                    Value(" "),
+                    F("batch__lecturer__last_name"),
+                    output_field=CharField(),
+                ),
+                batch_id=F("batch__id"),
+            )
+            .values()
         )
-        .annotate(
-            lecturer_full_name=Concat(
-                F("batch__lecturer__first_name"),  # Use batch's lecturer
-                Value(" "),
-                F("batch__lecturer__last_name"),
-                output_field=CharField(),
-            ),
-            batch_id=F("batch__id")
-        )
-        .values()
-    )
 
     @staticmethod
     def get_all_courses():
         return Course.objects.all().values()
-    
+
     @staticmethod
     def get_courses_for_course_provider_admin(course_provider_admin_id):
         return Course.objects.filter(
@@ -67,10 +77,20 @@ class CourseRepository:
             modules__course_id=course_id
         ).count()
 
+
 class BatchRepository:
     @staticmethod
-    def create_batch(course, title, lecturer, start_date=None, end_date=None,form=None):
-        return Batch.objects.get_or_create(course=course, title=title, lecturer=lecturer, start_date=start_date, end_date=end_date,form=form)
+    def create_batch(
+        course, title, lecturer, start_date=None, end_date=None, form=None
+    ):
+        return Batch.objects.get_or_create(
+            course=course,
+            title=title,
+            lecturer=lecturer,
+            start_date=start_date,
+            end_date=end_date,
+            form=form,
+        )
 
     @staticmethod
     def get_batch_by_id(batch_id):
@@ -90,16 +110,16 @@ class BatchRepository:
         batch.lecturer = lecturer
         batch.save()
         return batch
-    
+
     @staticmethod
     def get_all_batches():
         return Batch.objects.all()
-    
+
     @staticmethod
     def get_batch_by_user_id_and_course_id(user_id, course_id):
-        return Batch.objects.filter(student__student_id=user_id, course_id=course_id).first()
-
-
+        return Batch.objects.filter(
+            student__student_id=user_id, course_id=course_id
+        ).first()
 
 
 class LiveClassSeriesBatchAllocationRepository:
@@ -133,11 +153,9 @@ class ModuleRepository:
     @staticmethod
     def get_or_create_module(course, title, order_in_course):
         return Module.objects.get_or_create(
-            course=course,
-            title=title,
-            order_in_course=order_in_course
+            course=course, title=title, order_in_course=order_in_course
         )
-        
+
     @staticmethod
     def get_module_details_by_course_id(course_id):
         modules = (
@@ -159,50 +177,38 @@ class UploadRepository:
     @staticmethod
     def get_existing_upload(file_name, course, module):
         return Upload.objects.filter(
-            title=file_name,
-            course=course,
-            module=module
+            title=file_name, course=course, module=module
         ).first()
 
     @staticmethod
     def create_upload(title, course, module, blob_url):
         return Upload.objects.create(
-            title=title,
-            course=course,
-            module=module,
-            blob_url=blob_url
+            title=title, course=course, module=module, blob_url=blob_url
         )
-    
+
     def get_reading_resource_by_id(resource_id):
-        resource=Upload.objects.filter(id=resource_id).first()
+        resource = Upload.objects.filter(id=resource_id).first()
         return resource
+
 
 class UploadVideoRepository:
     @staticmethod
     def get_existing_upload(file_name, course, module):
         return UploadVideo.objects.filter(
-            title=file_name,
-            course=course,
-            module=module
+            title=file_name, course=course, module=module
         ).first()
 
     @staticmethod
     def create_upload(title, course, module, blob_url):
         return UploadVideo.objects.create(
-            title=title,
-            course=course,
-            module=module,
-            blob_url=blob_url
+            title=title, course=course, module=module, blob_url=blob_url
         )
 
     @staticmethod
     def get_video_count_by_course(course_id):
         videos = UploadVideo.objects.filter(course_id=course_id)
         return videos.count()
-    
+
     def get_video_resource_by_id(resource_id):
-        resource=UploadVideo.objects.filter(id=resource_id).first()
+        resource = UploadVideo.objects.filter(id=resource_id).first()
         return resource
-        
-
-
