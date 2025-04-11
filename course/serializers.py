@@ -21,11 +21,14 @@ class LiveClassSeriesSerializer(serializers.ModelSerializer):
             "weekday_schedule",
             "monthly_day",
         ]
-    def validate_batch_ids(self,value):
-        if len(value) >1:
-            raise serializers.ValidationError("You can create live class series for only one batch at a time")
+
+    def validate_batch_ids(self, value):
+        if len(value) > 1:
+            raise serializers.ValidationError(
+                "You can create live class series for only one batch at a time"
+            )
         return value
-        
+
     def validate_duration(self, value):
         """
         Validate that duration is positive and reasonable
@@ -74,7 +77,8 @@ class CourseMessageSerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
     message = serializers.CharField()
     subject = serializers.CharField()
-    
+
+
 class PersonalMessageSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     message = serializers.CharField()
@@ -86,6 +90,20 @@ class BatchWithStudentsSerializer(serializers.Serializer):
     start_date = serializers.DateField(required=False)
     end_date = serializers.DateField(required=False)
     student_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        required=False
+        child=serializers.IntegerField(), required=False
     )
+
+
+class BulkEnrollmentSerializer(serializers.Serializer):
+    file = serializers.FileField(
+        required=True,
+        allow_empty_file=False,
+        help_text="Upload Excel file containing student enrollment data",
+    )
+
+    def validate_file(self, value):
+        if not value.name.endswith(".xlsx"):
+            raise serializers.ValidationError("Only Excel (.xlsx) files are supported")
+        if value.size > 5242880:  # 5MB limit
+            raise serializers.ValidationError("File size cannot exceed 5MB")
+        return value

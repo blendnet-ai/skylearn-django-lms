@@ -1,4 +1,5 @@
 from accounts.authentication import FirebaseAuthentication
+from custom_auth.authentication import HardcodedAuthentication
 from accounts.models import Student, User
 from accounts.permissions import (
     IsCourseProviderAdmin,
@@ -19,6 +20,7 @@ from course.serializers import (
     LiveClassUpdateSerializer,
     PersonalMessageSerializer,
     BatchWithStudentsSerializer,
+    BulkEnrollmentSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -34,6 +36,14 @@ from course.usecases import (
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
 from Feedback.repositories import FeedbackFormRepository
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from .services import BulkEnrollmentService
+from rest_framework import serializers
+
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -45,6 +55,7 @@ from rest_framework.decorators import (
 from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
+
 
 # admin/course provider
 @api_view(["POST"])
@@ -353,17 +364,21 @@ def get_modules_and_resources_by_course_id(request, course_id):
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_assessments_by_module_id(request, course_id, module_id):
-    user_id=request.user.id
+    user_id = request.user.id
     # extract module assessment_generation_configs
-    assessment_generation_configs = AssessmentModuleUsecase.fetch_assessment_display_data(user_id,course_id,module_id)
+    assessment_generation_configs = (
+        AssessmentModuleUsecase.fetch_assessment_display_data(
+            user_id, course_id, module_id
+        )
+    )
 
-    if not assessment_generation_configs or len(assessment_generation_configs)==0:
+    if not assessment_generation_configs or len(assessment_generation_configs) == 0:
         return Response(
-            {"error": f"No assessment configs for course {course_id} module {module_id}"},
+            {
+                "error": f"No assessment configs for course {course_id} module {module_id}"
+            },
             status=status.HTTP_404_NOT_FOUND,
         )
-
-    
 
     return Response(
         {"assessment_generation_configs": assessment_generation_configs},
@@ -469,7 +484,6 @@ def get_student_details(request, student_id):
         return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 
-
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
@@ -494,6 +508,7 @@ def send_course_batch_message(request):
     except (ValueError, BatchUseCase.BatchDoesNotExist) as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
@@ -504,13 +519,12 @@ def send_course_personal_message(request):
     try:
         PersonalMessageUsecase.send_personal_message(
             user_id=serializer.validated_data["user_id"],
-            message=serializer.validated_data["message"]
+            message=serializer.validated_data["message"],
         )
-        return Response(
-            {"message": "Messages sent"}, status=status.HTTP_200_OK
-        )
+        return Response({"message": "Messages sent"}, status=status.HTTP_200_OK)
     except (ValueError, User.DoesNotExist) as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(["POST"])
 @authentication_classes([FirebaseAuthentication])
@@ -521,10 +535,12 @@ def create_batch_with_students(request, course_id):
     form = FeedbackFormRepository.get(id=1)
     if form is None:
         return Response(
-            {"error": "Error in creating Batch : Specified Feedback Form doesnot exists"}, 
-                status=status.HTTP_400_BAD_REQUEST
+            {
+                "error": "Error in creating Batch : Specified Feedback Form doesnot exists"
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
     if serializer.is_valid():
         try:
             # Create batch
@@ -534,30 +550,28 @@ def create_batch_with_students(request, course_id):
                 lecturer_id=serializer.validated_data["lecturer_id"],
                 start_date=serializer.validated_data.get("start_date"),
                 end_date=serializer.validated_data.get("end_date"),
-                form=form
+                form=form,
             )
 
-            
             # Assign students
             student_ids = serializer.validated_data.get("student_ids", [])
-            BatchUseCase.add_students_to_batch(
-                batch.id, 
-                student_ids
+            BatchUseCase.add_students_to_batch(batch.id, student_ids)
+
+            return Response(
+                {"message": "Batch created successfully", "batch_id": batch.id},
+                status=status.HTTP_201_CREATED,
             )
 
-            
-            return Response({
-                "message": "Batch created successfully",
-                "batch_id": batch.id
-            }, status=status.HTTP_201_CREATED)
-            
-        except (ValueError, Course.DoesNotExist, User.DoesNotExist, BatchUseCase.UserIsNotLecturerException) as e:
-            return Response(
-                {"error": str(e)}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
+        except (
+            ValueError,
+            Course.DoesNotExist,
+            User.DoesNotExist,
+            BatchUseCase.UserIsNotLecturerException,
+        ) as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
@@ -565,17 +579,52 @@ def create_batch_with_students(request, course_id):
 def get_unassigned_students(request, course_code):
     """Get students who have the course code but aren't assigned to a batch"""
     students = UnassignedStudentsUsecase.get_unassigned_students_for_course(course_code)
-    return Response({
-        "students": students,
-        "total_count": len(students)
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {"students": students, "total_count": len(students)}, status=status.HTTP_200_OK
+    )
+
 
 @api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn, IsStudent])
 def get_student_dashboard_data(request):
     """Get student dashboard data"""
-    data=StudentDashboardUsecase.compute_course_hours(request.user)
+    data = StudentDashboardUsecase.compute_course_hours(request.user)
     return Response(data, status=status.HTTP_200_OK)
 
 
+class BulkEnrollmentView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsLoggedIn, IsCourseProviderAdmin]
+    serializer_class = BulkEnrollmentSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file = serializer.validated_data["file"]
+            service = BulkEnrollmentService(file)
+            result = service.process()
+
+            return Response(
+                {
+                    "message": "Bulk enrollment processed successfully",
+                    "data": {
+                        "success_count": result["success_count"],
+                        "failed_count": result["failed_count"],
+                        "success": result["success"],  # Limit success examples
+                        "failures": result["failed"],  # Show all failures for debugging
+                    },
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to process file: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

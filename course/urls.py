@@ -93,19 +93,19 @@ urlpatterns = [
         name="send_course_personal_message",
     ),
     path(
-        'course/<course_id>/batch/create-with-students/', 
-         views.create_batch_with_students, 
-         name='create_batch_with_students'
+        "course/<course_id>/batch/create-with-students/",
+        views.create_batch_with_students,
+        name="create_batch_with_students",
     ),
     path(
-        'course/<course_code>/get-unassigned-students/', 
-        views.get_unassigned_students, 
-        name='get_unassigned_students'
+        "course/<course_code>/get-unassigned-students/",
+        views.get_unassigned_students,
+        name="get_unassigned_students",
     ),
     path(
-        'student-dashboard/', 
-        views.get_student_dashboard_data, 
-        name='get_student_dashboard_data'
-    )   
-
+        "student-dashboard/",
+        views.get_student_dashboard_data,
+        name="get_student_dashboard_data",
+    ),
+    path("bulk-enroll/", views.BulkEnrollmentView.as_view(), name="bulk-enroll"),
 ]
