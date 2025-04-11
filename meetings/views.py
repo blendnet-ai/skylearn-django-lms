@@ -89,8 +89,8 @@ class GetJoiningUrl(APIView):
 
 
 class UploadAdditionalRecording(APIView):
-    permission_classes = [IsLoggedIn, IsCourseProviderAdminOrLecturer]
-    authentication_classes = [FirebaseAuthentication]
+    # permission_classes = [IsLoggedIn, IsCourseProviderAdminOrLecturer]
+    # authentication_classes = [FirebaseAuthentication]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, meeting_id):
@@ -101,24 +101,16 @@ class UploadAdditionalRecording(APIView):
 
         if serializer.is_valid():
             try:
-                file = serializer.validated_data["file"]
                 filename = serializer.validated_data["filename"]
-
-                # Read file content
-                file_content = file.read()
-                content_type = file.content_type
 
                 # Upload recording using usecase
                 blob_url = MeetingUsecase.upload_additional_recording(
-                    meeting_id=meeting_id,
-                    file_content=file_content,
-                    filename=filename,
-                    content_type=content_type,
+                    meeting_id=meeting_id, filename=filename
                 )
 
                 return Response(
                     {
-                        "message": "Recording uploaded successfully",
+                        "message": "Recording Blob created successfully",
                         "blob_url": blob_url,
                     },
                     status=status.HTTP_201_CREATED,

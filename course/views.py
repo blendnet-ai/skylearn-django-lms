@@ -49,7 +49,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from .services import BulkEnrollmentService
 from rest_framework import serializers
-
+from evaluation.usecases import AssessmentUseCase
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -872,22 +872,16 @@ def upload_material(request):
 
             # Handle file upload to blob storage only if it's a new upload or blob_url is empty
             if created or not upload.blob_url:
-                file = serializer.validated_data["file"]
-                file_content = file.read()
-                content_type = file.content_type
-
-                blob_url = CourseContentDriveUsecase()._upload_to_blob(
-                    file_content=file_content,
-                    filename=title,
-                    blob_path=blob_path,
-                    content_type=content_type,
+                blob_url = AssessmentUseCase.fetch_azure_storage_url(
+                    blob_name=blob_path,
+                    container_name=settings.AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME,
                 )
                 upload.blob_url = blob_url
                 upload.save()
 
             return Response(
                 {
-                    "message": f"{'Created' if created else 'Updated'} {file_type} material successfully",
+                    "message": f"{'Created' if created else 'Updated'} {file_type} material Blob successfully",
                     "upload_id": upload.id,
                     "blob_url": upload.blob_url,
                 },

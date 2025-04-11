@@ -23,14 +23,4 @@ class MeetingSerializer:
 
 
 class AdditionalRecordingSerializer(serializers.Serializer):
-    file = serializers.FileField()
     filename = serializers.CharField(max_length=255)
-
-    def validate_file(self, value):
-        """Validate file is a video"""
-        valid_types = ["video/mp4", "video/quicktime", "video/x-msvideo"]
-        if value.content_type not in valid_types:
-            raise serializers.ValidationError(
-                "Only video files (mp4, mov, avi) are allowed"
-            )
-        return value
