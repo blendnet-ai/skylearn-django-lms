@@ -32,6 +32,7 @@ from course.usecases import (
     AssessmentModuleUsecase,
     StudentDashboardUsecase,
     UnassignedStudentsUsecase,
+    StudentEnrollmentUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -628,3 +629,29 @@ class BulkEnrollmentView(APIView):
                 {"error": f"Failed to process file: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def remove_student_enrollment(request, course_id, student_id):
+    """Remove student enrollment from a course"""
+    try:
+        result = StudentEnrollmentUsecase.remove_student_enrollment(
+            student_id=student_id, course_id=course_id
+        )
+        return Response(result, status=status.HTTP_200_OK)
+
+    except StudentEnrollmentUsecase.StudentNotFound:
+        return Response(
+            {"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+    except StudentEnrollmentUsecase.CourseNotFound:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+    except StudentEnrollmentUsecase.BatchNotFound:
+        return Response(
+            {"error": "Student is not enrolled in this course"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
