@@ -875,6 +875,9 @@ class CourseContentDriveUsecase:
         logging.info(f"Uploaded file to blob storage: {blob_url}")
         return blob_url
 
+    def _delete_blob(self, blob_url):
+        self.storage_service.delete_blob(blob_url)
+
 
 class BatchMessageUsecase:
     @staticmethod
