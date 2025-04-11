@@ -116,4 +116,19 @@ urlpatterns = [
     path("course/create/", views.create_course, name="create_course"),
     path("course/<int:course_id>/update/", views.update_course, name="update_course"),
     path("course/<int:course_id>/delete/", views.delete_course, name="delete_course"),
+    path(
+        "course/<int:course_id>/module/create/",
+        views.create_module,
+        name="create_module",
+    ),
+    path(
+        "course/<int:course_id>/module/<int:module_id>/update/",
+        views.update_module,
+        name="update_module",
+    ),
+    path(
+        "course/<int:course_id>/module/<int:module_id>/delete/",
+        views.delete_module,
+        name="delete_module",
+    ),
 ]

@@ -1,7 +1,7 @@
 from datetime import timedelta
 from rest_framework import serializers
 
-from course.models import Batch, Course
+from course.models import Batch, Course, Module
 from meetings.models import Meeting, MeetingSeries
 
 
@@ -118,4 +118,16 @@ class CourseSerializer(serializers.ModelSerializer):
     def validate_duration(self, value):
         if value <= 0:
             raise serializers.ValidationError("Duration must be greater than 0")
+        return value
+
+
+class ModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ["id", "title", "order_in_course"]
+        read_only_fields = ["id"]
+
+    def validate_order_in_course(self, value):
+        if value < 1:
+            raise serializers.ValidationError("Module order must be greater than 0")
         return value
