@@ -89,8 +89,8 @@ class GetJoiningUrl(APIView):
 
 
 class UploadAdditionalRecording(APIView):
-    # permission_classes = [IsLoggedIn, IsCourseProviderAdminOrLecturer]
-    # authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsLoggedIn, IsCourseProviderAdminOrLecturer]
+    authentication_classes = [FirebaseAuthentication]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, meeting_id):

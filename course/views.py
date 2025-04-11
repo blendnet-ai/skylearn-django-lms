@@ -834,8 +834,8 @@ def delete_module(request, course_id, module_id):
 
 
 @api_view(["POST"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
 def upload_material(request):
     """Upload a reading material"""
     serializer = UploadMaterialSerializer(data=request.data)
