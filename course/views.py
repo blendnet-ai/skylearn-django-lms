@@ -22,6 +22,7 @@ from course.serializers import (
     BatchWithStudentsSerializer,
     BulkEnrollmentSerializer,
     CourseSerializer,
+    ModuleSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -58,6 +59,7 @@ from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
 from accounts.repositories import CourseProviderRepository
+from course.repositories import ModuleRepository
 
 
 # admin/course provider
@@ -746,3 +748,83 @@ def delete_course(request, course_id):
 
     except Course.DoesNotExist:
         return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def create_module(request, course_id):
+    """Create a new module in a course"""
+    try:
+        course = Course.objects.get(id=course_id)
+        serializer = ModuleSerializer(data=request.data)
+
+        if serializer.is_valid():
+            module = ModuleRepository.create_module(
+                course=course,
+                title=serializer.validated_data["title"],
+                order_in_course=serializer.validated_data["order_in_course"],
+            )
+
+            return Response(
+                {
+                    "message": "Module created successfully",
+                    "module": ModuleSerializer(module).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["PUT"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def update_module(request, course_id, module_id):
+    """Update an existing module"""
+    try:
+        module = Module.objects.get(id=module_id, course_id=course_id)
+        serializer = ModuleSerializer(module, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            updated_module = ModuleRepository.update_module(
+                module_id,
+                title=serializer.validated_data.get("title"),
+                order_in_course=serializer.validated_data.get("order_in_course"),
+            )
+
+            return Response(
+                {
+                    "message": "Module updated successfully",
+                    "module": ModuleSerializer(updated_module).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Module.DoesNotExist:
+        return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def delete_module(request, course_id, module_id):
+    """Delete a module"""
+    try:
+        module = Module.objects.get(id=module_id, course_id=course_id)
+        ModuleRepository.delete_module(module_id)
+
+        # Reorder remaining modules
+        ModuleRepository.reorder_modules(course_id)
+
+        return Response(
+            {"message": "Module deleted successfully"}, status=status.HTTP_200_OK
+        )
+
+    except Module.DoesNotExist:
+        return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
