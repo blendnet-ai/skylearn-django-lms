@@ -23,6 +23,8 @@ from course.serializers import (
     BulkEnrollmentSerializer,
     CourseSerializer,
     ModuleSerializer,
+    UploadMaterialSerializer,
+    DeleteMaterialTypeSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -35,6 +37,7 @@ from course.usecases import (
     StudentDashboardUsecase,
     UnassignedStudentsUsecase,
     StudentEnrollmentUsecase,
+    CourseContentDriveUsecase,
 )
 from meetings.models import Meeting, MeetingSeries
 from meetings.usecases import MeetingSeriesUsecase, MeetingUsecase
@@ -59,7 +62,7 @@ from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
 from accounts.repositories import CourseProviderRepository
-from course.repositories import ModuleRepository
+from course.repositories import ModuleRepository, CourseRepository
 
 
 # admin/course provider
@@ -828,3 +831,102 @@ def delete_module(request, course_id, module_id):
 
     except Module.DoesNotExist:
         return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def upload_material(request):
+    """Upload a reading material"""
+    serializer = UploadMaterialSerializer(data=request.data)
+
+    if serializer.is_valid():
+        try:
+            course = serializer.validated_data["course"]
+            module = serializer.validated_data["module"]
+            file_type = serializer.validated_data["file_type"]
+            title = serializer.validated_data["title"]
+
+            # Verify module belongs to course
+            if module.course_id != course.id:
+                raise ValueError("Module does not belong to the specified course")
+
+            if file_type == "reading":
+                # Get or create Upload object
+                upload, created = Upload.objects.get_or_create(
+                    title=title,
+                    course=course,
+                    module=module,
+                    defaults={"blob_url": ""},  # Only used when creating new object
+                )
+                blob_path = f"{course.code}/{module.title}/Reading Resources/{title}"
+            elif file_type == "video":
+                # Get or create UploadVideo object
+                upload, created = UploadVideo.objects.get_or_create(
+                    title=title,
+                    course=course,
+                    module=module,
+                    defaults={"blob_url": ""},  # Only used when creating new object
+                )
+                blob_path = f"{course.code}/{module.title}/Video Resources/{title}"
+
+            # Handle file upload to blob storage only if it's a new upload or blob_url is empty
+            if created or not upload.blob_url:
+                file = serializer.validated_data["file"]
+                file_content = file.read()
+                content_type = file.content_type
+
+                blob_url = CourseContentDriveUsecase()._upload_to_blob(
+                    file_content=file_content,
+                    filename=title,
+                    blob_path=blob_path,
+                    content_type=content_type,
+                )
+                upload.blob_url = blob_url
+                upload.save()
+
+            return Response(
+                {
+                    "message": f"{'Created' if created else 'Updated'} {file_type} material successfully",
+                    "upload_id": upload.id,
+                    "blob_url": upload.blob_url,
+                },
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": f"Error uploading material: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def delete_material(request, type, upload_id):
+    """Delete a reading material"""
+    # Validate type parameter
+    type_serializer = DeleteMaterialTypeSerializer(data={"type": type})
+    if not type_serializer.is_valid():
+        return Response(type_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Use appropriate model based on type
+        if type == "reading":
+            upload = Upload.objects.get(id=upload_id)
+        elif type == "video":
+            upload = UploadVideo.objects.get(id=upload_id)
+
+        upload.delete()
+        return Response(
+            {"message": f"{type.capitalize()} material deleted successfully"},
+            status=status.HTTP_200_OK,
+        )
+    except (Upload.DoesNotExist, UploadVideo.DoesNotExist):
+        return Response(
+            {"error": f"{type.capitalize()} material not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )

@@ -26,7 +26,10 @@ class CourseRepository:
 
     @staticmethod
     def get_course_by_id(course_id):
-        return Course.objects.get(id=course_id)
+        try:
+            return Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return None
 
     @staticmethod
     def get_courses_by_course_provider(course_provider_id):
@@ -151,6 +154,13 @@ class LiveClassSeriesBatchAllocationRepository:
 
 
 class ModuleRepository:
+    @staticmethod
+    def get_module_by_id(module_id):
+        try:
+            return Module.objects.get(id=module_id)
+        except Module.DoesNotExist:
+            return None
+
     @staticmethod
     def get_or_create_module(course, title, order_in_course):
         return Module.objects.get_or_create(

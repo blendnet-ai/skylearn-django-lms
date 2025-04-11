@@ -131,4 +131,14 @@ urlpatterns = [
         views.delete_module,
         name="delete_module",
     ),
+    path(
+        "materials/upload/",
+        views.upload_material,
+        name="upload_material",
+    ),
+    path(
+        "materials/<str:type>/<int:upload_id>/delete/",
+        views.delete_material,
+        name="delete_material",
+    ),
 ]

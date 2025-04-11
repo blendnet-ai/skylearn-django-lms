@@ -1,7 +1,7 @@
 from datetime import timedelta
 from rest_framework import serializers
 
-from course.models import Batch, Course, Module
+from course.models import Batch, Course, Module, Upload, UploadVideo
 from meetings.models import Meeting, MeetingSeries
 
 
@@ -131,3 +131,28 @@ class ModuleSerializer(serializers.ModelSerializer):
         if value < 1:
             raise serializers.ValidationError("Module order must be greater than 0")
         return value
+
+
+class UploadMaterialSerializer(serializers.ModelSerializer):
+    file = serializers.FileField()
+    file_type = serializers.ChoiceField(choices=["reading", "video"])
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
+    module = serializers.PrimaryKeyRelatedField(queryset=Module.objects.all())
+
+    class Meta:
+        model = Upload  # or whichever model you're using
+        fields = ["title", "file", "course", "module", "file_type"]
+
+    def validate_file_type(self, value):
+        """
+        Validate file_type is either 'reading' or 'video'
+        """
+        if value not in ["reading", "video"]:
+            raise serializers.ValidationError(
+                "File type must be either 'reading' or 'video'"
+            )
+        return value
+
+
+class DeleteMaterialTypeSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["reading", "video"])
