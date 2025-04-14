@@ -6,6 +6,7 @@ from ast import literal_eval
 
 from dotenv import load_dotenv
 from attr.converters import to_bool
+
 load_dotenv()
 
 from celery.schedules import crontab
@@ -22,7 +23,14 @@ SECRET_KEY = config(
 )
 
 
-ALLOWED_HOSTS = ["127.0.0.1", "4.188.78.208","20.244.100.109","lms.sakshm.com", "localhost","orbit-lms.sakshm.com"]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "4.188.78.208",
+    "20.244.100.109",
+    "lms.sakshm.com",
+    "localhost",
+    "orbit-lms.sakshm.com",
+]
 
 LOCAL_MEM_CACHE = {
     "default": {
@@ -100,7 +108,7 @@ PROJECT_APPS = [
     "events_logger.apps.EventsLoggerConfig",
     "notifications_manager.apps.NotificationsManagerConfig",
     "notifications.apps.NotificationsConfig",
-    "Feedback.apps.FeedbackConfig"
+    "Feedback.apps.FeedbackConfig",
 ]
 
 
@@ -152,7 +160,7 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages"
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -205,9 +213,7 @@ def gettext(s):
     return s
 
 
-LANGUAGES = (
-    ("en", gettext("English")),
-)
+LANGUAGES = (("en", gettext("English")),)
 
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "en"
@@ -246,9 +252,9 @@ SASS_PROCESSOR_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-VERSION = os.environ.get('VERSION', 'VERSION:local-or-error!')
+VERSION = os.environ.get("VERSION", "VERSION:local-or-error!")
 
-SENTRY_TRACES_SAMPLE_RATE=int(os.environ.get("SENTRY_TRACES_SAMPLE_RATE",0))
+SENTRY_TRACES_SAMPLE_RATE = int(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", 0))
 
 if ENV != "local":
     import sentry_sdk, logging
@@ -259,13 +265,18 @@ if ENV != "local":
 
     sentry_logging = LoggingIntegration(
         level=logging.INFO,  # Capture info and above as breadcrumbs
-        event_level=logging.ERROR  # Send ERROR and above as events
+        event_level=logging.ERROR,  # Send ERROR and above as events
     )
 
     sentry_sdk.init(
         dsn=os.environ.get("SENTRY_DSN", ""),
         traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
-        integrations=[sentry_logging, DjangoIntegration(), CeleryIntegration(), RedisIntegration()],
+        integrations=[
+            sentry_logging,
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
         send_default_pii=True,
         environment=ENV,
         release=VERSION,
@@ -286,10 +297,11 @@ if True:
         logging_level = "INFO"
 else:
     logging_format = (
-        '%(levelname)s [%(request_id)s] user_id=%(user_id)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s'
-        '%(filename)s %(lineno)d %(message)s')
+        "%(levelname)s [%(request_id)s] user_id=%(user_id)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s"
+        "%(filename)s %(lineno)d %(message)s"
+    )
     logging_level = "INFO"
-    
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -393,51 +405,64 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE  # Use the same timezone as Django
 
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Celery Beat Settings (if you need scheduled tasks)
 
 CELERY_BEAT_SCHEDULE = {
-    'check-for-completed-meetings-every-1-hour': {
-        'task': 'meetings.tasks.process_completed_meetings_task',
-        'schedule': crontab(hour='*', minute=0),  # Executes every 1 hour
+    "check-for-completed-meetings-every-1-hour": {
+        "task": "meetings.tasks.process_completed_meetings_task",
+        "schedule": crontab(hour="*", minute=0),  # Executes every 1 hour
     },
-    'process-activity-aggregations': {
-        'task': 'reports.tasks.process_aggregation',
-        'schedule': crontab(hour=17, minute=30),  # Executes at 5:30 PM UTC (11 PM IST)
+    "process-activity-aggregations": {
+        "task": "reports.tasks.process_aggregation",
+        "schedule": crontab(hour=17, minute=30),  # Executes at 5:30 PM UTC (11 PM IST)
     },
-    'process-report-aggregations': {
-        'task': 'reports.tasks.process_reports',
-        'schedule': crontab(hour=18, minute=0),  # Executes at 6:00 PM UTC (11:30 PM IST)
+    "process-report-aggregations": {
+        "task": "reports.tasks.process_reports",
+        "schedule": crontab(
+            hour=18, minute=0
+        ),  # Executes at 6:00 PM UTC (11:30 PM IST)
     },
-    'generate-report-sheet': {
-        'task': 'reports.tasks.generate_report_sheet',
-        'schedule': crontab(hour=18, minute=15),  # Executes at 6:15 PM UTC (11:45 AM IST)
+    "generate-report-sheet": {
+        "task": "reports.tasks.generate_report_sheet",
+        "schedule": crontab(
+            hour=18, minute=15
+        ),  # Executes at 6:15 PM UTC (11:45 AM IST)
     },
-    'schedule-meeting-notifications': { 
-        'task': 'notifications_manager.tasks.schedule_meeting_notifications_task', 
-        'schedule': crontab(hour=18, minute=35),  #  Executes at 6:35 PM UTC (12:05 AM IST next day)
-    },         
-    'schedule-missed-lecture-notifications': { 
-        'task': 'notifications_manager.tasks.schedule_missed_lecture_notifications_task', 
-        'schedule': crontab(hour=3, minute=30),  # Executes at 6:40 PM UTC (12:10 AM IST next day)
-    }, 
-
-    'schedule-inactive-user-notifications': { 
-        'task': 'notifications_manager.tasks.schedule_inactive_user_notifications_task', 
-        'schedule': crontab(hour=4, minute=30),  # Executes at 6:45 PM UTC (12:15 AM IST next day)
-    }, 
-    'schedule-pending-assessments-notifications': { 
-        'task': 'notifications_manager.tasks.schedule_pending_assessments_notifications_task', 
-        'schedule': crontab(hour=4, minute=35),  # Executes at 6:50 PM UTC (12:20 AM IST next day)
+    "schedule-meeting-notifications": {
+        "task": "notifications_manager.tasks.schedule_meeting_notifications_task",
+        "schedule": crontab(
+            hour=18, minute=35
+        ),  #  Executes at 6:35 PM UTC (12:05 AM IST next day)
     },
-    'check-for-pending-intents': { 
-        'task': 'notifications.tasks.process_notification_intents', 
-        'schedule': crontab(minute='*/5'),  # Runs every 5 minutes
+    "schedule-missed-lecture-notifications": {
+        "task": "notifications_manager.tasks.schedule_missed_lecture_notifications_task",
+        "schedule": crontab(
+            hour=3, minute=30
+        ),  # Executes at 6:40 PM UTC (12:10 AM IST next day)
     },
-    'check-for-student-status': { 
-        'task': 'accounts.tasks.update_student_status_task', 
-        'schedule': crontab(hour=18, minute=35),  # Executes at 6:00 PM UTC (11:30 PM IST)
-    }
+    "schedule-inactive-user-notifications": {
+        "task": "notifications_manager.tasks.schedule_inactive_user_notifications_task",
+        "schedule": crontab(
+            hour=4, minute=30
+        ),  # Executes at 6:45 PM UTC (12:15 AM IST next day)
+    },
+    "schedule-pending-assessments-notifications": {
+        "task": "notifications_manager.tasks.schedule_pending_assessments_notifications_task",
+        "schedule": crontab(
+            hour=4, minute=35
+        ),  # Executes at 6:50 PM UTC (12:20 AM IST next day)
+    },
+    "check-for-pending-intents": {
+        "task": "notifications.tasks.process_notification_intents",
+        "schedule": crontab(minute="*/5"),  # Runs every 5 minutes
+    },
+    "check-for-student-status": {
+        "task": "accounts.tasks.update_student_status_task",
+        "schedule": crontab(
+            hour=18, minute=35
+        ),  # Executes at 6:00 PM UTC (11:30 PM IST)
+    },
 }
 
 # Task-specific settings
@@ -487,7 +512,9 @@ FIREBASE_MEASUREMENT_ID = os.environ["FIREBASE_MEASUREMENT_ID"]
 ### SERVICE SETTINGS
 ## WHISPER-TIMESTAMP SERVICE
 WHISPER_TIMESTAMP_SERVICE_ENDPOINT = os.environ["WHISPER_TIMESTAMP_SERVICE_ENDPOINT"]
-WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ["WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"]
+WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN = os.environ[
+    "WHISPER_TIMESTAMP_SERVICE_AUTH_TOKEN"
+]
 
 ## CEFR_LEVEL_SERVICE
 CEFR_LEVEL_SERVICE_ENDPOINT = os.environ["CEFR_LEVEL_SERVICE_ENDPOINT"]
@@ -504,15 +531,19 @@ AZURE_TEXT_ANALYTICS_CLIENT_ENDPOINT = os.environ[
 DEEPGRAM_KEY = os.environ["DEEPGRAM_KEY"]
 
 ANYMAIL = {
-    "SENDGRID_API_KEY":os.environ["SENDGRID_API_KEY"]
+    "SENDGRID_API_KEY": os.environ["SENDGRID_API_KEY"]
     # "MAILJET_API_KEY": os.environ["MAILJET_API_KEY"],
     # "MAILJET_SECRET_KEY": os.environ["MAILJET_SECRET_KEY"],
 }
 
-#EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
+# EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
 EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
 DEPLOYMENT_TYPE = os.environ.get("DEPLOYMENT_TYPE", "DEFAULT")
-DEFAULT_FROM_EMAIL = "lms.noreply@theearthcarefoundation.org" if DEPLOYMENT_TYPE == "ECF" else "contact@sakshm.com"
+DEFAULT_FROM_EMAIL = (
+    "lms.noreply@theearthcarefoundation.org"
+    if DEPLOYMENT_TYPE == "ECF"
+    else "contact@sakshm.com"
+)
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 ADMINS = os.environ["ADMINS"]
@@ -551,13 +582,23 @@ AUTH_USER_MODEL = "accounts.User"
 STUDENT_ID_PREFIX = config("STUDENT_ID_PREFIX", "ugr")
 LECTURER_ID_PREFIX = config("LECTURER_ID_PREFIX", "lec")
 
- 
-STORAGE_ACCOUNT_KEY=os.environ.get("STORAGE_ACCOUNT_KEY")   
-RECORDINGS_CONTAINER_NAME=os.environ.get("RECORDINGS_CONTAINER_NAME")
-AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME=os.environ.get("AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME")
+
+STORAGE_ACCOUNT_KEY = os.environ.get("STORAGE_ACCOUNT_KEY")
+RECORDINGS_CONTAINER_NAME = os.environ.get("RECORDINGS_CONTAINER_NAME")
+AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME = os.environ.get(
+    "AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME"
+)
 REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID")
-FRONTEND_BASE_URL=os.environ.get("FRONTEND_BASE_URL","https://lms.sakshm.com")
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "https://lms.sakshm.com")
 
-ORBIT_COURSE_CODES=os.environ.get("ORBIT_COURSE_CODES")
+ORBIT_COURSE_CODES = os.environ.get("ORBIT_COURSE_CODES")
 
+TEST_EMAILS = os.environ.get("TEST_EMAILS", [])
+REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS = os.environ.get(
+    "REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS"
+)
+MEETING_PROVIDER = os.environ.get("MEETING_PROVIDER", "teams")
+# Initialize meeting service
+from meetings.services.service_resolver import get_meeting_service
 
+MEETING_SERVICE = get_meeting_service()

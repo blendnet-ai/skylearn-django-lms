@@ -5,8 +5,11 @@ from accounts.models import UserConfigMapping
 from custom_auth.services.custom_auth_service import CustomAuth
 from custom_auth.services.sendgrid_service import SendgridService
 from evaluation.management.register.utils import Utils
+from course.models import Course, Batch
+from django.core.exceptions import ValidationError
 import logging
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ class BulkEnrollmentService:
                 "Centre Name",
                 "Training Location District Name",
                 "Training Location City Name",
-                "Course ID",
+                "Course Code",
                 "Batch ID",
                 "Onboarding Source",
                 "State",
@@ -57,6 +60,17 @@ class BulkEnrollmentService:
         except Exception as e:
             logger.error(f"Error processing file: {str(e)}")
             raise
+
+    # Helper function to handle NaN values
+    @staticmethod
+    def clean_value(value, default=""):
+        """Helper function to handle NaN values with special handling for batch_id"""
+        if pd.isna(value):
+            return default
+        # Handle batch_id as integer
+        if isinstance(value, (int, float)) and str(value).replace(".", "").isdigit():
+            return int(float(value))  # Convert float to int (e.g., 1.0 -> 1)
+        return str(value).strip()
 
     @transaction.atomic
     def _process_row(self, row: pd.Series) -> None:
@@ -111,37 +125,87 @@ class BulkEnrollmentService:
 
     def _create_config(self, row: pd.Series) -> Dict:
         """Create config dictionary from row data"""
-        # Handle empty/NaN values with default values
+        # Email validation
+        email = BulkEnrollmentService.clean_value(row["Email"]).lower()
+        if not email:
+            raise ValidationError("Email address is required")
+
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, email):
+            raise ValidationError(f"Invalid email format: {email}")
+
+        # Phone validation
+        phone = BulkEnrollmentService.clean_value(row["Phone"])
+        if phone:
+            # Remove any non-digit characters
+            phone = re.sub(r"\D", "", phone)
+            # Check if phone number is valid (10 digits)
+            if not re.match(r"^\d{10}$", phone):
+                raise ValidationError(
+                    f"Invalid phone number format: {row['Phone']}. Must be 10 digits."
+                )
+
+        # Validate course and batch IDs
+        course_id = BulkEnrollmentService.clean_value(row["Course Code"])
+        batch_id = BulkEnrollmentService.clean_value(row["Batch ID"])
+
+        # Check if course_id is provided
+        if not course_id:
+            raise ValidationError("Course Code is required")
+
+        # Check if batch_id is provided
+        if not batch_id:
+            raise ValidationError("Batch ID is required")
+
+        # Validate Course Code
+        if course_id:
+            course = Course.objects.filter(code=course_id).first()
+            if not course:
+                raise ValidationError(f"Invalid Course Code: {course_id}")
+
+        # Validate batch ID
+        if batch_id:
+            if not isinstance(batch_id, int):
+                raise ValidationError(f"Batch ID must be an integer, got: {batch_id}")
+            batch = Batch.objects.filter(id=batch_id).first()
+            if not batch:
+                raise ValidationError(f"Invalid batch ID: {batch_id}")
+            # Verify batch belongs to course
+            if str(batch.course.code) != str(course_id):
+                raise ValidationError(
+                    f"Batch {batch_id} does not belong to course {course_id}"
+                )
+
         name = str(row["Name"]).strip() if pd.notna(row["Name"]) else ""
         name_parts = name.split(maxsplit=1)
         first_name = name_parts[0] if name_parts else ""
         last_name = name_parts[1] if len(name_parts) > 1 else ""
 
-        # Helper function to handle NaN values
-        def clean_value(value, default=""):
-            return str(value).strip() if pd.notna(value) else default
-
         return {
             "role": "student",
-            "course_id": clean_value(row["Course ID"]),
-            "batch_id": clean_value(row["Batch ID"]),
+            "course_id": course_id,
+            "batch_id": batch_id,
             "first_name": first_name,
             "last_name": last_name,
-            "email_address": clean_value(row["Email"]).lower(),
-            "phone": clean_value(row["Phone"]),
+            "email_address": email,
+            "phone": phone,
             "user_data": {
-                "college_name": clean_value(row["College Name"]),
-                "enrollment_status": clean_value(row["Enrollment Status"]),
-                "centre_name": clean_value(row["Centre Name"]),
-                "training_location_district": clean_value(
+                "college_name": BulkEnrollmentService.clean_value(row["College Name"]),
+                "enrollment_status": BulkEnrollmentService.clean_value(
+                    row["Enrollment Status"]
+                ),
+                "centre_name": BulkEnrollmentService.clean_value(row["Centre Name"]),
+                "training_location_district": BulkEnrollmentService.clean_value(
                     row["Training Location District Name"]
                 ),
-                "training_location_city": clean_value(
+                "training_location_city": BulkEnrollmentService.clean_value(
                     row["Training Location City Name"]
                 ),
-                "onboarding_source": clean_value(row["Onboarding Source"]),
-                "state": clean_value(row["State"]),
-                "district": clean_value(row["District"]),
+                "onboarding_source": BulkEnrollmentService.clean_value(
+                    row["Onboarding Source"]
+                ),
+                "state": BulkEnrollmentService.clean_value(row["State"]),
+                "district": BulkEnrollmentService.clean_value(row["District"]),
             },
         }
 
@@ -173,17 +237,35 @@ class BulkEnrollmentService:
         else:
             existing_config["user_data"] = new_config["user_data"]
 
-        # Update batch ID if provided
+        # Update batch ID if provided - convert all values to strings
+        # Update batch ID if provided - handle both string and integer cases
         if new_config.get("batch_id"):
-            existing_batch_ids = set(existing_config.get("batch_id", "").split(","))
-            existing_batch_ids.add(new_config["batch_id"])
-            existing_config["batch_id"] = ",".join(filter(None, existing_batch_ids))
+            existing_batch_id = existing_config.get("batch_id", "")
+            # Convert to string and handle both integer and string cases
+            existing_batch_ids = set()
+            if existing_batch_id:
+                if isinstance(existing_batch_id, (int, float)):
+                    existing_batch_ids.add(str(int(existing_batch_id)))
+                else:
+                    existing_batch_ids.update(
+                        bid for bid in str(existing_batch_id).split(",") if bid
+                    )
+            existing_batch_ids.add(str(new_config["batch_id"]))
+            existing_config["batch_id"] = ",".join(existing_batch_ids)
 
-        # Update course ID if provided
+        # Update Course Code if provided - handle both string and integer cases
         if new_config.get("course_id"):
-            existing_course_ids = set(existing_config.get("course_id", "").split(","))
-            existing_course_ids.add(new_config["course_id"])
-            existing_config["course_id"] = ",".join(filter(None, existing_course_ids))
+            existing_course_id = existing_config.get("course_id", "")
+            existing_course_ids = set()
+            if existing_course_id:
+                if isinstance(existing_course_id, (int, float)):
+                    existing_course_ids.add(str(existing_course_id))
+                else:
+                    existing_course_ids.update(
+                        cid for cid in str(existing_course_id).split(",") if cid
+                    )
+            existing_course_ids.add(str(new_config["course_id"]))
+            existing_config["course_id"] = ",".join(existing_course_ids)
 
         # Update other fields
         fields_to_update = ["phone", "first_name", "last_name", "role"]
