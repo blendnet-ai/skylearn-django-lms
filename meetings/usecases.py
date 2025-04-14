@@ -306,7 +306,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
             # Create Teams meeting using model properties
             meeting_details = teams_service.create_meeting(
                 presenter=meeting.series.presenter_details,
@@ -349,7 +349,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
             teams_service.delete_meeting(
                 presenter=presenter_details, meeting_id=conference_id
             )
@@ -381,7 +381,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
             # Create Teams meeting using model properties
             meeting_details = teams_service.update_meeting(
                 presenter=meeting.series.presenter_details,
@@ -429,7 +429,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
 
             recording_by_thread = teams_service.get_meetings_recordings(
                 presenter=meeting.series.presenter_details, meeting=meeting
@@ -483,7 +483,7 @@ class MeetingUsecase:
             recording_data = meeting.recording_metadata
 
             # Download and upload using Teams service
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
             blob_url = teams_service.download_and_upload_recording(
                 meeting_id=meeting_id,
                 recording_metadata=recording_data,
@@ -530,7 +530,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = MSTeamsConferencePlatformService()
+            teams_service = settings.MEETING_SERVICE()
 
             # Get attendance data from Teams
             attendance_data = teams_service.get_meeting_attendance(
