@@ -311,23 +311,34 @@ def create_batch(request, course_id):
     serializer = BatchSerializer(data=request.data)
 
     if serializer.is_valid():
+        lecturer_id = serializer.validated_data["lecturer_id"]
+
+        # Validate if lecturer exists
+        try:
+            lecturer = User.objects.get(id=lecturer_id)
+            if not lecturer.is_lecturer:
+                return Response(
+                    {"error": "User is not a lecturer"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Lecturer not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
         try:
             batch = BatchUseCase.create_batch(
                 course_id,
                 serializer.validated_data["title"],
-                serializer.validated_data["lecturer_id"],
+                lecturer_id,
             )
             return Response(
-                {"message": f"Batch created successfully.", "id": batch.id},
+                {"message": "Batch created successfully.", "id": batch.id},
                 status=status.HTTP_201_CREATED,
             )
         except Course.DoesNotExist:
             return Response(
                 {"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except User.DoesNotExist:
-            return Response(
-                {"error": "Invalid lecturer id"}, status=status.HTTP_400_BAD_REQUEST
             )
         except BatchUseCase.UserIsNotLecturerException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
