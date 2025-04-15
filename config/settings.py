@@ -601,3 +601,6 @@ MEETING_PROVIDER = os.environ.get("MEETING_PROVIDER", "teams")
 from meetings.services.service_resolver import get_meeting_service
 
 MEETING_SERVICE = get_meeting_service()
+ZOOM_API_KEY = os.environ.get("ZOOM_API_KEY", "")
+ZOOM_API_SECRET = os.environ.get("ZOOM_API_SECRET", "")
+ZOOM_ACCOUNT_ID = os.environ.get("ZOOM_ACCOUNT_ID", "")
