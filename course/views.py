@@ -935,3 +935,34 @@ def delete_material(request, type, upload_id):
             {"error": f"{type.capitalize()} material not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_course_by_id(request, course_id):
+    """Get a course by its ID"""
+    try:
+        course = Course.objects.get(id=course_id)
+        serializer = CourseSerializer(course)
+        return Response({"course": serializer.data}, status=status.HTTP_200_OK)
+    except Course.DoesNotExist:
+        return Response(
+            {"error": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(["GET"]) 
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+def get_module_by_id(request, module_id):
+    """Get a module by its ID"""
+    try:
+        module = Module.objects.get(id=module_id)
+        serializer = ModuleSerializer(module)
+        return Response({"module": serializer.data}, status=status.HTTP_200_OK)
+    except Module.DoesNotExist:
+        return Response(
+            {"error": "Module not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )

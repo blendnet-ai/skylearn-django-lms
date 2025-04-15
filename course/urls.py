@@ -141,4 +141,14 @@ urlpatterns = [
         views.delete_material,
         name="delete_material",
     ),
+    path(
+        "get-course/<int:course_id>/",
+        views.get_course_by_id,
+        name="get_course_by_id",
+    ),
+    path(
+        "get-module/<int:module_id>/",
+        views.get_module_by_id,
+        name="get_module_by_id", 
+    )
 ]
