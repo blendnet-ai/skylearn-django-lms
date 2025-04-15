@@ -35,6 +35,11 @@ class ZoomConferencePlatformService(BaseConferencePlatformService):
             self.api_secret = zoom_settings.api_secret
             self.account_id = zoom_settings.account_id
 
+    def _encode_credentials(self, client_id, client_secret):
+        import base64
+        credentials = f"{client_id}:{client_secret}".encode("utf-8")
+        return base64.b64encode(credentials).decode("utf-8")
+
     def _get_cached_token(self) -> Optional[str]:
         return cache.get(settings.ZOOM_ACCESS_TOKEN_CACHE_KEY)
 
@@ -106,18 +111,17 @@ class ZoomConferencePlatformService(BaseConferencePlatformService):
             meeting_data = {
                 "topic": subject,
                 "type": 2,  # Scheduled meeting
-                "start_time": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "start_time": start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "duration": duration,  # in minutes
-                "timezone": "UTC",
+                "timezone": "Asia/Kolkata",  # Change timezone to IST
                 "settings": {
                     "auto_recording": "cloud",
                     "join_before_host": True,
                     "waiting_room": False,
-                    "mute_upon_entry": True,
-                    "screen_sharing": "host",
-                    "require_password": False,
+                    "require_password": False
                 },
             }
+            print(presenter)
 
             # Create the meeting under the presenter's user ID
             response = requests.post(
@@ -180,9 +184,9 @@ class ZoomConferencePlatformService(BaseConferencePlatformService):
 
             meeting_data = {
                 "topic": subject,
-                "start_time": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "start_time": start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "duration": duration,
-                "timezone": "UTC",
+                "timezone": "Asia/Kolkata",
             }
 
             response = requests.patch(
