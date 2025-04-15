@@ -8,7 +8,8 @@ from course.models import (
     UploadVideo,
 )
 from evaluation.models import AssessmentGenerationConfig
-from django.db.models import Prefetch, F, CharField, Value
+from django.db.models import Prefetch, F, CharField
+from django.db import connection
 from django.db.models.functions import Concat
 from django.db import transaction, IntegrityError
 
@@ -253,95 +254,94 @@ class ModuleRepository:
                 ModuleRepository.reorder_modules(course.id)
                 return module
 
-    # Need to refactor
     @staticmethod
     def update_module(module_id, **kwargs):
-        """Update module with proper order handling"""
+        """Update module with completely separate order handling phases"""
         with transaction.atomic():
-            try:
-                module = Module.objects.get(id=module_id)
-                new_order = kwargs.get("order_in_course")
+            # Get the module and its course
+            module = Module.objects.select_for_update().get(id=module_id)
+            course_id = module.course.id
+            new_order = kwargs.pop("order_in_course", None)  # Remove order from kwargs
 
-                # Handle order change
-                if new_order is not None and new_order != module.order_in_course:
-                    max_order = (
-                        Module.objects.filter(course_id=module.course.id)
-                        .order_by("-order_in_course")
-                        .first()
-                    )
-                    max_order = max_order.order_in_course if max_order else 0
+            # Update non-order fields first
+            for key, value in kwargs.items():
+                if value is not None:
+                    setattr(module, key, value)
 
-                    # Validate new order
-                    if new_order < 1:
-                        new_order = 1
-                    elif new_order > max_order:
-                        new_order = max_order
-
-                    current_order = module.order_in_course
-
-                    # First move the target module to a temporary position
-                    temp_order = max_order + 999
-                    module.order_in_course = temp_order
-                    module.save()
-
-                    # Shift modules in reverse order to prevent conflicts
-                    if new_order > current_order:
-                        modules_to_shift = Module.objects.filter(
-                            course_id=module.course.id,
-                            order_in_course__gt=current_order,
-                            order_in_course__lte=new_order,
-                        ).order_by("-order_in_course")
-
-                        for mod in modules_to_shift:
-                            mod.order_in_course -= 1
-                            mod.save()
-                    else:
-                        modules_to_shift = Module.objects.filter(
-                            course_id=module.course.id,
-                            order_in_course__gte=new_order,
-                            order_in_course__lt=current_order,
-                        ).order_by("-order_in_course")
-
-                        for mod in modules_to_shift:
-                            mod.order_in_course += 1
-                            mod.save()
-
-                    # Finally move the target module to its new position
-                    module.order_in_course = new_order
-
-                # Update other fields
-                for key, value in kwargs.items():
-                    if value is not None and key != "order_in_course":
-                        setattr(module, key, value)
-
+            # Save changes to other fields (if any)
+            if kwargs:
                 module.save()
 
-                # Final reorder to ensure consistency
-                ModuleRepository.reorder_modules(module.course.id)
-                module.refresh_from_db()
-                return module
+            # Handle order change as a completely separate operation
+            if new_order is not None and new_order != module.order_in_course:
+                # Let's handle reordering outside the main flow
+                ModuleRepository._reorder_all_modules(course_id, module_id, new_order)
 
-            except IntegrityError:
-                # If anything goes wrong, reorder everything and try again
-                ModuleRepository.reorder_modules(module.course.id)
-                module.refresh_from_db()
-                return module
+            # Refresh to get latest state
+            module.refresh_from_db()
+            return module
 
     @staticmethod
-    def delete_module(module_id):
-        Module.objects.filter(id=module_id).delete()
-
-    @staticmethod
-    def reorder_modules(course_id):
-        """Reorder modules sequentially to fix any gaps or duplicates"""
+    def _reorder_all_modules(course_id, target_module_id, new_order):
+        """Complete rebuild of module ordering to avoid any conflicts"""
         with transaction.atomic():
-            modules = Module.objects.filter(course_id=course_id).order_by(
-                "order_in_course"
+            # Get all modules
+            all_modules = list(
+                Module.objects.select_for_update().filter(course_id=course_id)
             )
-            for index, module in enumerate(modules, 1):
-                if module.order_in_course != index:
-                    module.order_in_course = index
-                    module.save()
+
+            # Validate new order
+            if new_order < 1:
+                new_order = 1
+            elif new_order > len(all_modules):
+                new_order = len(all_modules)
+
+            # Find the target module and its current order
+            target_module = next(
+                (m for m in all_modules if m.id == target_module_id), None
+            )
+            if not target_module:
+                return
+
+            current_order = target_module.order_in_course
+
+            # Skip if no change needed
+            if new_order == current_order:
+                return
+
+            # First, assign temporary orders
+            # Use module ID as temporary order to guarantee uniqueness
+            for mod in all_modules:
+                if (
+                    mod.order_in_course != mod.id + 10000
+                ):  # Use offset to avoid conflicts
+                    mod.order_in_course = mod.id + 10000
+                    mod.save(update_fields=["order_in_course"])
+
+            # Create new ordering list (excluding target)
+            other_modules = [m for m in all_modules if m.id != target_module_id]
+            other_modules.sort(key=lambda m: m.id + 10000)  # Sort by temp order
+
+            # Rebuild the order from scratch
+            final_order = 1
+
+            # Process modules before insertion point
+            for i in range(new_order - 1):
+                if i < len(other_modules):
+                    other_modules[i].order_in_course = final_order
+                    other_modules[i].save(update_fields=["order_in_course"])
+                    final_order += 1
+
+            # Insert target module
+            target_module.order_in_course = final_order
+            target_module.save(update_fields=["order_in_course"])
+            final_order += 1
+
+            # Process remaining modules
+            for i in range(new_order - 1, len(other_modules)):
+                other_modules[i].order_in_course = final_order
+                other_modules[i].save(update_fields=["order_in_course"])
+                final_order += 1
 
 
 class UploadRepository:
