@@ -59,12 +59,11 @@ class LiveClassUpdateSerializer(serializers.ModelSerializer):
         fields = ["start_time", "duration", "start_date"]
 
 
-class BatchSerializer(serializers.ModelSerializer):
+class BatchSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
     lecturer_id = serializers.IntegerField()
-
-    class Meta:
-        model = Batch
-        fields = ["title", "lecturer_id"]
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
 
 
 class LiveClassDateRangeSerializer(serializers.Serializer):
