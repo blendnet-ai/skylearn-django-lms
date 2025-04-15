@@ -121,7 +121,7 @@ class ZoomConferencePlatformService(BaseConferencePlatformService):
 
             # Create the meeting under the presenter's user ID
             response = requests.post(
-                f"{self.API_BASE_URL}/users/{presenter.get('upn')}/meetings",
+                f"{self.API_BASE_URL}/users/{presenter.get('zoom_gmail')}/meetings",
                 headers=headers,
                 json=meeting_data,
             )
