@@ -111,3 +111,5 @@ drf-spectacular==0.27.2
 praat-parselmouth
 django-sass-processor
 libsass
+pandas
+openpyxl
