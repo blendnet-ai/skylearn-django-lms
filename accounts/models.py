@@ -5,6 +5,7 @@ from django.db.models import Q
 
 from course.models import Batch
 
+
 class UserConfigMapping(models.Model):
     email = models.EmailField(unique=True)
     config = models.JSONField(max_length=100)
@@ -77,7 +78,7 @@ class Student(models.Model):
         ACTIVE = 0, "Active"
         INACTIVE = 1, "Inactive"
         SUSPENDED = 2, "Suspended"
-       
+
     student = models.OneToOneField(User, on_delete=models.CASCADE)
     batches = models.ManyToManyField(Batch, blank=True)
     status = models.IntegerField(choices=Status.choices, default=int(Status.ACTIVE))
@@ -101,11 +102,7 @@ class Student(models.Model):
 
     @property
     def status_string(self):
-        status_map = {
-            0: "Active",
-            1: "Inactive",
-            2: "Suspended"
-        }
+        status_map = {0: "Active", 1: "Inactive", 2: "Suspended"}
         return status_map.get(self.status, "Unknown")
 
 
@@ -119,16 +116,23 @@ class CourseProvider(models.Model):
     admins = models.ManyToManyField(CourseProviderAdmin)
     teams_guid = models.CharField(max_length=50, null=False)
     teams_upn = models.CharField(max_length=100, null=False)
+    zoom_gmail = models.CharField(max_length=100, null=False)
 
 
 class Lecturer(models.Model):
     lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
     guid = models.CharField(max_length=50, null=False)
     upn = models.CharField(max_length=100, null=False)
+    zoom_gmail = models.CharField(max_length=100, null=False)
     course_provider = models.ForeignKey(CourseProvider, on_delete=models.CASCADE)
 
     def name(self):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"
 
     def presenter_details(self):
-        return {"guid": self.guid, "name": self.name(), "upn": self.upn}
+        return {
+            "guid": self.guid,
+            "name": self.name(),
+            "upn": self.upn,
+            "zoom_gmail": self.zoom_gmail,
+        }
