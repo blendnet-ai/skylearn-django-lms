@@ -276,3 +276,133 @@ class BulkEnrollmentService:
         # Ensure proper JSON serialization before saving
         mapping.config = json.loads(json.dumps(existing_config))
         mapping.save()
+
+
+from typing import List, Dict, Tuple
+from datetime import datetime, timedelta
+from evaluation.models import Question, AssessmentGenerationConfig
+from django.db.models import Q
+from dataclasses import dataclass
+
+
+@dataclass
+class QuestionTypeResult:
+    available_count: int
+    requested_count: int
+    question_ids: List[int]
+
+    @property
+    def has_enough_questions(self):
+        return self.available_count >= self.requested_count
+
+
+class AssessmentConfigGenerator:
+    QUESTION_TYPE_MAPPING = {
+        "objective": {
+            "answer_type": Question.AnswerType.MCQ,
+            "category": Question.Category.LANGUAGE,
+        },
+        "listening": {
+            "answer_type": Question.AnswerType.MMCQ,
+            "sub_category": Question.SubCategory.LISTENING,
+        },
+        "speaking": {
+            "answer_type": Question.AnswerType.VOICE,
+            "sub_category": Question.SubCategory.SPEAKING,
+        },
+        "reading": {
+            "answer_type": Question.AnswerType.MMCQ,
+            "sub_category": Question.SubCategory.RC,
+        },
+        "writing": {
+            "answer_type": Question.AnswerType.SUBJECTIVE,
+            "sub_category": Question.SubCategory.WRITING,
+        },
+    }
+
+    @staticmethod
+    def get_questions_by_type(question_type: str, count: int) -> QuestionTypeResult:
+        """
+        Get specified number of question IDs for given type and return availability info
+        """
+        mapping = AssessmentConfigGenerator.QUESTION_TYPE_MAPPING[question_type]
+        query = Q(answer_type=mapping["answer_type"])
+
+        if question_type == "objective":
+            query &= Q(category=mapping["category"])
+        elif mapping.get("sub_category"):
+            query &= Q(sub_category=mapping["sub_category"])
+
+        questions = list(Question.objects.filter(query).values_list("id", flat=True))
+        available_count = len(questions)
+        actual_count = min(available_count, count)
+
+        return QuestionTypeResult(
+            available_count=available_count,
+            requested_count=count,
+            question_ids=questions[:actual_count],
+        )
+
+    @staticmethod
+    def generate_config(
+        question_counts: Dict[str, int],
+        name: str,
+        module_id: int,
+        start_date: datetime,
+        end_date: datetime,
+        due_date: datetime = None,
+        duration: int = 60,
+        assessment_generator_class_name="QuestionPoolBasedAssessment",
+        evaluator_class_name="Question Based",
+    ) -> Tuple[AssessmentGenerationConfig, Dict]:
+        """
+        Generate assessment config with sections based on question types and counts
+
+        Returns:
+            Tuple containing:
+            - The created AssessmentGenerationConfig
+            - Dict with info about question availability
+        """
+        subcategories = []
+        total_questions = 0
+        question_availability = {}
+
+        for qtype, count in question_counts.items():
+            if count > 0:
+                result = AssessmentConfigGenerator.get_questions_by_type(qtype, count)
+                question_availability[qtype] = {
+                    "requested": result.requested_count,
+                    "available": result.available_count,
+                    "sufficient": result.has_enough_questions,
+                }
+
+                if result.question_ids:
+                    subcategories.append(
+                        {
+                            "number": len(result.question_ids),
+                            "skippable": True,
+                            "section_name": qtype.capitalize(),
+                            "question_pool": result.question_ids,
+                        }
+                    )
+                    total_questions += len(result.question_ids)
+
+        unique_name = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        config = AssessmentGenerationConfig.objects.create(
+            assessment_name=unique_name,
+            assessment_display_name=name,
+            start_date=start_date,
+            end_date=end_date,
+            due_date=due_date,
+            test_duration=timedelta(minutes=duration),
+            kwargs={
+                "category": Question.Category.LANGUAGE,
+                "total_number": total_questions,
+                "subcategories": subcategories,
+            },
+            enabled=True,
+            assessment_generation_class_name=assessment_generator_class_name,
+            evaluator_class_name=evaluator_class_name,
+        )
+
+        return config, question_availability

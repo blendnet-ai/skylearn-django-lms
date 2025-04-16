@@ -25,6 +25,7 @@ from course.serializers import (
     ModuleSerializer,
     UploadMaterialSerializer,
     DeleteMaterialTypeSerializer,
+    AssessmentConfigSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -47,7 +48,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
-from .services import BulkEnrollmentService
+from .services import BulkEnrollmentService, AssessmentConfigGenerator
 from rest_framework import serializers
 from evaluation.usecases import AssessmentUseCase
 
@@ -63,6 +64,7 @@ from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
 from accounts.repositories import CourseProviderRepository
 from course.repositories import ModuleRepository, CourseRepository
+from evaluation.models import AssessmentGenerationConfig
 
 
 # admin/course provider
@@ -947,12 +949,10 @@ def get_course_by_id(request, course_id):
         serializer = CourseSerializer(course)
         return Response({"course": serializer.data}, status=status.HTTP_200_OK)
     except Course.DoesNotExist:
-        return Response(
-            {"error": "Course not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(["GET"]) 
+
+@api_view(["GET"])
 @authentication_classes([FirebaseAuthentication])
 @permission_classes([IsLoggedIn])
 def get_module_by_id(request, module_id):
@@ -962,7 +962,87 @@ def get_module_by_id(request, module_id):
         serializer = ModuleSerializer(module)
         return Response({"module": serializer.data}, status=status.HTTP_200_OK)
     except Module.DoesNotExist:
-        return Response(
-            {"error": "Module not found"},
-            status=status.HTTP_404_NOT_FOUND
+        return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def create_assessment(request):
+    serializer = AssessmentConfigSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+
+    try:
+        config, availability = AssessmentConfigGenerator.generate_config(
+            question_counts=data["question_counts"],
+            name=data["name"],
+            module_id=data["module_id"],
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+            due_date=data.get("due_date"),
+            duration=data.get("duration", 60),
         )
+
+        # Add to module if module_id provided
+        if data["module_id"]:
+            try:
+                module = Module.objects.get(id=data["module_id"])
+                module.assignment_configs.add(config)
+            except Module.DoesNotExist:
+                return Response(
+                    {"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+
+        response = {
+            "id": config.assessment_generation_id,
+            "message": "Assessment created successfully",
+            "question_availability": availability,
+            "warnings": [],
+        }
+
+        # Add warnings for insufficient questions
+        for qtype, info in availability.items():
+            if not info["sufficient"]:
+                response["warnings"].append(
+                    f"Only {info['available']} {qtype} questions available out of {info['requested']} requested"
+                )
+
+        return Response(response, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["DELETE"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def delete_assessment(request, module_id, assessment_generation_id):
+    """Delete an assessment config and remove from module"""
+    try:
+        module = Module.objects.get(id=module_id)
+        assessment_config = AssessmentGenerationConfig.objects.get(
+            assessment_generation_id=assessment_generation_id
+        )
+
+        # First remove from module
+        module.assignment_configs.remove(assessment_config)
+
+        # Then delete the config itself
+        assessment_config.delete()
+
+        return Response(
+            {"message": "Assessment deleted successfully"}, status=status.HTTP_200_OK
+        )
+
+    except Module.DoesNotExist:
+        return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
+    except AssessmentGenerationConfig.DoesNotExist:
+        return Response(
+            {"error": "Assessment configuration not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
