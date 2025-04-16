@@ -1051,8 +1051,8 @@ def delete_assessment(request, module_id, assessment_generation_id):
 
 
 @api_view(["POST"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def question_upload(request):
     serializer = QuestionUploadSerializer(data=request.data)
     if not serializer.is_valid():
