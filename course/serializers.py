@@ -183,3 +183,22 @@ class QuestionUploadSerializer(serializers.Serializer):
         if value.size > 5242880:  # 5MB limit
             raise serializers.ValidationError("File size cannot exceed 5MB")
         return value
+
+
+class AssessmentConfigUpdateSerializer(serializers.Serializer):
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    due_date = serializers.DateTimeField(required=False, allow_null=True)
+    duration = serializers.IntegerField(
+        required=False, min_value=1, help_text="Duration in minutes"
+    )
+
+    def validate(self, data):
+        """Validate dates and duration"""
+        if data["end_date"] <= data["start_date"]:
+            raise serializers.ValidationError("End date must be after start date")
+
+        if data.get("due_date") and data["due_date"] < data["end_date"]:
+            raise serializers.ValidationError("Due date must be after end date")
+
+        return data

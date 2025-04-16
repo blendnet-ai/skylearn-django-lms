@@ -158,4 +158,9 @@ urlpatterns = [
         name="delete_assessment",
     ),
     path("questions/upload/", views.question_upload, name="upload-questions"),
+    path(
+        "assessment/<int:assessment_generation_id>/update/",
+        views.update_assessment_config,
+        name="update_assessment_config",
+    ),
 ]
