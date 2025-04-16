@@ -616,9 +616,35 @@ class QuestionUploader:
             "hint": "",  # Empty hint field for speaking questions
         }
 
+    def get_question_signature(self, question_data: Dict, question_type: str) -> str:
+        """Generate a unique signature for a question based on its content"""
+        if question_type == "reading":
+            signature = f"{question_data['paragraph']}"
+        elif question_type == "listening":
+            signature = f"{question_data.get('audio_url', '')}"
+        else:
+            signature = question_data["question"]
+        return signature.strip().lower()
+
+    def is_question_duplicate(
+        self, question_data: Dict, question_type: str, config: Dict
+    ) -> bool:
+        """Check if question already exists"""
+        signature = self.get_question_signature(question_data, question_type)
+        query = Q(
+            answer_type=config["answer_type"], sub_category=config["sub_category"]
+        )
+        existing_questions = Question.objects.filter(query)
+
+        return any(
+            self.get_question_signature(q.question_data, question_type) == signature
+            for q in existing_questions
+        )
+
     def upload_questions(self, file, question_type: str) -> QuestionUploadResult:
         """Upload questions from CSV file based on question type"""
         result = QuestionUploadResult()
+        config = self.UPLOADER_CONFIGS[question_type]
 
         try:
             df = (
@@ -627,23 +653,31 @@ class QuestionUploader:
                 else pd.read_csv(file)
             )
             self.validate_columns(df, question_type)
-
-            config = self.UPLOADER_CONFIGS[question_type]
             questions_to_create = []
 
             if question_type == "reading":
                 for _, group in df.groupby("Task Number"):
                     try:
                         question_data = self.process_reading_question(group)
-                        questions_to_create.append(
-                            self.create_question_object(question_data, config)
-                        )
-                        result.successful.append(
-                            {
-                                "title": f"Reading Task {group['Task Number'].iloc[0]}",
-                                "id": None,
-                            }
-                        )
+                        if self.is_question_duplicate(
+                            question_data, question_type, config
+                        ):
+                            result.successful.append(
+                                {
+                                    "title": f"Reading Task {group['Task Number'].iloc[0]}",
+                                    "status": "duplicate",
+                                }
+                            )
+                        else:
+                            questions_to_create.append(
+                                self.create_question_object(question_data, config)
+                            )
+                            result.successful.append(
+                                {
+                                    "title": f"Reading Task {group['Task Number'].iloc[0]}",
+                                    "status": "created",
+                                }
+                            )
                     except Exception as e:
                         result.failed.append(
                             {
@@ -651,45 +685,74 @@ class QuestionUploader:
                                 "reason": str(e),
                             }
                         )
+
             elif question_type == "listening":
-                # Group by Audio Link since multiple questions can share same audio
                 for audio_url, group in df.groupby("Audio Link"):
                     try:
                         question_data = self.process_listening_question(group)
-                        questions_to_create.append(
-                            self.create_question_object(question_data, config)
-                        )
-                        result.successful.append(
-                            {
-                                "title": f"Listening Audio {audio_url}",
-                                "id": None,
-                                "question_count": len(group),
-                            }
-                        )
+                        if self.is_question_duplicate(
+                            question_data, question_type, config
+                        ):
+                            result.successful.append(
+                                {
+                                    "title": f"Listening Audio {audio_url}",
+                                    "question_count": len(group),
+                                    "status": "duplicate",
+                                }
+                            )
+                        else:
+                            questions_to_create.append(
+                                self.create_question_object(question_data, config)
+                            )
+                            result.successful.append(
+                                {
+                                    "title": f"Listening Audio {audio_url}",
+                                    "question_count": len(group),
+                                    "status": "created",
+                                }
+                            )
                     except Exception as e:
                         result.failed.append(
                             {"title": f"Listening Audio {audio_url}", "reason": str(e)}
                         )
+
             else:
                 for idx, row in df.iterrows():
                     try:
                         processor = getattr(self, f"process_{question_type}_question")
                         question_data = processor(row)
-                        questions_to_create.append(
-                            self.create_question_object(question_data, config)
-                        )
-                        result.successful.append({"title": row["Question"], "id": None})
+                        if self.is_question_duplicate(
+                            question_data, question_type, config
+                        ):
+                            result.successful.append(
+                                {
+                                    "title": row["Question"],
+                                    "status": "duplicate",
+                                }
+                            )
+                        else:
+                            questions_to_create.append(
+                                self.create_question_object(question_data, config)
+                            )
+                            result.successful.append(
+                                {
+                                    "title": row["Question"],
+                                    "status": "created",
+                                }
+                            )
                     except Exception as e:
                         result.failed.append(
                             {"title": row["Question"], "reason": str(e)}
                         )
 
-            # Bulk create questions and update IDs in result
+            # Bulk create questions and update IDs for only non-duplicate entries
             if questions_to_create:
                 created_questions = Question.objects.bulk_create(questions_to_create)
-                for i, q in enumerate(created_questions):
-                    if result.successful[i]["id"] is None:
-                        result.successful[i]["id"] = q.id
+                created_idx = 0
+                for i in range(len(result.successful)):
+                    if result.successful[i]["status"] == "created":
+                        # result.successful[i]["id"] = created_questions[created_idx].id
+                        created_idx += 1
 
         except Exception as e:
             logger.error(f"Error processing file: {str(e)}")
