@@ -29,6 +29,7 @@ from meetings.models import AttendanceRecord, Meeting
 from .repositories import AttendaceRecordRepository
 from django.conf import settings
 from meetings.tasks import create_teams_meeting_task
+from .services.service_resolver import get_meeting_service_by_provider
 
 logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
@@ -319,6 +320,7 @@ class MeetingUsecase:
             meeting.link = meeting_details.join_url
             meeting.conference_metadata = meeting_details.all_details
             meeting.conference_id = meeting_details.id
+            meeting.provider = settings.MEETING_PROVIDER
             # Temporarily disconnect signals
             post_save.disconnect(meeting_post_save, sender=Meeting)
 
@@ -348,8 +350,12 @@ class MeetingUsecase:
                 f"Presenter details are missing for meeting ID {meeting_id}"
             )
 
+        meeting = MeetingRepository.get_meeting_by_id(meeting_id)
+        if not meeting:
+            raise MeetingNotFoundError(f"Meeting with ID {meeting_id} not found")
+
         try:
-            teams_service = settings.MEETING_SERVICE()
+            teams_service = get_meeting_service_by_provider(meeting.provider)
             teams_service.delete_meeting(
                 presenter=presenter_details, meeting_id=conference_id
             )
@@ -381,7 +387,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = settings.MEETING_SERVICE()
+            teams_service = get_meeting_service_by_provider(meeting.provider)
             # Create Teams meeting using model properties
             meeting_details = teams_service.update_meeting(
                 presenter=meeting.series.presenter_details,
@@ -429,7 +435,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = settings.MEETING_SERVICE()
+            teams_service = get_meeting_service_by_provider(meeting.provider)
 
             recording_by_thread = teams_service.get_meetings_recordings(
                 presenter=meeting.series.presenter_details, meeting=meeting
@@ -483,7 +489,7 @@ class MeetingUsecase:
             recording_data = meeting.recording_metadata
 
             # Download and upload using Teams service
-            teams_service = settings.MEETING_SERVICE()
+            teams_service = get_meeting_service_by_provider(meeting.provider)
             blob_url = teams_service.download_and_upload_recording(
                 meeting_id=meeting_id,
                 recording_metadata=recording_data,
@@ -530,7 +536,7 @@ class MeetingUsecase:
             )
 
         try:
-            teams_service = settings.MEETING_SERVICE()
+            teams_service = get_meeting_service_by_provider(meeting.provider)
 
             # Get attendance data from Teams
             attendance_data = teams_service.get_meeting_attendance(
