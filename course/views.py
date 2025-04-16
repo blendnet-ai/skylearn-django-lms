@@ -28,6 +28,7 @@ from course.serializers import (
     AssessmentConfigSerializer,
     QuestionUploadSerializer,
     AssessmentConfigUpdateSerializer,
+    AssessmentConfigDetailSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -1120,3 +1121,22 @@ def update_assessment_config(request, assessment_generation_id):
             ),
         }
     )
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def get_assessment_config_details(request, assessment_generation_id):
+    """Get assessment configuration details"""
+    assessment_config = AssessmentGenerationConfig.objects.filter(
+        assessment_generation_id=assessment_generation_id
+    ).first()
+
+    if not assessment_config:
+        return Response(
+            {"error": "Assessment configuration not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = AssessmentConfigDetailSerializer(assessment_config)
+    return Response(serializer.data)
