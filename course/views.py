@@ -977,45 +977,41 @@ def create_assessment(request):
 
     data = serializer.validated_data
 
-    try:
-        config, availability = AssessmentConfigGenerator.generate_config(
-            question_counts=data["question_counts"],
-            name=data["name"],
-            module_id=data["module_id"],
-            start_date=data["start_date"],
-            end_date=data["end_date"],
-            due_date=data.get("due_date"),
-            duration=data.get("duration", 60),
-        )
+    config, availability = AssessmentConfigGenerator.generate_config(
+        question_counts=data["question_counts"],
+        name=data["name"],
+        module_id=data["module_id"],
+        start_date=data["start_date"],
+        end_date=data["end_date"],
+        due_date=data.get("due_date"),
+        duration=data.get("duration", 60),
+    )
 
-        # Add to module if module_id provided
-        if data["module_id"]:
-            try:
-                module = Module.objects.get(id=data["module_id"])
-                module.assignment_configs.add(config)
-            except Module.DoesNotExist:
-                return Response(
-                    {"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND
-                )
+    # Add to module if module_id provided
+    if data["module_id"]:
+        try:
+            module = Module.objects.get(id=data["module_id"])
+            module.assignment_configs.add(config)
+        except Module.DoesNotExist:
+            return Response(
+                {"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        response = {
-            "id": config.assessment_generation_id,
-            "message": "Assessment created successfully",
-            "question_availability": availability,
-            "warnings": [],
-        }
+    response = {
+        "id": config.assessment_generation_id,
+        "message": "Assessment created successfully",
+        "question_availability": availability,
+        "warnings": [],
+    }
 
-        # Add warnings for insufficient questions
-        for qtype, info in availability.items():
-            if not info["sufficient"]:
-                response["warnings"].append(
-                    f"Only {info['available']} {qtype} questions available out of {info['requested']} requested"
-                )
+    # Add warnings for insufficient questions
+    for qtype, info in availability.items():
+        if not info["sufficient"]:
+            response["warnings"].append(
+                f"Only {info['available']} {qtype} questions available out of {info['requested']} requested"
+            )
 
-        return Response(response, status=status.HTTP_201_CREATED)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response(response, status=status.HTTP_201_CREATED)
 
 
 @api_view(["DELETE"])
@@ -1046,13 +1042,11 @@ def delete_assessment(request, module_id, assessment_generation_id):
             {"error": "Assessment configuration not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["POST"])
-# @authentication_classes([FirebaseAuthentication])
-# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
 def question_upload(request):
     serializer = QuestionUploadSerializer(data=request.data)
     if not serializer.is_valid():
