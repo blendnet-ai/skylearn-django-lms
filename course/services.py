@@ -406,3 +406,304 @@ class AssessmentConfigGenerator:
         )
 
         return config, question_availability
+
+
+from typing import Dict, List, Tuple
+from datetime import timedelta
+import pandas as pd
+import logging
+from django.core.exceptions import ValidationError
+from evaluation.models import Question
+from storage_service.azure_storage import AzureStorageService
+import os
+import requests
+import tempfile
+from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
+
+
+class QuestionUploadResult:
+    def __init__(self):
+        self.successful: List[Dict] = []  # {title: str, id: int}
+        self.failed: List[Dict] = []  # {title: str, reason: str}
+
+
+class QuestionUploader:
+    UPLOADER_CONFIGS = {
+        "objective": {
+            "required_columns": [
+                "Question",
+                "Option 1",
+                "Option 2",
+                "Option 3",
+                "Correct Option",
+            ],
+            "answer_type": Question.AnswerType.MCQ,
+            "category": Question.Category.LANGUAGE,
+            "sub_category": Question.SubCategory.QUANT,
+        },
+        "reading": {
+            "required_columns": [
+                "Task Number",
+                "Instructions",
+                "Passage",
+                "Question",
+                "Option 1",
+                "Option 2",
+                "Option 3",
+                "Option 4",
+                "Correct Option",
+            ],
+            "answer_type": Question.AnswerType.MMCQ,
+            "sub_category": Question.SubCategory.RC,
+        },
+        "writing": {
+            "required_columns": ["Question"],
+            "answer_type": Question.AnswerType.SUBJECTIVE,
+            "sub_category": Question.SubCategory.WRITING,
+        },
+        "speaking": {
+            "required_columns": ["Question"],
+            "answer_type": Question.AnswerType.VOICE,
+            "sub_category": Question.SubCategory.SPEAKING,
+        },
+        "listening": {
+            "required_columns": [
+                "Question",
+                "Audio Link",
+                "Option 1",
+                "Option 2",
+                "Correct Option",
+            ],
+            "answer_type": Question.AnswerType.MMCQ,
+            "sub_category": Question.SubCategory.LISTENING,
+        },
+    }
+
+    def __init__(self):
+        self.default_time = timedelta(minutes=1)
+        self.storage_service = AzureStorageService()
+        self.container_name = "listening-audios"
+
+    def validate_columns(self, df: pd.DataFrame, question_type: str) -> None:
+        required_cols = self.UPLOADER_CONFIGS[question_type]["required_columns"]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            raise ValidationError(
+                f"Missing required columns for {question_type}: {', '.join(missing_cols)}"
+            )
+
+    def get_file_id_from_url(self, url: str) -> str:
+        """Extract file ID from Google Drive URL"""
+        parsed_url = urlparse(url)
+        if "drive.google.com" in parsed_url.netloc:
+            if "file/d/" in url:
+                file_id = url.split("file/d/")[1].split("/")[0]
+            else:
+                file_id = parsed_url.query.split("id=")[1].split("&")[0]
+            return file_id
+        return None
+
+    def download_from_drive(self, drive_url: str) -> str:
+        """Download file from Google Drive"""
+        try:
+            file_id = self.get_file_id_from_url(drive_url)
+            if not file_id:
+                raise ValueError(f"Invalid Google Drive URL: {drive_url}")
+
+            download_url = f"https://drive.google.com/uc?id={file_id}"
+
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                response = requests.get(download_url)
+                response.raise_for_status()
+                temp_file.write(response.content)
+                temp_path = temp_file.name
+
+            return temp_path
+
+        except Exception as e:
+            logger.error(f"Error downloading file: {str(e)}")
+            raise
+
+    def upload_audio_to_azure(self, gdrive_url: str, blob_name: str) -> str:
+        """Downloads audio from Google Drive and uploads to Azure"""
+        try:
+            temp_audio_path = self.download_from_drive(gdrive_url)
+
+            with open(temp_audio_path, "rb") as file:
+                content = file.read()
+                azure_url = self.storage_service.upload_blob(
+                    container_name=self.container_name,
+                    blob_name=blob_name,
+                    content=content,
+                    content_type="audio/mpeg",
+                    overwrite=True,
+                )
+
+            # Clean up temporary file
+            os.unlink(temp_audio_path)
+
+            return azure_url
+
+        except Exception as e:
+            logger.error(f"Error uploading audio {gdrive_url}: {str(e)}")
+            raise
+
+    def process_objective_question(self, row: pd.Series) -> Dict:
+        return {
+            "question": row["Question"],
+            "options": [row[f"Option {i}"] for i in range(1, 4)],
+            "answer": int(row["Correct Option"]) - 1,
+        }
+
+    def process_reading_question(self, group: pd.DataFrame) -> Dict:
+        sub_questions = []
+        for _, row in group.iterrows():
+            options = [
+                row[f"Option {i}"] for i in range(1, 5) if pd.notna(row[f"Option {i}"])
+            ]
+            sub_questions.append(
+                {
+                    "question": row["Question"],
+                    "options": options,
+                    "answer": int(row["Correct Option"]) - 1,
+                }
+            )
+        return {
+            "paragraph": f"{group['Instructions'].iloc[0]}\n{group['Passage'].iloc[0]}",
+            "task_number": int(group["Task Number"].iloc[0]),
+            "questions": sub_questions,
+        }
+
+    def process_writing_question(self, row: pd.Series) -> Dict:
+        """Process writing questions with default medium level"""
+        return {"question": row["Question"], "level": "easy"}
+
+    def process_listening_question(self, group: pd.DataFrame) -> Dict:
+        """Process grouped listening questions with shared audio"""
+        try:
+            # Get audio URL from first row since it's same for group
+            audio_url = group["Audio Link"].iloc[0]
+
+            # Upload audio to Azure
+            file_id = self.get_file_id_from_url(audio_url)
+            audio_blob_name = f"{file_id}.mp3"
+            azure_audio_url = self.upload_audio_to_azure(audio_url, audio_blob_name)
+
+            # Process all questions for this audio
+            sub_questions = []
+            for _, row in group.iterrows():
+                sub_question = {
+                    "question": row["Question"],
+                    "options": [row["Option 1"], row["Option 2"]],
+                    "answer": int(row["Correct Option"]) - 1,
+                }
+                sub_questions.append(sub_question)
+
+            # Return complete question data
+            return {"questions": sub_questions, "audio_url": azure_audio_url}
+
+        except Exception as e:
+            logger.error(f"Error processing listening questions for audio: {audio_url}")
+            logger.error(str(e))
+            raise ValidationError(f"Error processing listening questions: {str(e)}")
+
+    def process_speaking_question(self, row: pd.Series) -> Dict:
+        """Process speaking questions with empty hint"""
+        return {
+            "question": row["Question"],
+            "hint": "",  # Empty hint field for speaking questions
+        }
+
+    def upload_questions(self, file, question_type: str) -> QuestionUploadResult:
+        """Upload questions from CSV file based on question type"""
+        result = QuestionUploadResult()
+
+        try:
+            df = (
+                pd.read_excel(file)
+                if file.name.endswith(".xlsx")
+                else pd.read_csv(file)
+            )
+            self.validate_columns(df, question_type)
+
+            config = self.UPLOADER_CONFIGS[question_type]
+            questions_to_create = []
+
+            if question_type == "reading":
+                for _, group in df.groupby("Task Number"):
+                    try:
+                        question_data = self.process_reading_question(group)
+                        questions_to_create.append(
+                            self.create_question_object(question_data, config)
+                        )
+                        result.successful.append(
+                            {
+                                "title": f"Reading Task {group['Task Number'].iloc[0]}",
+                                "id": None,
+                            }
+                        )
+                    except Exception as e:
+                        result.failed.append(
+                            {
+                                "title": f"Reading Task {group['Task Number'].iloc[0]}",
+                                "reason": str(e),
+                            }
+                        )
+            elif question_type == "listening":
+                # Group by Audio Link since multiple questions can share same audio
+                for audio_url, group in df.groupby("Audio Link"):
+                    try:
+                        question_data = self.process_listening_question(group)
+                        questions_to_create.append(
+                            self.create_question_object(question_data, config)
+                        )
+                        result.successful.append(
+                            {
+                                "title": f"Listening Audio {audio_url}",
+                                "id": None,
+                                "question_count": len(group),
+                            }
+                        )
+                    except Exception as e:
+                        result.failed.append(
+                            {"title": f"Listening Audio {audio_url}", "reason": str(e)}
+                        )
+            else:
+                for idx, row in df.iterrows():
+                    try:
+                        processor = getattr(self, f"process_{question_type}_question")
+                        question_data = processor(row)
+                        questions_to_create.append(
+                            self.create_question_object(question_data, config)
+                        )
+                        result.successful.append({"title": row["Question"], "id": None})
+                    except Exception as e:
+                        result.failed.append(
+                            {"title": row["Question"], "reason": str(e)}
+                        )
+
+            # Bulk create questions and update IDs in result
+            if questions_to_create:
+                created_questions = Question.objects.bulk_create(questions_to_create)
+                for i, q in enumerate(created_questions):
+                    if result.successful[i]["id"] is None:
+                        result.successful[i]["id"] = q.id
+
+        except Exception as e:
+            logger.error(f"Error processing file: {str(e)}")
+            raise ValidationError(f"Error processing file: {str(e)}")
+
+        return result
+
+    def create_question_object(self, question_data: Dict, config: Dict) -> Question:
+        return Question(
+            answer_type=config["answer_type"],
+            question_data=question_data,
+            category=config.get("category", Question.Category.LANGUAGE),
+            sub_category=config["sub_category"],
+            audio_url=question_data.get("audio_url", None),
+            time_required=self.default_time,
+            tags=[],
+        )

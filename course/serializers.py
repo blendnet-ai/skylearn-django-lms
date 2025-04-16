@@ -167,3 +167,19 @@ class AssessmentConfigSerializer(serializers.Serializer):
         child=serializers.IntegerField(min_value=0),
         help_text="Dict of question types and counts",
     )
+
+
+class QuestionUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    question_type = serializers.ChoiceField(
+        choices=["objective", "reading", "writing", "speaking", "listening"]
+    )
+
+    def validate_file(self, value):
+        if not value.name.endswith(".xlsx") and not value.name.endswith(".csv"):
+            raise serializers.ValidationError(
+                "Only Excel (.xlsx) and CSV (.csv) files are supported"
+            )
+        if value.size > 5242880:  # 5MB limit
+            raise serializers.ValidationError("File size cannot exceed 5MB")
+        return value
