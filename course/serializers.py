@@ -154,3 +154,16 @@ class UploadMaterialSerializer(serializers.ModelSerializer):
 
 class DeleteMaterialTypeSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=["reading", "video"])
+
+
+class AssessmentConfigSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    module_id = serializers.IntegerField()
+    duration = serializers.IntegerField(help_text="Duration in minutes")
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    due_date = serializers.DateTimeField(required=False, allow_null=True)
+    question_counts = serializers.DictField(
+        child=serializers.IntegerField(min_value=0),
+        help_text="Dict of question types and counts",
+    )

@@ -149,6 +149,12 @@ urlpatterns = [
     path(
         "get-module/<int:module_id>/",
         views.get_module_by_id,
-        name="get_module_by_id", 
-    )
+        name="get_module_by_id",
+    ),
+    path("create-assessment/", views.create_assessment, name="create_assessment"),
+    path(
+        "modules/<int:module_id>/delete-assessment/<int:assessment_generation_id>/",
+        views.delete_assessment,
+        name="delete_assessment",
+    ),
 ]

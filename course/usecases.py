@@ -1040,7 +1040,7 @@ class AssessmentModuleUsecase:
                     "heading": f"{name}",
                     "img_url": display_data.get("eval_img_url"),
                 },
-                "name": assessment.assessment_name,
+                "name": name,
                 "max_attempts": max_attempts,
                 "user_attempts": number_of_attempts,
                 "user_id": user_id,
