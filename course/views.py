@@ -1097,6 +1097,9 @@ def update_assessment_config(request, assessment_generation_id):
         )
 
     # Update dates
+    assessment_config.assessment_display_name = serializer.validated_data[
+        "assessment_display_name"
+    ]
     assessment_config.start_date = serializer.validated_data["start_date"]
     assessment_config.end_date = serializer.validated_data["end_date"]
     assessment_config.due_date = serializer.validated_data.get("due_date")
@@ -1112,6 +1115,7 @@ def update_assessment_config(request, assessment_generation_id):
     return Response(
         {
             "message": "Assessment configuration updated successfully",
+            "assessment_display_name": assessment_config.assessment_display_name,
             "assessment_id": assessment_generation_id,
             "start_date": assessment_config.start_date,
             "end_date": assessment_config.end_date,

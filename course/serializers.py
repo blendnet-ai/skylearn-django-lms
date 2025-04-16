@@ -186,6 +186,7 @@ class QuestionUploadSerializer(serializers.Serializer):
 
 
 class AssessmentConfigUpdateSerializer(serializers.Serializer):
+    assessment_display_name = serializers.CharField()
     start_date = serializers.DateTimeField()
     end_date = serializers.DateTimeField()
     due_date = serializers.DateTimeField(required=False, allow_null=True)
