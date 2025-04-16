@@ -26,6 +26,7 @@ from course.serializers import (
     UploadMaterialSerializer,
     DeleteMaterialTypeSerializer,
     AssessmentConfigSerializer,
+    QuestionUploadSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -48,7 +49,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
-from .services import BulkEnrollmentService, AssessmentConfigGenerator
+from .services import BulkEnrollmentService, AssessmentConfigGenerator, QuestionUploader
 from rest_framework import serializers
 from evaluation.usecases import AssessmentUseCase
 
@@ -65,6 +66,7 @@ from django.conf import settings
 from accounts.repositories import CourseProviderRepository
 from course.repositories import ModuleRepository, CourseRepository
 from evaluation.models import AssessmentGenerationConfig
+from django.core.exceptions import ValidationError
 
 
 # admin/course provider
@@ -1046,3 +1048,33 @@ def delete_assessment(request, module_id, assessment_generation_id):
         )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["POST"])
+# @authentication_classes([FirebaseAuthentication])
+# @permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def question_upload(request):
+    serializer = QuestionUploadSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        uploader = QuestionUploader()
+        result = uploader.upload_questions(
+            request.FILES["file"], serializer.validated_data["question_type"]
+        )
+
+        return Response(
+            {
+                "message": f"Processed {len(result.successful)} questions successfully",
+                "successful": result.successful,
+                "failed": result.failed,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except (ValueError, ValidationError) as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )

@@ -157,4 +157,5 @@ urlpatterns = [
         views.delete_assessment,
         name="delete_assessment",
     ),
+    path("questions/upload/", views.question_upload, name="upload-questions"),
 ]
