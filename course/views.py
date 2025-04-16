@@ -1031,7 +1031,7 @@ def delete_assessment(request, module_id, assessment_generation_id):
         module.assignment_configs.remove(assessment_config)
 
         # Then delete the config itself
-        assessment_config.delete()
+        # assessment_config.delete()
 
         return Response(
             {"message": "Assessment deleted successfully"}, status=status.HTTP_200_OK
