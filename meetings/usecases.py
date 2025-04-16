@@ -650,6 +650,7 @@ class MeetingUsecase:
                     "start_timestamp": start_datetime,
                     "end_timestamp": end_datetime,
                     "link": meeting.link,
+                    "provider": f"{meeting.provider.capitalize()} Meeting",
                     "start_time": (
                         meeting.start_time_override
                         if meeting.start_time_override
