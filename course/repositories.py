@@ -8,7 +8,7 @@ from course.models import (
     UploadVideo,
 )
 from evaluation.models import AssessmentGenerationConfig
-from django.db.models import Prefetch, F, CharField
+from django.db.models import Prefetch, F, CharField, Value
 from django.db import connection
 from django.db.models.functions import Concat
 from django.db import transaction, IntegrityError
