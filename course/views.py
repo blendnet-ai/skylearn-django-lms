@@ -27,6 +27,7 @@ from course.serializers import (
     DeleteMaterialTypeSerializer,
     AssessmentConfigSerializer,
     QuestionUploadSerializer,
+    AssessmentConfigUpdateSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -52,6 +53,7 @@ from rest_framework.permissions import IsAuthenticated
 from .services import BulkEnrollmentService, AssessmentConfigGenerator, QuestionUploader
 from rest_framework import serializers
 from evaluation.usecases import AssessmentUseCase
+from datetime import timedelta
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -1072,3 +1074,53 @@ def question_upload(request):
             {"error": str(e)},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["PATCH"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def update_assessment_config(request, assessment_generation_id):
+    """Update assessment config dates and duration"""
+    try:
+        serializer = AssessmentConfigUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        assessment_config = AssessmentGenerationConfig.objects.filter(
+            assessment_generation_id=assessment_generation_id
+        ).first()
+
+        if not assessment_config:
+            return Response(
+                {"error": "Assessment configuration not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Update dates
+        assessment_config.start_date = serializer.validated_data["start_date"]
+        assessment_config.end_date = serializer.validated_data["end_date"]
+        assessment_config.due_date = serializer.validated_data.get("due_date")
+
+        # Update duration if provided
+        if "duration" in serializer.validated_data:
+            assessment_config.test_duration = timedelta(
+                minutes=serializer.validated_data["duration"]
+            )
+
+        assessment_config.save()
+
+        return Response(
+            {
+                "message": "Assessment configuration updated successfully",
+                "assessment_id": assessment_generation_id,
+                "start_date": assessment_config.start_date,
+                "end_date": assessment_config.end_date,
+                "due_date": assessment_config.due_date,
+                "duration_minutes": int(
+                    assessment_config.test_duration.total_seconds() / 60
+                ),
+            }
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
