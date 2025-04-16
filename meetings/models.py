@@ -56,7 +56,21 @@ class MeetingSeries(models.Model):
 
 
 class Meeting(models.Model):
+    PROVIDER_TEAMS = "teams"
+    PROVIDER_ZOOM = "zoom"
+
+    PROVIDER_CHOICES = [
+        (PROVIDER_TEAMS, "Microsoft Teams"),
+        (PROVIDER_ZOOM, "Zoom"),
+    ]
+
     series = models.ForeignKey(MeetingSeries, on_delete=models.CASCADE)
+    provider = models.CharField(
+        max_length=10,
+        choices=PROVIDER_CHOICES,
+        default=PROVIDER_TEAMS,
+        help_text="Meeting platform provider",
+    )
     start_date = models.DateField()
     title_override = models.CharField(max_length=255, null=True, blank=True)
     start_time_override = models.TimeField(null=True, blank=True)
