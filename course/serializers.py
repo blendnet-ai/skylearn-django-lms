@@ -202,3 +202,13 @@ class AssessmentConfigUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Due date must be after end date")
 
         return data
+
+
+class AssessmentConfigDetailSerializer(serializers.Serializer):
+    assessment_generation_id = serializers.IntegerField()
+    assessment_name = serializers.CharField()
+    assessment_display_name = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    due_date = serializers.DateTimeField(allow_null=True)
+    test_duration = serializers.DurationField()

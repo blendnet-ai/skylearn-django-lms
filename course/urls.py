@@ -163,4 +163,9 @@ urlpatterns = [
         views.update_assessment_config,
         name="update_assessment_config",
     ),
+    path(
+        "assessment/<int:assessment_generation_id>/details/",
+        views.get_assessment_config_details,
+        name="get_assessment_config_details",
+    ),
 ]
