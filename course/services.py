@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 import logging
 import json
 import re
+import firebase_admin
 
 logger = logging.getLogger(__name__)
 
