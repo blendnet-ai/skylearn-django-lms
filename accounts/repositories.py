@@ -13,10 +13,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class StudentRepository:
     def get_student_by_student_id(student_id):
         return Student.objects.get(student_id=student_id)
-    
+
     def get_students_by_student_ids(student_ids):
         return Student.objects.filter(student_id__in=student_ids)
 
@@ -29,7 +30,7 @@ class StudentRepository:
     def add_students_to_batch(batch_id, student_ids):
         batch = BatchRepository.get_batch_by_id(batch_id)
         students = StudentRepository.get_students_by_student_ids(student_ids)
-        
+
         for student in students:
             student.batches.add(batch)
             student.save()
@@ -37,10 +38,9 @@ class StudentRepository:
     def get_batches_by_student_id(student_id):
         return Student.objects.get(student_id=student_id).batches.all()
 
-
     def create_student(user):
         return Student.objects.get_or_create(student=user)
-    
+
     def get_all_students():
         return Student.objects.all()
 
@@ -48,7 +48,7 @@ class StudentRepository:
     def get_active_students():
         """Get all students with active status"""
         return Student.objects.filter(status=Student.Status.ACTIVE)
-    
+
     @staticmethod
     def get_inactive_students():
         """Get all students with inactive status"""
@@ -61,7 +61,7 @@ class StudentRepository:
         student.status = Student.Status.INACTIVE
         student.save()
 
-    @staticmethod   
+    @staticmethod
     def mark_student_active(student_id):
         """Mark a student as active"""
         student = Student.objects.get(student_id=student_id)
@@ -76,7 +76,9 @@ class StudentRepository:
             student_ids (list): List of student user IDs to mark as inactive
         """
         try:
-            Student.objects.filter(student_id__in=student_ids).update(status=Student.Status.INACTIVE)
+            Student.objects.filter(student_id__in=student_ids).update(
+                status=Student.Status.INACTIVE
+            )
         except Exception as e:
             logger.error(f"Error marking students inactive in bulk: {str(e)}")
 
@@ -88,11 +90,11 @@ class StudentRepository:
             student_ids (list): List of student user IDs to mark as active
         """
         try:
-            Student.objects.filter(student_id__in=student_ids).update(status=Student.Status.ACTIVE)
+            Student.objects.filter(student_id__in=student_ids).update(
+                status=Student.Status.ACTIVE
+            )
         except Exception as e:
             logger.error(f"Error marking students active in bulk: {str(e)}")
-
-
 
 
 class UserRepository:
@@ -111,10 +113,10 @@ class UserRepository:
         - If only end_date: check if not ended
         - If both dates: check if current date is between them
         3. Are students
-        
+
         Args:
             days (int): Number of days of inactivity to check
-            
+
         Returns:
             QuerySet: Filtered User objects
         """
@@ -128,23 +130,36 @@ class UserRepository:
         # Build batch date conditions
         batch_conditions = Q(
             # Case 1: Both dates are null - consider active
-            Q(student__batches__start_date__isnull=True, 
-            student__batches__end_date__isnull=True) |
+            Q(
+                student__batches__start_date__isnull=True,
+                student__batches__end_date__isnull=True,
+            )
+            |
             # Case 2: Only start_date exists - check if started
-            Q(student__batches__start_date__lte=current_date,
-            student__batches__end_date__isnull=True) |
+            Q(
+                student__batches__start_date__lte=current_date,
+                student__batches__end_date__isnull=True,
+            )
+            |
             # Case 3: Only end_date exists - check if not ended
-            Q(student__batches__start_date__isnull=True,
-            student__batches__end_date__gte=current_date) |
+            Q(
+                student__batches__start_date__isnull=True,
+                student__batches__end_date__gte=current_date,
+            )
+            |
             # Case 4: Both dates exist - check if current date is between them
-            Q(student__batches__start_date__lte=current_date,
-            student__batches__end_date__gte=current_date)
+            Q(
+                student__batches__start_date__lte=current_date,
+                student__batches__end_date__gte=current_date,
+            )
         )
 
-        return User.objects.filter(
-            last_login__lt=threshold_date,
-            is_student=True
-        ).filter(batch_conditions).distinct()
+        return (
+            User.objects.filter(last_login__lt=threshold_date, is_student=True)
+            .filter(batch_conditions)
+            .distinct()
+        )
+
 
 class CourseProviderAdminRepository:
     @staticmethod
@@ -179,7 +194,7 @@ class CourseProviderRepository:
 
         except CourseProviderAdmin.DoesNotExist:
             return None
-    
+
     def get_all_course_providers():
         return CourseProvider.objects.all()
 
@@ -209,39 +224,38 @@ class LecturerRepository:
     @staticmethod
     def get_lecturers_by_course_provider_id(course_provider_id):
         """Get all lecturers associated with a course provider"""
-        return Lecturer.objects.filter(
-            course_provider_id=course_provider_id
-        ).select_related('lecturer').values(
-            'lecturer_id',
-            'guid',
-            'upn',
-            first_name=F('lecturer__first_name'),
-            last_name=F('lecturer__last_name'),
-            email=F('lecturer__email')
+        return (
+            Lecturer.objects.filter(course_provider_id=course_provider_id)
+            .select_related("lecturer")
+            .values(
+                "lecturer_id",
+                "guid",
+                "upn",
+                first_name=F("lecturer__first_name"),
+                last_name=F("lecturer__last_name"),
+                email=F("lecturer__email"),
+            )
         )
 
 
 class UserConfigMappingRepository:
     @staticmethod
     def create_user_config_mapping(email: str, config: dict):
-        return UserConfigMapping.objects.create(
-            email=email,
-            config=config
-        )
+        return UserConfigMapping.objects.create(email=email, config=config)
+
     @staticmethod
     def get_or_create(email: str, config: dict):
         return UserConfigMapping.objects.get_or_create(
-            email=email,
-            defaults={"config": config}
+            email=email, defaults={"config": config}
         )
+
     @staticmethod
     def update_or_create(email: str, config: dict):
 
         return UserConfigMapping.objects.update_or_create(
-            email=email,
-            defaults={"config": config}
+            email=email, defaults={"config": config}
         )
-    
+
     @staticmethod
     def get_user_config_mapping(email: str):
 
@@ -255,11 +269,23 @@ class UserConfigMappingRepository:
         return UserConfigMapping.objects.bulk_create(config_mappings)
 
     @staticmethod
-    def get_configs_by_course_code(course_code: str):        
+    def get_configs_by_course_code(course_code: str):
         # Match course_code exactly (between commas or at the start/end of the string)
-        regex_pattern = rf'(^|,){course_code}($|,)'
+        regex_pattern = rf"(^|,){course_code}($|,)"
 
         return UserConfigMapping.objects.filter(
             Q(config__course_codes__regex=regex_pattern)
         )
 
+    @staticmethod
+    def get_configs_for_day(date):
+        """
+        Get all user config mappings created on a specific date
+
+        Args:
+            date (datetime.date): The date to filter on
+
+        Returns:
+            QuerySet: UserConfigMapping objects created on the specified date
+        """
+        return UserConfigMapping.objects.filter(created_at__date=date)
