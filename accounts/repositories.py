@@ -164,12 +164,14 @@ class UserRepository:
 class CourseProviderAdminRepository:
     @staticmethod
     def create_course_provider_admin(user):
-        return CourseProviderAdmin.objects.create(course_provider_admin=user)
+        return CourseProviderAdmin.objects.get_or_create(course_provider_admin=user)[0]
 
     @staticmethod
     def associate_with_course_provider(course_provider_admin, course_provider):
-        course_provider.admins.add(course_provider_admin)
-        course_provider.save()
+        # Check if admin is already associated with this course provider
+        if not course_provider.admins.filter(id=course_provider_admin.id).exists():
+            course_provider.admins.add(course_provider_admin)
+            course_provider.save()
         return course_provider
 
 
@@ -217,13 +219,13 @@ class LecturerRepository:
 
     @staticmethod
     def create_lecturer(user, guid, upn, zoom_gmail, course_provider):
-        return Lecturer.objects.create(
+        return Lecturer.objects.get_or_create(
             lecturer=user,
             guid=guid,
             upn=upn,
             zoom_gmail=zoom_gmail,
             course_provider=course_provider,
-        )
+        )[0]
 
     @staticmethod
     def get_lecturers_by_course_provider_id(course_provider_id):

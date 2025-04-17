@@ -568,6 +568,9 @@ class UserSyncUsecase:
                             logger.info(f"Sent password email to: {mapping.email}")
 
                     # Assign role
+                    user_profile = UserProfileRepository.create_user_profile(
+                        user_id=user.id
+                    )
                     RoleAssignmentUsecase.assign_role_from_config(user)
                     processed_users.append(mapping.email)
                     logger.info(f"Processed role assignment for: {mapping.email}")
