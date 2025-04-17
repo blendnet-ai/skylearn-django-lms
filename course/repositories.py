@@ -127,6 +127,12 @@ class BatchRepository:
             student__student_id=user_id, course_id=course_id
         ).first()
 
+    @staticmethod
+    def delete_batch(batch_id):
+        """Delete a batch by id"""
+        batch = Batch.objects.get(id=batch_id)
+        batch.delete()
+
 
 class LiveClassSeriesBatchAllocationRepository:
     @staticmethod
