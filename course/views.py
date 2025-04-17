@@ -1203,3 +1203,35 @@ def delete_batch(_, batch_id):
         )
     except Batch.DoesNotExist:
         return Response({"error": "Batch not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["GET"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def get_batch_by_id_and_course(request, batch_id):
+    """Get batch details by batch ID and course ID"""
+    try:
+        batch = Batch.objects.get(id=batch_id)
+        return Response(
+            {
+                "batch": {
+                    "id": batch.id,
+                    "title": batch.title,
+                    "lecturer": {
+                        "id": batch.lecturer.id,
+                        "name": f"{batch.lecturer.first_name} {batch.lecturer.last_name}",
+                    },
+                    "course_id": batch.course_id,
+                    "start_date": batch.start_date,
+                    "end_date": batch.end_date,
+                    "created_at": batch.created_at,
+                }
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Batch.DoesNotExist:
+        return Response(
+            {"error": "Batch not found for given course"},
+            status=status.HTTP_404_NOT_FOUND,
+        )

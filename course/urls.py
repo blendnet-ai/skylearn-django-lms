@@ -170,4 +170,9 @@ urlpatterns = [
     ),
     path("batch/<int:batch_id>/update/", views.update_batch, name="update_batch"),
     path("batch/<int:batch_id>/delete/", views.delete_batch, name="delete_batch"),
+    path(
+        "batch/<int:batch_id>/",
+        views.get_batch_by_id_and_course,
+        name="get-batch-details",
+    ),
 ]
