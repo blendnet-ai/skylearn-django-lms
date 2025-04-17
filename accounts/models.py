@@ -5,9 +5,11 @@ from django.db.models import Q
 
 from course.models import Batch
 
+
 class UserConfigMapping(models.Model):
     email = models.EmailField(unique=True)
     config = models.JSONField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class CustomUserManager(UserManager):
@@ -77,7 +79,7 @@ class Student(models.Model):
         ACTIVE = 0, "Active"
         INACTIVE = 1, "Inactive"
         SUSPENDED = 2, "Suspended"
-       
+
     student = models.OneToOneField(User, on_delete=models.CASCADE)
     batches = models.ManyToManyField(Batch, blank=True)
     status = models.IntegerField(choices=Status.choices, default=int(Status.ACTIVE))
@@ -101,11 +103,7 @@ class Student(models.Model):
 
     @property
     def status_string(self):
-        status_map = {
-            0: "Active",
-            1: "Inactive",
-            2: "Suspended"
-        }
+        status_map = {0: "Active", 1: "Inactive", 2: "Suspended"}
         return status_map.get(self.status, "Unknown")
 
 
