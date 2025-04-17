@@ -96,7 +96,7 @@ class BatchRepository:
             end_date=end_date,
             form=form,
         )
-        return batch
+        return batch, created
 
     @staticmethod
     def get_batch_by_id(batch_id):

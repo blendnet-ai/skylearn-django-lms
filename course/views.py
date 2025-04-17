@@ -337,13 +337,24 @@ def create_batch(request, course_id):
             )
 
         try:
-            batch = BatchUseCase.create_batch(
-                course_id, serializer.validated_data["title"], lecturer_id, form=form
+            batch, created = BatchUseCase.create_batch(
+                course_id,
+                serializer.validated_data["title"],
+                lecturer_id,
+                form=form,
+                start_date=serializer.validated_data.get("start_date"),
+                end_date=serializer.validated_data.get("end_date"),
             )
-            return Response(
-                {"message": "Batch created successfully.", "id": batch.id},
-                status=status.HTTP_201_CREATED,
-            )
+            if created:
+                return Response(
+                    {"message": "Batch created successfully.", "id": batch.id},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(
+                    {"message": "Batch Already exists.", "id": batch.id},
+                    status=status.HTTP_200_OK,
+                )
         except Course.DoesNotExist:
             return Response(
                 {"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND
