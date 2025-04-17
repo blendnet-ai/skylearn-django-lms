@@ -13,6 +13,7 @@ import re
 import firebase_admin
 import csv
 from pathlib import Path
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ class BulkEnrollmentService:
 
         except Exception as e:
             logger.error(
-                f"Error processing row for email {row.get('Email', 'No Email')}: {str(e)}"
+                f"Error processing row for email {row.get('Email', 'No Email')}: {str(e)}\n{traceback.format_exc()}"
             )
             self.results["failed"].append(
                 {"email": row.get("Email", "No Email Found"), "error": str(e)}
@@ -141,7 +142,7 @@ class BulkEnrollmentService:
         phone = BulkEnrollmentService.clean_value(row["Phone"])
         if phone:
             # Remove any non-digit characters
-            phone = re.sub(r"\D", "", phone)
+            phone = re.sub(r"\D", "", str(phone))
             # Check if phone number is valid (10 digits)
             if not re.match(r"^\d{10}$", phone):
                 raise ValidationError(
@@ -248,7 +249,7 @@ class BulkEnrollmentService:
         existing_config = mapping.config
 
         # Update user data
-        if "user_data" in existing_config:
+        if "user_data" in existing_config and existing_config["user_data"]:
             existing_config["user_data"].update(new_config["user_data"])
         else:
             existing_config["user_data"] = new_config["user_data"]
