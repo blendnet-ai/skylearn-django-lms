@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from course.models import Batch, Course, Module, Upload, UploadVideo
 from meetings.models import Meeting, MeetingSeries
+from accounts.models import User
 
 
 class LiveClassSeriesSerializer(serializers.ModelSerializer):
@@ -213,3 +214,30 @@ class AssessmentConfigDetailSerializer(serializers.Serializer):
     end_date = serializers.DateTimeField()
     due_date = serializers.DateTimeField(allow_null=True)
     test_duration = serializers.DurationField()
+
+
+class BatchUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200, required=False)
+    lecturer_id = serializers.IntegerField(required=False)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+
+    def validate(self, data):
+        """Validate dates"""
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError("End date must be after start date")
+
+        return data
+
+    def validate_lecturer_id(self, value):
+        """Validate lecturer exists and has correct role"""
+        try:
+            lecturer = User.objects.get(id=value)
+            if not lecturer.is_lecturer:
+                raise serializers.ValidationError("Selected user is not a lecturer")
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Lecturer not found")
