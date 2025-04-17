@@ -324,6 +324,7 @@ def create_batch(request, course_id):
 
         # Validate if lecturer exists
         try:
+            form = FeedbackFormRepository.get_by_name("student_feedback_form")
             lecturer = User.objects.get(id=lecturer_id)
             if not lecturer.is_lecturer:
                 return Response(
@@ -337,9 +338,7 @@ def create_batch(request, course_id):
 
         try:
             batch = BatchUseCase.create_batch(
-                course_id,
-                serializer.validated_data["title"],
-                lecturer_id,
+                course_id, serializer.validated_data["title"], lecturer_id, form=form
             )
             return Response(
                 {"message": "Batch created successfully.", "id": batch.id},

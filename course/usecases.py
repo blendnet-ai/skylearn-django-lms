@@ -365,9 +365,10 @@ class BatchUseCase:
         if not lecturer.is_lecturer:
 
             raise BatchUseCase.UserIsNotLecturerException()
-        return BatchRepository.create_batch(
+        batch = BatchRepository.create_batch(
             course, title, lecturer, start_date, end_date, form
         )
+        return batch
 
     @staticmethod
     def get_batch_by_user_id_and_course_id(user_id, course_id):
