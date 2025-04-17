@@ -11,6 +11,8 @@ import logging
 import json
 import re
 import firebase_admin
+import csv
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +218,20 @@ class BulkEnrollmentService:
 
         # Create Firebase user
         firebase_id = CustomAuth.create_user(email=email, password=password)
+        csv_path = Path("user_creds.csv")
+        file_exists = csv_path.exists()
 
+        with open(csv_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["email", "password", "created_at"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(
+                {
+                    "email": email,
+                    "password": password,
+                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
         # Create config mapping - ensure config is JSON serializable
         UserConfigMapping.objects.create(
             email=email,
