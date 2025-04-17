@@ -280,3 +280,16 @@ class UserConfigMappingRepository:
         return UserConfigMapping.objects.filter(
             Q(config__course_codes__regex=regex_pattern)
         )
+
+    @staticmethod
+    def get_configs_for_day(date):
+        """
+        Get all user config mappings created on a specific date
+
+        Args:
+            date (datetime.date): The date to filter on
+
+        Returns:
+            QuerySet: UserConfigMapping objects created on the specified date
+        """
+        return UserConfigMapping.objects.filter(created_at__date=date)

@@ -7,6 +7,7 @@ from ast import literal_eval
 from dotenv import load_dotenv
 from attr.converters import to_bool
 
+
 load_dotenv()
 
 from celery.schedules import crontab
@@ -463,6 +464,10 @@ CELERY_BEAT_SCHEDULE = {
             hour=18, minute=35
         ),  # Executes at 6:00 PM UTC (11:30 PM IST)
     },
+    "sync_user_configs": {
+        "task": "accounts.tasks.sync_configs_task",
+        "schedule": crontab(minute=0),  # Executes every hour at minute 0
+    },
 }
 
 # Task-specific settings
@@ -592,7 +597,6 @@ REPORT_SPEADSHEET_ID = os.environ.get("REPORT_SPEADSHEET_ID")
 FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "https://lms.sakshm.com")
 
 ORBIT_COURSE_CODES = os.environ.get("ORBIT_COURSE_CODES")
-
 TEST_EMAILS = os.environ.get("TEST_EMAILS", [])
 REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS = os.environ.get(
     "REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS"
@@ -605,4 +609,4 @@ MEETING_SERVICE = get_meeting_service()
 ZOOM_API_KEY = os.environ.get("ZOOM_API_KEY", "")
 ZOOM_API_SECRET = os.environ.get("ZOOM_API_SECRET", "")
 ZOOM_ACCOUNT_ID = os.environ.get("ZOOM_ACCOUNT_ID", "")
-ZOOM_ACCESS_TOKEN_CACHE_KEY="zoom_access_token"
+ZOOM_ACCESS_TOKEN_CACHE_KEY = "zoom_access_token"

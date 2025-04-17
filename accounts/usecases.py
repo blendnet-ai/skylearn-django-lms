@@ -23,6 +23,12 @@ from Feedback.repositories import FeedbackFormRepository
 import logging
 from meetings.repositories import MeetingRepository
 from django.contrib.auth import get_user_model
+from custom_auth.services.custom_auth_service import CustomAuth
+from custom_auth.services.sendgrid_service import SendgridService
+from evaluation.management.register.utils import Utils
+import firebase_admin
+import csv
+from pathlib import Path
 
 User = get_user_model()
 
@@ -484,3 +490,100 @@ class StudentStatusUsecase:
         except (Student.DoesNotExist, ValueError, AttributeError) as e:
             logger.error(f"Error in update_student_status: {str(e)}")
             raise
+
+
+class UserSyncUsecase:
+    @staticmethod
+    def sync_users_from_config():
+        """
+        Creates users and assigns/updates roles for all users in config mappings.
+        Creates new users in Firebase if they don't exist and saves passwords to CSV.
+        """
+        try:
+            config_mappings = UserConfigMappingRepository.get_configs_for_day(
+                datetime.now().date()
+            )
+
+            processed_users = []
+            failed_users = []
+            csv_path = Path("user_credentials.csv")
+            file_exists = csv_path.exists()
+
+            for mapping in config_mappings:
+                try:
+                    user = User.objects.filter(email=mapping.email).first()
+
+                    if not user:
+                        try:
+                            # Try to get from Firebase first
+                            firebase_uid = CustomAuth.get_user_by_email(mapping.email)
+                            # Create user with Firebase data
+                            user = User.objects.create(
+                                email=mapping.email,
+                                username=firebase_uid,
+                                firebase_uid=firebase_uid,
+                                first_name=mapping.config.get("first_name", ""),
+                                last_name=mapping.config.get("last_name", ""),
+                            )
+                            logger.info(
+                                f"Created new user from Firebase: {mapping.email}"
+                            )
+
+                        except firebase_admin.auth.UserNotFoundError:
+                            # Generate password and create user in Firebase
+                            password = Utils.generate_random_password()
+                            firebase_uid = CustomAuth.create_user(
+                                email=mapping.email, password=password
+                            )
+
+                            # Create user in Django
+                            user = User.objects.create(
+                                email=mapping.email,
+                                username=firebase_uid,
+                                firebase_uid=firebase_uid,
+                                first_name=mapping.config.get("first_name", ""),
+                                last_name=mapping.config.get("last_name", ""),
+                            )
+
+                            # Immediately write credentials to CSV
+                            with open(csv_path, "a", newline="") as f:
+                                writer = csv.DictWriter(
+                                    f, fieldnames=["email", "password", "created_at"]
+                                )
+                                if not file_exists:
+                                    writer.writeheader()
+                                    file_exists = True
+                                writer.writerow(
+                                    {
+                                        "email": mapping.email,
+                                        "password": password,
+                                        "created_at": datetime.now().strftime(
+                                            "%Y-%m-%d %H:%M:%S"
+                                        ),
+                                    }
+                                )
+                            logger.info(f"Saved credentials for: {mapping.email}")
+                            # Send password email
+                            SendgridService.send_password_email(mapping.email, password)
+                            logger.info(f"Sent password email to: {mapping.email}")
+
+                    # Assign role
+                    RoleAssignmentUsecase.assign_role_from_config(user)
+                    processed_users.append(mapping.email)
+                    logger.info(f"Processed role assignment for: {mapping.email}")
+
+                except Exception as e:
+                    failed_users.append({"email": mapping.email, "error": str(e)})
+                    logger.error(f"Failed to process user {mapping.email}: {str(e)}")
+
+            return {
+                "success": True,
+                "processed_users": processed_users,
+                "failed_users": failed_users,
+                "total_processed": len(processed_users),
+                "total_failed": len(failed_users),
+            }
+
+        except Exception as e:
+            logger.error(f"Error in sync_users_from_config: {str(e)}")
+            return {"success": False, "error": str(e)}
