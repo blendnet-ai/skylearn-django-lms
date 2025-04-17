@@ -168,4 +168,5 @@ urlpatterns = [
         views.get_assessment_config_details,
         name="get_assessment_config_details",
     ),
+    path("batch/<int:batch_id>/update/", views.update_batch, name="update_batch"),
 ]

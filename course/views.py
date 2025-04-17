@@ -29,6 +29,7 @@ from course.serializers import (
     QuestionUploadSerializer,
     AssessmentConfigUpdateSerializer,
     AssessmentConfigDetailSerializer,
+    BatchUpdateSerializer,
 )
 from course.usecases import (
     BatchUseCase,
@@ -67,7 +68,8 @@ from rest_framework.response import Response
 from accounts.usecases import StudentProfileUsecase
 from django.conf import settings
 from accounts.repositories import CourseProviderRepository
-from course.repositories import ModuleRepository, CourseRepository
+from course.models import Batch
+from course.repositories import ModuleRepository, CourseRepository, BatchRepository
 from evaluation.models import AssessmentGenerationConfig
 from django.core.exceptions import ValidationError
 
@@ -1144,3 +1146,47 @@ def get_assessment_config_details(request, assessment_generation_id):
 
     serializer = AssessmentConfigDetailSerializer(assessment_config)
     return Response(serializer.data)
+
+
+@api_view(["PATCH"])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdmin])
+def update_batch(request, batch_id):
+    """Update batch details"""
+    try:
+        batch = BatchRepository.get_batch_by_id(batch_id)
+        serializer = BatchUpdateSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update fields if provided
+        if "title" in serializer.validated_data:
+            batch.title = serializer.validated_data["title"]
+
+        if "lecturer_id" in serializer.validated_data:
+            batch.lecturer_id = serializer.validated_data["lecturer_id"]
+
+        if "start_date" in serializer.validated_data:
+            batch.start_date = serializer.validated_data["start_date"]
+
+        if "end_date" in serializer.validated_data:
+            batch.end_date = serializer.validated_data["end_date"]
+
+        batch.save()
+
+        return Response(
+            {
+                "message": "Batch updated successfully",
+                "batch": {
+                    "id": batch.id,
+                    "title": batch.title,
+                    "lecturer_id": batch.lecturer_id,
+                    "start_date": batch.start_date,
+                    "end_date": batch.end_date,
+                },
+            }
+        )
+
+    except Batch.DoesNotExist:
+        return Response({"error": "Batch not found"}, status=status.HTTP_404_NOT_FOUND)
