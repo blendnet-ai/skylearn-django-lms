@@ -3,53 +3,75 @@ from django.template import Template, Context
 from django.conf import settings
 from django.core.mail import send_mass_mail
 import requests
-from .repositories import UserRepository, NotificationRecordRepository, NotificationIntentRepository
-from .providers import EmailNotificationProvider, TelegramNotificationProvider
+from notifications.repositories import (
+    UserRepository,
+    NotificationRecordRepository,
+    NotificationIntentRepository,
+)
+from notifications.providers import (
+    EmailNotificationProvider,
+    TelegramNotificationProvider,
+)
 import logging
-from .exceptions import NotificationIntentProcessingError
-from .models import NotificationIntent
+from notifications.exceptions import NotificationIntentProcessingError
+from notifications.models import NotificationIntent
 
 logger = logging.getLogger(__name__)
 
+
 class NotificationService:
     _providers = {
-        'email': EmailNotificationProvider(),
-        'telegram': TelegramNotificationProvider()
+        "email": EmailNotificationProvider(),
+        "telegram": TelegramNotificationProvider(),
     }
 
     @staticmethod
     def create_intent(message_template, variables, user_ids, medium, scheduled_at):
         if len(variables) != len(user_ids):
-            raise ValueError("The number of variables must match the number of user IDs.")
-        
+            raise ValueError(
+                "The number of variables must match the number of user IDs."
+            )
+
         return NotificationIntentRepository.create_intent(
             message_template=message_template,
             variables=variables,  # Pass the list of dicts
             user_ids=user_ids,
             medium=medium,
-            scheduled_at=scheduled_at
+            scheduled_at=scheduled_at,
         )
-    
+
+    # First, modify the UserRepository to get basic user info
+
+    @staticmethod
+    def get_basic_user_info(user_ids):
+        """Get basic user info (email) even if user profile doesn't exist"""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        print("ts")
+        return User.objects.filter(id__in=user_ids)
+
     @staticmethod
     def process_intent(intent_id):
         try:
             intent = NotificationIntentRepository.get_intent_by_id(intent_id)
-            
+
             if intent.state == NotificationIntent.State.PICKED:
                 logger.info(f"Intent {intent_id} is in PICKED state")
                 return
-            
+
             NotificationIntentRepository.mark_intent_as_processing(intent)
-             
+            basic_users = NotificationService.get_basic_user_info(intent.user_ids)
             # Get users and prepare notifications
             existing_users = UserRepository.get_users_by_ids(intent.user_ids)
-            
-           
-            
+
             # Create mapping of user_id to user object
             user_map = {str(user.user_id): user.user for user in existing_users}
-            user_telegram_map = {str(user.user_id): user.telegram_chat_id for user in existing_users}
-
+            user_telegram_map = {
+                str(user.user_id): user.telegram_chat_id for user in existing_users
+            }
+            basic_user_map = {str(user.id): user for user in basic_users}
+            print(basic_user_map)
             provider = NotificationService._providers.get(intent.medium)
             if not provider:
                 raise ValueError(f"Unsupported notification medium: {intent.medium}")
@@ -57,57 +79,99 @@ class NotificationService:
             records = []
             messages_data = []
             skipped_users = []
-            
+
             # Process users and create notifications
             for user_id, user_variables in zip(intent.user_ids, intent.variables):
                 # Skip if user doesn't exist
                 if str(user_id) not in user_map:
-                    skipped_users.append({
-                        'user_id': user_id,
-                        'variables': user_variables,
-                        'reason': 'User not found in database'
-                    })
-                    logger.warning(
-                        f"Skipping notification for user_id={user_id}. "
-                        f"Reason: User not found in database. "
-                        f"Variables that would have been used: {user_variables}"
-                    )
-                    continue
-                
+                    if (
+                        intent.medium == "email"
+                        and str(user_id) in basic_user_map
+                        and (
+                            intent.notification_type != "meeting_24h"
+                            and intent.notification_type != "meeting_30m"
+                        )
+                    ):
+                        basic_user = basic_user_map[str(user_id)]
+                        rendered_message = NotificationService.render_message(
+                            intent.message_template, user_variables
+                        )
+
+                        record = NotificationRecordRepository.create_record(
+                            intent=intent,
+                            user=basic_user,
+                            message=rendered_message,
+                            medium="email",
+                        )
+
+                        if record:
+                            records.append(record)
+                            messages_data.append(
+                                {
+                                    "record_id": record.record_id,
+                                    "recipient": basic_user.email,
+                                    "message": rendered_message,
+                                    "variables": user_variables,
+                                }
+                            )
+                            logger.info(
+                                f"Added email notification for user without profile: {user_id}"
+                            )
+                            continue
+                    else:
+                        skipped_users.append(
+                            {
+                                "user_id": user_id,
+                                "variables": user_variables,
+                                "reason": "User not found in database",
+                            }
+                        )
+                        logger.warning(
+                            f"Skipping notification for user_id={user_id}. "
+                            f"Reason: User not found in database. "
+                            f"Variables that would have been used: {user_variables}"
+                        )
+                        continue
+
                 user = user_map[str(user_id)]
                 telegram_chat_id = user_telegram_map[str(user_id)]
-                
+
                 rendered_message = NotificationService.render_message(
-                    intent.message_template,
-                    user_variables
+                    intent.message_template, user_variables
                 )
-                
+
                 record = NotificationRecordRepository.create_record(
                     intent=intent,
                     user=user,
-                    message=rendered_message, 
-                    medium=intent.medium
+                    message=rendered_message,
+                    medium=intent.medium,
                 )
-                
+
                 if record is None:
-                    skipped_users.append({
-                        'user_id': user_id,
-                        'variables': user_variables,
-                        'reason': 'Notification already sent'
-                    })
-                    logger.info(f"Skipping already sent notification for user_id={user_id}")
+                    skipped_users.append(
+                        {
+                            "user_id": user_id,
+                            "variables": user_variables,
+                            "reason": "Notification already sent",
+                        }
+                    )
+                    logger.info(
+                        f"Skipping already sent notification for user_id={user_id}"
+                    )
                     continue
-                
+
                 records.append(record)
-                recipient_id = user.email if intent.medium == 'email' else telegram_chat_id
+                recipient_id = (
+                    user.email if intent.medium == "email" else telegram_chat_id
+                )
                 message_data = {
-                    'record_id': record.record_id,
-                    'recipient': recipient_id,
-                    'message': rendered_message,
-                    'variables': user_variables
+                    "record_id": record.record_id,
+                    "recipient": recipient_id,
+                    "message": rendered_message,
+                    "variables": user_variables,
                 }
                 messages_data.append(message_data)
-            
+
             # Log summary of skipped users
             if skipped_users:
                 logger.info(
@@ -115,31 +179,33 @@ class NotificationService:
                     f"Total users processed: {len(messages_data)}. "
                     f"Skipped users summary: {skipped_users}"
                 )
-            
+
             # Send notifications if we have valid messages
             if messages_data:
                 sent_status = provider.send_message(messages_data)
-                
+
                 record_map = {record.record_id: record for record in records}
-                
+
                 for status in sent_status:
-                    record_id = status['record_id']
-                    success = status['success']
-                    error = status.get('error')
-                    
+                    record_id = status["record_id"]
+                    success = status["success"]
+                    error = status.get("error")
+
                     record = record_map.get(record_id)
                     if record:
-                        NotificationRecordRepository.mark_record_as_sent(record, success,error)
-            
+                        NotificationRecordRepository.mark_record_as_sent(
+                            record, success, error
+                        )
+
             NotificationIntentRepository.mark_intent_as_completed(intent)
             NotificationIntentRepository.mark_intent_as_processed(intent)
-            
+
         except Exception as e:
             logger.error(f"Failed to process notification intent {intent_id}: {str(e)}")
             if intent:
                 NotificationIntentRepository.mark_intent_as_failed(intent, str(e))
             raise NotificationIntentProcessingError(str(e))
-    
+
     @staticmethod
     def render_message(template_str, variables):
         # Check if the input is a template or a plain string
@@ -149,7 +215,7 @@ class NotificationService:
         template = Template(template_str)
         context = Context({**variables})
         return template.render(context)
-    
+
     def send_immediate_notification(intent_id):
         intent = NotificationIntentRepository.get_intent_by_id(intent_id)
         NotificationService.process_intent(intent_id)
