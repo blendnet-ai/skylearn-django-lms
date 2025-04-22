@@ -727,37 +727,45 @@ class MeetingUsecase:
         return recordings_data
 
     def get_sas_url_for_recording(meeting_blob_url: str):
+        logger.info(f"meeting blob url {meeting_blob_url}")
         clean_url = meeting_blob_url.split("?")[0]
-        # Parse the URL
         parsed_url = urllib.parse.urlparse(clean_url)
-        # Split the path and remove empty strings
         path_parts = [p for p in parsed_url.path.split("/") if p]
-        # First part is container name, rest is blob name
+
         container_name = path_parts[0]
         blob_name = "/".join(path_parts[1:]).replace("%20", " ")
 
-        # Determine content type based on file extension
-        content_type = None
-        file_extension = blob_name.lower().split(".")[-1] if "." in blob_name else ""
+        # Try to get content type from blob metadata
+        try:
+            blob_props = storage_service.get_blob_details(container_name, blob_name)
+            content_type = blob_props.get("content_settings", {}).get("content_type")
+            logger.info(f"content {content_type}")
+        except Exception as e:
+            logger.info(f"exception {e}")
+            content_type = None
 
-        content_types = {
-            "pdf": "application/pdf",
-            "mp4": "video/mp4",
-            "mov": "video/quicktime",
-            "doc": "application/msword",
-            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "xls": "application/vnd.ms-excel",
-            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "ppt": "application/vnd.ms-powerpoint",
-            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            "jpg": "image/jpeg",
-            "jpeg": "image/jpeg",
-            "png": "image/png",
-            "gif": "image/gif",
-        }
+        # Fallback to content type from extension if not found
+        if not content_type:
+            content_types = {
+                "pdf": "application/pdf",
+                "mp4": "video/mp4",
+                "mov": "video/quicktime",
+                "doc": "application/msword",
+                "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "xls": "application/vnd.ms-excel",
+                "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "ppt": "application/vnd.ms-powerpoint",
+                "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "jpg": "image/jpeg",
+                "jpeg": "image/jpeg",
+                "png": "image/png",
+                "gif": "image/gif",
+            }
 
-        content_type = content_types.get(file_extension, "application/octet-stream")
+            file_extension = blob_name.lower().split(".")[-1] if "." in blob_name else ""
+            content_type = content_types.get(file_extension, "application/octet-stream")
 
+        # Generate SAS URL
         sas_url = storage_service.generate_blob_access_url(
             container_name,
             blob_name,
@@ -766,6 +774,7 @@ class MeetingUsecase:
             allow_write=False,
             content_type=content_type,
         )
+
         return sas_url
 
     @staticmethod
