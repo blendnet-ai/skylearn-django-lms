@@ -18,6 +18,148 @@ import traceback
 logger = logging.getLogger(__name__)
 
 
+class LecturerEnrollmentService:
+    def __init__(self):
+        self.results = {"success": [], "failed": []}
+
+    def enroll_lecturer(self, config: Dict) -> Dict:
+        """Process lecturer enrollment with the provided config"""
+        try:
+            # Validate config data
+            self._validate_config(config)
+            
+            email = config["email_address"].lower().strip()
+
+            # Check if user exists in UserConfigMapping
+            user_mapping = UserConfigMapping.objects.filter(email=email).first()
+
+            try:
+                # Check Firebase user existence
+                firebase_user = CustomAuth.get_user_by_email(email)
+                firebase_exists = True
+            except firebase_admin.auth.UserNotFoundError:
+                firebase_exists = False
+
+            if user_mapping and firebase_exists:
+                # Update existing user config
+                self._update_existing_mapping(user_mapping, config)
+                message = "Updated existing lecturer config"
+            elif user_mapping and not firebase_exists:
+                # Create Firebase user and update config
+                password = Utils.generate_random_password()
+                firebase_id = CustomAuth.create_user(email=email, password=password)
+                SendgridService.send_password_email(email, password)
+                self._update_existing_mapping(user_mapping, config)
+                message = "Created Firebase user and updated lecturer config"
+            elif not user_mapping and firebase_exists:
+                # Create new config mapping
+                UserConfigMapping.objects.create(email=email, config=config)
+                message = "Created lecturer config for existing Firebase user"
+            else:
+                # Create new user with Firebase auth and config
+                self._create_new_user(email, config)
+                message = "Created new lecturer with Firebase auth and config"
+
+            return {"success": True, "message": message}
+
+        except ValidationError as e:
+            logger.error(f"Validation error for {config.get('email_address')}: {str(e)}")
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            logger.error(f"Error enrolling lecturer: {str(e)}\n{traceback.format_exc()}")
+            return {"success": False, "error": f"Internal error: {str(e)}"}
+
+    def _validate_config(self, config: Dict) -> None:
+        """Validate lecturer config data"""
+        required_fields = {
+            "email_address": str,
+            "course_code": str,
+            "batch_id": str,
+            "first_name": str,
+            "last_name":str
+        }
+
+        # Check required fields and types
+        for field, field_type in required_fields.items():
+            if field not in config:
+                raise ValidationError(f"Missing required field: {field}")
+            if not isinstance(config[field], field_type):
+                raise ValidationError(f"{field} must be a {field_type.__name__}")
+
+        # Validate email format
+        email = config["email_address"].lower()
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, email):
+            raise ValidationError(f"Invalid email format: {email}")
+
+        # Validate role
+        if config["role"] != "lecturer":
+            raise ValidationError("Role must be 'lecturer'")
+
+        # Validate course code exists
+        course = Course.objects.filter(code=config["course_code"]).first()
+        if not course:
+            raise ValidationError(f"Invalid course code: {config['course_code']}")
+
+        # Validate batch exists and belongs to course
+        try:
+            batch_id = int(config["batch_id"])
+            batch = Batch.objects.filter(id=batch_id).first()
+            if not batch:
+                raise ValidationError(f"Invalid batch ID: {batch_id}")
+            if str(batch.course.code) != str(config["course_code"]):
+                raise ValidationError(f"Batch {batch_id} does not belong to course {config['course_code']}")
+        except ValueError:
+            raise ValidationError("Batch ID must be a valid integer")
+
+    def _create_new_user(self, email: str, config: Dict) -> None:
+        """Create new lecturer user with Firebase auth and config mapping"""
+        password = Utils.generate_random_password()
+
+        # Create Firebase user
+        firebase_id = CustomAuth.create_user(email=email, password=password)
+        
+        # Store credentials
+        csv_path = Path("user_creds.csv")
+        file_exists = csv_path.exists()
+
+        with open(csv_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["email", "password", "created_at"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({
+                "email": email,
+                "password": password,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        # Create config mapping
+        UserConfigMapping.objects.create(
+            email=email,
+            config=json.loads(json.dumps(config))
+        )
+
+        # Send credentials email
+        SendgridService.send_password_email(email, password)
+
+    def _update_existing_mapping(self, mapping: UserConfigMapping, new_config: Dict) -> None:
+        """Update existing lecturer mapping with new config"""
+        existing_config = mapping.config
+        
+        # Update fields
+        existing_config.update({
+            "role": "lecturer",
+            "course_code": new_config["course_code"],
+            "batch_id": new_config["batch_id"], 
+            "course_provider_id": new_config["course_provider_id"],
+            "first_name": new_config["first_name"],
+            "last_name": new_config.get("last_name", "")
+        })
+
+        # Ensure proper JSON serialization
+        mapping.config = json.loads(json.dumps(existing_config))
+        mapping.save()
+
 class BulkEnrollmentService:
     def __init__(self, file):
         self.file = file
