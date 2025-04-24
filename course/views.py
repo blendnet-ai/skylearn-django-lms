@@ -52,7 +52,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
-from .services import BulkEnrollmentService, AssessmentConfigGenerator, QuestionUploader
+from .services import BulkEnrollmentService, AssessmentConfigGenerator, QuestionUploader, LecturerEnrollmentService
 from rest_framework import serializers
 from evaluation.usecases import AssessmentUseCase
 from datetime import timedelta
@@ -72,6 +72,7 @@ from course.models import Batch
 from course.repositories import ModuleRepository, CourseRepository, BatchRepository
 from evaluation.models import AssessmentGenerationConfig
 from django.core.exceptions import ValidationError
+import pandas as pd
 
 
 # admin/course provider
@@ -667,6 +668,78 @@ class BulkEnrollmentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+
+class LecturerBulkEnrollmentView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    # authentication_classes = [FirebaseAuthentication]
+    # permission_classes = [IsLoggedIn, IsCourseProviderAdmin]
+    serializer_class = BulkEnrollmentSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get course provider ID for the admin user
+            # course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+            #     request.user.id
+            # )
+            # if not course_provider:
+            #     return Response(
+            #         {"error": "Course provider not found for this user"},
+            #         status=status.HTTP_404_NOT_FOUND,
+            #     )
+
+            file = serializer.validated_data["file"]
+            service = LecturerEnrollmentService()
+
+            df = pd.read_excel(file)
+            results = {"success": [], "failed": []}
+
+            for _, row in df.iterrows():
+                config = {
+                    "email_address": row["Email"],
+                    "course_code": str(row["Course Code"]),
+                    "role": "lecturer",
+                    "batch_id": str(row["Batch ID"]),
+                    "first_name": row["First Name"],
+                    "last_name": row.get("Last Name", ""),
+                    "course_provider_id": 2
+                }
+
+                result = service.enroll_lecturer(config)
+                
+                if result["success"]:
+                    results["success"].append({
+                        "email": config["email_address"],
+                        "message": result["message"]
+                    })
+                else:
+                    results["failed"].append({
+                        "email": config["email_address"],
+                        "error": result["error"]
+                    })
+
+            return Response(
+                {
+                    "message": "Lecturer bulk enrollment processed successfully",
+                    "data": {
+                        "success_count": len(results["success"]),
+                        "failed_count": len(results["failed"]),
+                        "success": results["success"],
+                        "failures": results["failed"],
+                    },
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to process file: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 @api_view(["DELETE"])
 @authentication_classes([FirebaseAuthentication])
