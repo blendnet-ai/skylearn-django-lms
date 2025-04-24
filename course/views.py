@@ -671,8 +671,8 @@ class BulkEnrollmentView(APIView):
 
 class LecturerBulkEnrollmentView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    # authentication_classes = [FirebaseAuthentication]
-    # permission_classes = [IsLoggedIn, IsCourseProviderAdmin]
+    authentication_classes = [FirebaseAuthentication]
+    permission_classes = [IsLoggedIn, IsCourseProviderAdmin]
     serializer_class = BulkEnrollmentSerializer
 
     def post(self, request, *args, **kwargs):
@@ -682,15 +682,15 @@ class LecturerBulkEnrollmentView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get course provider ID for the admin user
-            # course_provider = CourseProviderRepository.get_course_provider_by_user_id(
-            #     request.user.id
-            # )
-            # if not course_provider:
-            #     return Response(
-            #         {"error": "Course provider not found for this user"},
-            #         status=status.HTTP_404_NOT_FOUND,
-            #     )
+            #Get course provider ID for the admin user
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+                request.user.id
+            )
+            if not course_provider:
+                return Response(
+                    {"error": "Course provider not found for this user"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             file = serializer.validated_data["file"]
             service = LecturerEnrollmentService()
@@ -706,7 +706,7 @@ class LecturerBulkEnrollmentView(APIView):
                     "batch_id": str(row["Batch ID"]),
                     "first_name": row["First Name"],
                     "last_name": row.get("Last Name", ""),
-                    "course_provider_id": 2
+                    "course_provider_id": course_provider.id
                 }
 
                 result = service.enroll_lecturer(config)
