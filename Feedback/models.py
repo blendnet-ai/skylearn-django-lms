@@ -28,7 +28,10 @@ class FeedbackResponse(models.Model):
     user_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     course_feedback_entry = models.ForeignKey(
-        CourseFormEntry, on_delete=models.CASCADE, null=False, blank=False
+        CourseFormEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
 

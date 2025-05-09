@@ -9,6 +9,8 @@ from course.models import Batch
 class UserConfigMapping(models.Model):
     email = models.EmailField(unique=True)
     config = models.JSONField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class CustomUserManager(UserManager):

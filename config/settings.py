@@ -463,6 +463,10 @@ CELERY_BEAT_SCHEDULE = {
             hour=18, minute=35
         ),  # Executes at 6:00 PM UTC (11:30 PM IST)
     },
+    "sync_user_configs": {
+        "task": "accounts.tasks.sync_configs_task",
+        "schedule": crontab(minute=0),  # Executes every hour at minute 0
+    },
 }
 
 # Task-specific settings
@@ -596,6 +600,7 @@ TEST_EMAILS = os.environ.get("TEST_EMAILS", [])
 REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS = os.environ.get(
     "REPORT_SPEADSHEET_ID_WITHOUT_TEST_EMAILS"
 )
+
 MEETING_PROVIDER = os.environ.get("MEETING_PROVIDER", "teams")
 # Initialize meeting service
 from meetings.services.service_resolver import get_meeting_service
@@ -605,3 +610,4 @@ ZOOM_API_KEY = os.environ.get("ZOOM_API_KEY", "")
 ZOOM_API_SECRET = os.environ.get("ZOOM_API_SECRET", "")
 ZOOM_ACCOUNT_ID = os.environ.get("ZOOM_ACCOUNT_ID", "")
 ZOOM_ACCESS_TOKEN_CACHE_KEY="zoom_access_token"
+

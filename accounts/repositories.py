@@ -164,12 +164,14 @@ class UserRepository:
 class CourseProviderAdminRepository:
     @staticmethod
     def create_course_provider_admin(user):
-        return CourseProviderAdmin.objects.create(course_provider_admin=user)
+        return CourseProviderAdmin.objects.get_or_create(course_provider_admin=user)[0]
 
     @staticmethod
     def associate_with_course_provider(course_provider_admin, course_provider):
-        course_provider.admins.add(course_provider_admin)
-        course_provider.save()
+        # Check if admin is already associated with this course provider
+        if not course_provider.admins.filter(id=course_provider_admin.id).exists():
+            course_provider.admins.add(course_provider_admin)
+            course_provider.save()
         return course_provider
 
 
@@ -217,13 +219,11 @@ class LecturerRepository:
 
     @staticmethod
     def create_lecturer(user, guid, upn, zoom_gmail, course_provider):
-        return Lecturer.objects.create(
-            lecturer=user,
-            guid=guid,
-            upn=upn,
-            zoom_gmail=zoom_gmail,
-            course_provider=course_provider,
-        )
+        return Lecturer.objects.get_or_create(
+            lecturer=user, guid=guid, upn=upn,zoom_gmail=zoom_gmail, course_provider=course_provider
+        )[
+            0
+        ]  # get_or_create returns (object, created) tuple, we return just the object
 
     @staticmethod
     def get_lecturers_by_course_provider_id(course_provider_id):
@@ -279,4 +279,19 @@ class UserConfigMappingRepository:
 
         return UserConfigMapping.objects.filter(
             Q(config__course_codes__regex=regex_pattern)
+        )
+
+    @staticmethod
+    def get_configs_for_day(date):
+        """
+        Get all user config mappings created on a specific date
+
+        Args:
+            date (datetime.date): The date to filter on
+
+        Returns:
+            QuerySet: UserConfigMapping objects created on the specified date
+        """
+        return UserConfigMapping.objects.filter(
+            Q(created_at__date=date) | Q(updated_at__date=date)
         )
