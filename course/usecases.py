@@ -1160,21 +1160,6 @@ class StudentEnrollmentUsecase:
 
     @staticmethod
     def remove_student_enrollment(student_id: int, course_id: int) -> dict:
-        """
-        Remove a student's enrollment from a course
-
-        Args:
-            student_id (int): ID of the student
-            course_id (int): ID of the course
-
-        Returns:
-            dict: Details of the unenrollment operation
-
-        Raises:
-            StudentNotFound: If student doesn't exist
-            CourseNotFound: If course doesn't exist
-            BatchNotFound: If student isn't enrolled in any batch for this course
-        """
         try:
             # Get student and validate existence
             student = StudentRepository.get_student_by_student_id(student_id)
@@ -1197,6 +1182,17 @@ class StudentEnrollmentUsecase:
 
             # Remove student from batch
             student.batches.remove(batch)
+
+            # Update user config mapping
+            config_mapping = UserConfigMappingRepository.get_config_by_email(
+                student.student.email
+            )
+            if config_mapping and config_mapping.config:
+                batch_ids = config_mapping.config.get("batch_id", "").split(",")
+                if str(batch.id) in batch_ids:
+                    batch_ids.remove(str(batch.id))
+                    config_mapping.config["batch_id"] = ",".join(batch_ids)
+                    config_mapping.save()
 
             # Log the unenrollment
             logger.info(
