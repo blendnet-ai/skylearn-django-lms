@@ -294,4 +294,6 @@ class UserConfigMappingRepository:
         Returns:
             QuerySet: UserConfigMapping objects created on the specified date
         """
-        return UserConfigMapping.objects.filter(created_at__date=date)
+        return UserConfigMapping.objects.filter(
+            Q(created_at__date=date) | Q(updated_at__date=date)
+        )
