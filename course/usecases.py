@@ -1,4 +1,10 @@
-from accounts.repositories import StudentRepository, UserConfigMappingRepository, UserRepository, LecturerRepository
+from accounts.repositories import (
+    StudentRepository,
+    UserConfigMappingRepository,
+    UserRepository,
+    LecturerRepository,
+)
+from accounts.models import Student
 from config import settings
 from course.models import Batch, LiveClassSeriesBatchAllocation
 from course.repositories import (
@@ -7,7 +13,7 @@ from course.repositories import (
     LiveClassSeriesBatchAllocationRepository,
     ModuleRepository,
     UploadRepository,
-    UploadVideoRepository
+    UploadVideoRepository,
 )
 from custom_auth.repositories import UserProfileRepository
 from meetings.repositories import MeetingSeriesRepository
@@ -32,11 +38,15 @@ from django.utils import timezone
 from datetime import datetime
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 from django.contrib.auth import get_user_model
 from reports.repositories import UserCourseReportRepository
+
 User = get_user_model()
+
 
 class LiveClassUsecase:
     class UserNotInBatchOfCourseException(Exception):
@@ -70,8 +80,8 @@ class LiveClassUsecase:
         )
 
         for batch_id in batch_ids:
-             batch = BatchRepository.get_batch_by_id(batch_id)
-             if not batch.lecturer:
+            batch = BatchRepository.get_batch_by_id(batch_id)
+            if not batch.lecturer:
                 raise MeetingSeriesUsecase.LecturerNotAssigned
 
         batches_allocated, batches_failed_to_allocate = (
@@ -210,20 +220,22 @@ class LiveClassSeriesPresenterAssignmentUseCase:
         for batch in batches_allocated:
             batch = BatchRepository.get_batch_by_id(batch)
             if batch.lecturer:
-                presenter_details = LecturerRepository.get_presenter_details_by_lecturer_id(
-                    batch.lecturer.id
+                presenter_details = (
+                    LecturerRepository.get_presenter_details_by_lecturer_id(
+                        batch.lecturer.id
+                    )
                 )
             else:
                 raise MeetingSeriesUsecase.LecturerNotAssigned
 
-
             if presenter_details:
                 # Convert presenter_details to a serializable format if needed
                 serializable_presenter_details = {
-                    key: value for key, value in presenter_details.items() 
+                    key: value
+                    for key, value in presenter_details.items()
                     if not callable(value)  # Filter out any method objects
                 }
-                
+
                 LiveClassSeriesPresenterAssignmentUseCase.assign_presenter(
                     live_class_series, serializable_presenter_details
                 )
@@ -236,13 +248,14 @@ class LiveClassSeriesPresenterAssignmentUseCase:
         # Ensure presenter_details is serializable before passing it
         if not isinstance(presenter_details, dict):
             presenter_details = dict(presenter_details)
-            
+
         # Remove any method objects from the dictionary
         presenter_details = {
-            key: value for key, value in presenter_details.items() 
+            key: value
+            for key, value in presenter_details.items()
             if not callable(value)
         }
-        
+
         MeetingSeriesRepository.add_presenter_details_to_meeting_series(
             live_class_series, presenter_details
         )
@@ -344,14 +357,18 @@ class BatchUseCase:
             super().__init__("User is not a lecturer")
 
     @staticmethod
-    def create_batch(course_id, title, lecturer_id, start_date=None, end_date=None,form=None):
+    def create_batch(
+        course_id, title, lecturer_id, start_date=None, end_date=None, form=None
+    ):
         course = CourseRepository.get_course_by_id(course_id)
         lecturer = UserRepository.get_user_by_id(lecturer_id)
         if not lecturer.is_lecturer:
 
             raise BatchUseCase.UserIsNotLecturerException()
-        return BatchRepository.create_batch(course, title, lecturer, start_date, end_date,form)
-
+        batch, created = BatchRepository.create_batch(
+            course, title, lecturer, start_date, end_date, form
+        )
+        return batch, created
 
     @staticmethod
     def get_batch_by_user_id_and_course_id(user_id, course_id):
@@ -398,9 +415,13 @@ class BatchUseCase:
             batches = BatchRepository.get_batches_by_lecturer_id(user.id)
         elif user.is_course_provider_admin:
             # Get course provider ID
-            course_provider = CourseProviderRepository.get_course_provider_by_user_id(user.id)
+            course_provider = CourseProviderRepository.get_course_provider_by_user_id(
+                user.id
+            )
             # Get all courses for this provider
-            courses = CourseRepository.get_courses_by_course_provider(course_provider.id)
+            courses = CourseRepository.get_courses_by_course_provider(
+                course_provider.id
+            )
             # Get all batches for these courses
             batches = []
             for course in courses:
@@ -421,14 +442,14 @@ class BatchUseCase:
                     "batch_title": batch.title,
                     "course_id": batch.course.id,
                     "course_title": batch.course.title,
-                    "enrollment_date": batch.created_at
+                    "enrollment_date": batch.created_at,
                 }
                 students_data.append(student_data)
 
         # Remove duplicates based on student ID
         unique_students = {student["id"]: student for student in students_data}.values()
         return list(unique_students)
-    
+
     @staticmethod
     def add_students_to_batch(batch_id, student_ids):
         return StudentRepository.add_students_to_batch(batch_id, student_ids)
@@ -478,26 +499,32 @@ class CourseUseCase:
             ]
 
             # Collect reading resources and sort by title
-            resource_data_reading = sorted([
-                {
-                    "type": "reading",
-                    "id": resource.id,
-                    "title": resource.title,
-                    "url": resource.blob_url
-                }
-                for resource in module.uploads.all()
-            ], key=lambda x: x["title"])
+            resource_data_reading = sorted(
+                [
+                    {
+                        "type": "reading",
+                        "id": resource.id,
+                        "title": resource.title,
+                        "url": resource.blob_url,
+                    }
+                    for resource in module.uploads.all()
+                ],
+                key=lambda x: x["title"],
+            )
 
             # Collect video resources and sort by title
-            resource_data_video = sorted([
-                {
-                    "type": "video",
-                    "id": resource.id,
-                    "title": resource.title,
-                    "url": resource.blob_url,
-                }
-                for resource in module.video_uploads.all()
-            ], key=lambda x: x["title"])
+            resource_data_video = sorted(
+                [
+                    {
+                        "type": "video",
+                        "id": resource.id,
+                        "title": resource.title,
+                        "url": resource.blob_url,
+                    }
+                    for resource in module.video_uploads.all()
+                ],
+                key=lambda x: x["title"],
+            )
 
             module_data.append(
                 {
@@ -510,8 +537,35 @@ class CourseUseCase:
                 }
             )
         return module_data
-    
-    
+
+    @staticmethod
+    def create_course(
+        title: str, summary: str, code, course_hours: int, course_provider
+    ) -> Course:
+        """Create a new course"""
+        course = CourseRepository.create_course(
+            course_provider, code, title, summary, course_hours
+        )
+        return course
+
+    @staticmethod
+    def update_course(course_id: int, **kwargs) -> Course:
+        """Update an existing course"""
+        course = Course.objects.get(id=course_id)
+
+        # Update only provided fields
+        for field, value in kwargs.items():
+            if value is not None:
+                setattr(course, field, value)
+
+        course.save()
+        return course
+
+    @staticmethod
+    def delete_course(course_id: int) -> None:
+        """Delete a course"""
+        course = Course.objects.get(id=course_id)
+        course.delete()
 
 
 class CourseContentDriveUsecase:
@@ -525,27 +579,37 @@ class CourseContentDriveUsecase:
         try:
             course = CourseRepository.get_course_by_id(course_id)
             self.logger.info(f"Found course: {course.code} - Starting sync process")
-            
+
             if not course.drive_folder_link:
                 self.logger.error(f"No drive folder link found for course {course_id}")
-                raise CourseContentDriveException.DriveInitializationException("No drive folder link found for course")
+                raise CourseContentDriveException.DriveInitializationException(
+                    "No drive folder link found for course"
+                )
 
             folder_id = self._extract_folder_id_from_url(course.drive_folder_link)
             self.logger.info(f"Extracted folder ID: {folder_id} from drive link")
-            
+
             drive_service = self._initialize_drive_service()
             self.logger.info("Successfully initialized Google Drive service")
-            
+
             result = self._process_course_folder(drive_service, folder_id, course)
             self.logger.info(f"Successfully completed sync for course {course_id}")
             return result
-            
+
         except CourseContentDriveException as e:
-            self.logger.error(f"Drive content sync failed for course {course_id}: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Drive content sync failed for course {course_id}: {str(e)}",
+                exc_info=True,
+            )
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error during content sync for course {course_id}: {str(e)}", exc_info=True)
-            raise CourseContentDriveException.DriveAPIException("sync_course_content", e)
+            self.logger.error(
+                f"Unexpected error during content sync for course {course_id}: {str(e)}",
+                exc_info=True,
+            )
+            raise CourseContentDriveException.DriveAPIException(
+                "sync_course_content", e
+            )
 
     def _initialize_drive_service(self):
         """Initialize Google Drive API client"""
@@ -553,13 +617,15 @@ class CourseContentDriveUsecase:
             scopes = [
                 "https://www.googleapis.com/auth/drive.file",
                 "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive.readonly"
+                "https://www.googleapis.com/auth/drive.readonly",
             ]
             current_directory = os.getcwd()
             config_file_path = os.path.join(current_directory, "gd_config.json")
-            
-            credentials = Credentials.from_service_account_file(config_file_path, scopes=scopes)
-            return build('drive', 'v3', credentials=credentials)
+
+            credentials = Credentials.from_service_account_file(
+                config_file_path, scopes=scopes
+            )
+            return build("drive", "v3", credentials=credentials)
         except Exception as e:
             raise CourseContentDriveException.DriveInitializationException(e)
 
@@ -575,155 +641,197 @@ class CourseContentDriveUsecase:
 
         module_results = []
         for index, module_folder in enumerate(module_folders, 1):
-            self.logger.info(f"Processing module {index}/{len(module_folders)}: {module_folder['name']}")
+            self.logger.info(
+                f"Processing module {index}/{len(module_folders)}: {module_folder['name']}"
+            )
             try:
-                module_order, module_name = self._parse_module_folder_name(module_folder['name'])
-                self.logger.debug(f"Parsed module name: {module_name}, order: {module_order}")
-                
-                module,created = ModuleRepository.get_or_create_module(
-                    course=course,
-                    title=module_name,
-                    order_in_course=module_order
+                module_order, module_name = self._parse_module_folder_name(
+                    module_folder["name"]
                 )
-                
+                self.logger.debug(
+                    f"Parsed module name: {module_name}, order: {module_order}"
+                )
+
+                module, created = ModuleRepository.get_or_create_module(
+                    course=course, title=module_name, order_in_course=module_order
+                )
+
                 if created:
-                    self.logger.info(f"Created module: {module.title} (ID: {module.id})")
+                    self.logger.info(
+                        f"Created module: {module.title} (ID: {module.id})"
+                    )
                 else:
-                    self.logger.info(f"Retrieved module: {module.title} (ID: {module.id})")
-                
+                    self.logger.info(
+                        f"Retrieved module: {module.title} (ID: {module.id})"
+                    )
+
                 module_content = {
-                    'module_id': module.id,
-                    'module_name': module_name,
-                    'resources': self._process_module_resources(
+                    "module_id": module.id,
+                    "module_name": module_name,
+                    "resources": self._process_module_resources(
                         drive_service,
-                        module_folder['id'],
+                        module_folder["id"],
                         f"{course.code}/{module_folder['name']}",
                         course,
-                        module
-                    )
+                        module,
+                    ),
                 }
                 module_results.append(module_content)
                 self.logger.info(f"Successfully processed module: {module_name}")
-                
+
             except Exception as e:
-                self.logger.error(f"Failed to process module {module_folder['name']}: {str(e)}", exc_info=True)
-                module_results.append({
-                    'module_name': module_folder['name'],
-                    'status': 'failed',
-                    'error': str(e)
-                })
-                
+                self.logger.error(
+                    f"Failed to process module {module_folder['name']}: {str(e)}",
+                    exc_info=True,
+                )
+                module_results.append(
+                    {
+                        "module_name": module_folder["name"],
+                        "status": "failed",
+                        "error": str(e),
+                    }
+                )
+
         return module_results
 
-    def _process_module_resources(self, drive_service, module_folder_id, module_path, course, module):
+    def _process_module_resources(
+        self, drive_service, module_folder_id, module_path, course, module
+    ):
         """Processes both video and reading resources in a module"""
         self.logger.info(f"Processing resources for module: {module.title}")
-        resources = {
-            'video': [],
-            'reading': []
-        }
-        
+        resources = {"video": [], "reading": []}
+
         resource_folders = self._list_folders(drive_service, module_folder_id)
         self.logger.info(f"Found {len(resource_folders)} resource folders")
-        
+
         for folder in resource_folders:
-            resource_path = os.path.join(module_path, folder['name'])
+            resource_path = os.path.join(module_path, folder["name"])
             self.logger.info(f"Processing resource folder: {folder['name']}")
-            
-            if folder['name'] == 'Video Resources':
+
+            if folder["name"] == "Video Resources":
                 self.logger.info("Processing video resources")
-                resources['video'] = self._process_resource_folder(
-                    drive_service, folder['id'], 'video', resource_path, course, module
+                resources["video"] = self._process_resource_folder(
+                    drive_service, folder["id"], "video", resource_path, course, module
                 )
                 self.logger.info(f"Processed {len(resources['video'])} video resources")
-                
-            elif folder['name'] == 'Reading Resources':
+
+            elif folder["name"] == "Reading Resources":
                 self.logger.info("Processing reading resources")
-                resources['reading'] = self._process_resource_folder(
-                    drive_service, folder['id'], 'reading', resource_path, course, module
+                resources["reading"] = self._process_resource_folder(
+                    drive_service,
+                    folder["id"],
+                    "reading",
+                    resource_path,
+                    course,
+                    module,
                 )
-                self.logger.info(f"Processed {len(resources['reading'])} reading resources")
-                
+                self.logger.info(
+                    f"Processed {len(resources['reading'])} reading resources"
+                )
+
         return resources
 
-    def _process_resource_folder(self, drive_service, folder_id, resource_type, resource_path, course, module):
+    def _process_resource_folder(
+        self, drive_service, folder_id, resource_type, resource_path, course, module
+    ):
         """Downloads and uploads all files in a resource folder"""
-        self.logger.info(f"Processing {resource_type} resources at path: {resource_path}")
+        self.logger.info(
+            f"Processing {resource_type} resources at path: {resource_path}"
+        )
         processed_files = []
-        
+
         try:
             query = f"'{folder_id}' in parents and mimeType!='application/vnd.google-apps.folder'"
-            files = drive_service.files().list(q=query).execute().get('files', [])
+            files = drive_service.files().list(q=query).execute().get("files", [])
             self.logger.info(f"Found {len(files)} files to process")
         except Exception as e:
             self.logger.error(f"Failed to list files: {str(e)}", exc_info=True)
             raise CourseContentDriveException.DriveAPIException("list_files", e)
-        
+
         for index, file in enumerate(files, 1):
-            file_path = os.path.join(resource_path, file['name'])
+            file_path = os.path.join(resource_path, file["name"])
             self.logger.info(f"Processing file {index}/{len(files)}: {file['name']}")
-            
+
             try:
-                repository = UploadRepository if resource_type == 'reading' else UploadVideoRepository
-                existing_upload = repository.get_existing_upload(file['name'], course, module)
+                repository = (
+                    UploadRepository
+                    if resource_type == "reading"
+                    else UploadVideoRepository
+                )
+                existing_upload = repository.get_existing_upload(
+                    file["name"], course, module
+                )
 
                 if existing_upload:
                     self.logger.info(f"File already exists: {file['name']}")
-                    processed_files.append({
-                        'name': file['name'],
-                        'type': resource_type,
-                        'url': f"https://drive.google.com/file/d/{file['id']}/view",
-                        'status': 'existing'
-                    })
+                    processed_files.append(
+                        {
+                            "name": file["name"],
+                            "type": resource_type,
+                            "url": f"https://drive.google.com/file/d/{file['id']}/view",
+                            "status": "existing",
+                        }
+                    )
                     continue
-                    
+
                 self.logger.info(f"Downloading and uploading file: {file['name']}")
-                blob_url = self._download_and_upload_file(drive_service, file, file_path)
-                
+                blob_url = self._download_and_upload_file(
+                    drive_service, file, file_path
+                )
+
                 repository.create_upload(
-                    title=file['name'],
-                    course=course,
-                    module=module,
-                    blob_url=blob_url
+                    title=file["name"], course=course, module=module, blob_url=blob_url
                 )
                 self.logger.info(f"Successfully processed file: {file['name']}")
-                
-                processed_files.append({
-                    'name': file['name'],
-                    'type': resource_type,
-                    'url': f"https://drive.google.com/file/d/{file['id']}/view",
-                    'status': 'success'
-                })
-                
+
+                processed_files.append(
+                    {
+                        "name": file["name"],
+                        "type": resource_type,
+                        "url": f"https://drive.google.com/file/d/{file['id']}/view",
+                        "status": "success",
+                    }
+                )
+
             except Exception as e:
-                self.logger.error(f"Failed to process file {file['name']}: {str(e)}", exc_info=True)
-                raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
-                
+                self.logger.error(
+                    f"Failed to process file {file['name']}: {str(e)}", exc_info=True
+                )
+                raise CourseContentDriveException.DriveFileUploadException(
+                    file["name"], e
+                )
+
         return processed_files
 
     def _download_and_upload_file(self, drive_service, file, file_path):
         """Helper method to download from Drive and upload to blob storage"""
         try:
             # Get file metadata to retrieve MIME type
-            file_metadata = drive_service.files().get(fileId=file['id'], fields='mimeType').execute()
-            mime_type = file_metadata.get('mimeType', 'application/octet-stream')
-            
-            request = drive_service.files().get_media(fileId=file['id'])
+            file_metadata = (
+                drive_service.files()
+                .get(fileId=file["id"], fields="mimeType")
+                .execute()
+            )
+            mime_type = file_metadata.get("mimeType", "application/octet-stream")
+
+            request = drive_service.files().get_media(fileId=file["id"])
             file_content = io.BytesIO()
             downloader = MediaIoBaseDownload(file_content, request)
-            
+
             done = False
             while not done:
                 _, done = downloader.next_chunk()
-            
+
             file_content.seek(0)
-            return self._upload_to_blob(file_content, file['name'], file_path, mime_type)
+            return self._upload_to_blob(
+                file_content, file["name"], file_path, mime_type
+            )
         except Exception as e:
-            raise CourseContentDriveException.DriveFileUploadException(file['name'], e)
+            raise CourseContentDriveException.DriveFileUploadException(file["name"], e)
 
     def _parse_module_folder_name(self, folder_name):
         """Extract order and name from module folder name (e.g., "1_Module Name")"""
-        match = re.match(r'^(\d+)_(.+)$', folder_name)
+        match = re.match(r"^(\d+)_(.+)$", folder_name)
         if not match:
             raise CourseContentDriveException.InvalidFolderFormatException(
                 f"Invalid module folder name format: {folder_name}. Expected format: 'ORDER_NAME'"
@@ -733,64 +841,72 @@ class CourseContentDriveUsecase:
     def _extract_folder_id_from_url(self, url):
         """Extract folder ID from Google Drive URL"""
         patterns = [
-            r'folders/([a-zA-Z0-9-_]+)',  # Standard folder URL
-            r'id=([a-zA-Z0-9-_]+)',       # Alternate format
-            r'/d/([a-zA-Z0-9-_]+)'        # Short format
+            r"folders/([a-zA-Z0-9-_]+)",  # Standard folder URL
+            r"id=([a-zA-Z0-9-_]+)",  # Alternate format
+            r"/d/([a-zA-Z0-9-_]+)",  # Short format
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, url)
             if match:
                 return match.group(1)
-                
+
         raise CourseContentDriveException.DriveInitializationException(
             f"Could not extract folder ID from URL: {url}"
         )
-        
+
     def _list_folders(self, drive_service, parent_id):
         """List all folders within a parent folder"""
         query = f"'{parent_id}' in parents and mimeType='application/vnd.google-apps.folder'"
         results = drive_service.files().list(q=query).execute()
-        return results.get('files', [])
-        
+        return results.get("files", [])
+
     def _upload_to_blob(self, file_content, filename, blob_path, content_type):
         """Upload file to Azure Blob Storage with content type"""
-        logging.info(f"Uploading file to blob storage: {blob_path} with content type: {content_type}")
+        logging.info(
+            f"Uploading file to blob storage: {blob_path} with content type: {content_type}"
+        )
         blob_url = self.storage_service.upload_blob(
             container_name=settings.AZURE_STORAGE_COURSE_MATERIALS_CONTAINER_NAME,
             blob_name=blob_path,
             content=file_content,
             content_type=content_type,  # Pass the content type to Azure
-            overwrite=True
+            overwrite=True,
         )
         logging.info(f"Uploaded file to blob storage: {blob_url}")
         return blob_url
+
+    def _delete_blob(self, blob_url):
+        self.storage_service.delete_blob(blob_url)
+
 
 class BatchMessageUsecase:
     @staticmethod
     def send_batch_messages(batch_id: int, subject: str, message: str) -> dict:
         """
         Send messages to all students in a batch via email and telegram
-        
+
         Args:
             batch_id: ID of the batch
             subject: Subject line for email
             message: Message content
-            
+
         Returns:
             dict: Statistics about message delivery
         """
         batch = BatchRepository.get_batch_by_id(batch_id)
-        
+
         # Prepare variables and user_ids
         variables = []
         user_ids = []
-        
+
         for student in batch.students.all():
-            variables.append({
-                "participant_name": student.student.get_full_name,
-                "email_subject": subject
-            })
+            variables.append(
+                {
+                    "participant_name": student.student.get_full_name,
+                    "email_subject": subject,
+                }
+            )
             user_ids.append(student.student_id)
 
         # Send immediate notifications for both email and telegram
@@ -800,16 +916,16 @@ class BatchMessageUsecase:
             user_ids=user_ids,
             medium="email",
             notification_type="batch_message",
-            reference_id=None
+            reference_id=None,
         )
-        
+
         telegram_success = NotificationManagerUsecase.send_immediate_notification(
             message_template=message,
             variables=variables,
             user_ids=user_ids,
             medium="telegram",
             notification_type="batch_message",
-            reference_id=None
+            reference_id=None,
         )
 
         # Return statistics
@@ -817,60 +933,72 @@ class BatchMessageUsecase:
             "email_sent": len(user_ids) if email_success else 0,
             "email_failed": len(user_ids) if not email_success else 0,
             "telegram_sent": len(user_ids) if telegram_success else 0,
-            "telegram_failed": len(user_ids) if not telegram_success else 0
+            "telegram_failed": len(user_ids) if not telegram_success else 0,
         }
-        
+
+
 class PersonalMessageUsecase:
     @staticmethod
     def send_personal_message(user_id: int, message: str) -> None:
         """
         Send a personal message to a user via email
-        
+
         Args:
             user_id: ID of the user
             message: Message content
         """
         user = UserRepository.get_user_by_id(user_id)
-        variables = [{"participant_name": user.get_full_name,"email_subject":'Message from course provider', "subject": message}]
-        
+        variables = [
+            {
+                "participant_name": user.get_full_name,
+                "email_subject": "Message from course provider",
+                "subject": message,
+            }
+        ]
+
         NotificationManagerUsecase.send_immediate_notification(
             message_template=message,
             variables=variables,
             user_ids=[user.id],
             medium="email",
             notification_type="personal_message",
-            reference_id=None
+            reference_id=None,
         )
-        
+
         NotificationManagerUsecase.send_immediate_notification(
             message_template=message,
             variables=variables,
             user_ids=[user.id],
             medium="telegram",
             notification_type="personal_message",
-            reference_id=None
+            reference_id=None,
         )
 
+
 class AssessmentModuleUsecase:
-    def fetch_assessment_display_data(user_id,course_id,module_id):
-        from evaluation.repositories import AssessmentGenerationConfigRepository, AssessmentAttemptRepository
-        available_assessments = AssessmentGenerationConfigRepository.return_assessment_generation_configs_by_course_id_module_id(course_id,module_id)
+    def fetch_assessment_display_data(user_id, course_id, module_id):
+        from evaluation.repositories import (
+            AssessmentGenerationConfigRepository,
+            AssessmentAttemptRepository,
+        )
+
+        available_assessments = AssessmentGenerationConfigRepository.return_assessment_generation_configs_by_course_id_module_id(
+            course_id, module_id
+        )
         resp_data = []
         for assessment in available_assessments:
             assessment_generation_id = assessment.assessment_generation_id
             # Get max score and percentage for this assessment config
             attempts = AssessmentAttemptRepository.get_assessment_attempts_by_config(
                 user_id=user_id,
-                assessment_generation_config_id=assessment_generation_id
+                assessment_generation_config_id=assessment_generation_id,
             )
             max_percentage = 0
-            
+
             for attempt in attempts:
                 eval_data = attempt.eval_data or {}
-                percentage = eval_data.get('percentage', 0)
+                percentage = eval_data.get("percentage", 0)
                 max_percentage = max(max_percentage, percentage)
-          
-        
 
             # if (
             #     assessment_generation_id == int(AssessmentAttempt.Type.CODING) + 1
@@ -881,21 +1009,21 @@ class AssessmentModuleUsecase:
             display_data = assessment.display_data
             name = assessment.assessment_display_name
             max_attempts = assessment.number_of_attempts
-            start_date=assessment.start_date
-            end_date=assessment.end_date
-            due_date=assessment.due_date
+            start_date = assessment.start_date
+            end_date = assessment.end_date
+            due_date = assessment.due_date
             number_of_attempts = AssessmentAttemptRepository.number_of_attempts_expired(
                 assessment_generation_config_id=assessment_generation_id,
                 user_id=user_id,
             )
-            
+
             # Check if the assessment should be locked
             current_date = timezone.now()
             if start_date is not None and end_date is not None:
                 is_locked = not (start_date <= current_date <= end_date)
             else:
                 is_locked = False
-            
+
             resp_obj = {
                 "assessment_generation_id": assessment_generation_id,
                 "test": {
@@ -913,23 +1041,22 @@ class AssessmentModuleUsecase:
                     "heading": f"{name}",
                     "img_url": display_data.get("eval_img_url"),
                 },
-                "name": assessment.assessment_name,
+                "name": name,
                 "max_attempts": max_attempts,
                 "user_attempts": number_of_attempts,
                 "user_id": user_id,
                 "start_date": start_date,
                 "end_date": end_date,
-                "due_date":due_date,
+                "due_date": due_date,
                 "is_locked": is_locked,
-                "score":f"{max_percentage}%"
- 
-                
+                "score": f"{max_percentage}%",
             }
 
             resp_data.append(resp_obj)
         resp_data.sort(key=lambda x: x["assessment_generation_id"])
         return resp_data
-    
+
+
 class UnassignedStudentsUsecase:
     @staticmethod
     def get_unassigned_students_for_course(course_code: str):
@@ -942,29 +1069,33 @@ class UnassignedStudentsUsecase:
             user = User.objects.filter(email=config.email).first()
             if not user or not user.is_student:
                 continue
-                
+
             # Check if student is already assigned to a batch for this course
             course = CourseRepository.get_course_by_code(course_code)
             if not course:
                 continue
-                
+
             student = StudentRepository.get_student_by_student_id(user.id)
             if not student:
                 continue
-                
+
             # Check if student is already in a batch for this course
             is_assigned = student.batches.filter(course=course).exists()
-            
+
             if not is_assigned:
-                unassigned_students.append({
-                    "id": user.id,
-                    "email": user.email,
-                    "name": f"{user.first_name} {user.last_name}".strip(),
-                    "course_codes": config.config.get("course_codes", "").split(",")
-                })
-                
+                unassigned_students.append(
+                    {
+                        "id": user.id,
+                        "email": user.email,
+                        "name": f"{user.first_name} {user.last_name}".strip(),
+                        "course_codes": config.config.get("course_codes", "").split(
+                            ","
+                        ),
+                    }
+                )
+
         return unassigned_students
-    
+
 
 class StudentDashboardUsecase:
     @staticmethod
@@ -976,7 +1107,9 @@ class StudentDashboardUsecase:
         if settings.DEPLOYMENT_TYPE == "DEFAULT":
             user_profile = UserProfileRepository.get(user_id)
             user_data = user_profile.user_data
-            aadhar_number = UserProfileRepository.fetch_value_from_form('beneficiaryId', user_data)
+            aadhar_number = UserProfileRepository.fetch_value_from_form(
+                "beneficiaryId", user_data
+            )
             name = user.get_full_name
             email = user.email
             phone = user_profile.phone
@@ -985,17 +1118,18 @@ class StudentDashboardUsecase:
                 f"?usp=pp_url&entry.1785019217={aadhar_number}&entry.112616835={name}&entry.1447575587={phone}"
                 f"&entry.1182700804={email}"
             )
-        
+
         # Use a list to keep track of course data instead of a dict keyed by course_id
         data = []
         for report in reports:
             # Try to find an existing entry for this course in the list
             course_data = next(
-                (item for item in data if item.get("course_id") == report.course_id), None
+                (item for item in data if item.get("course_id") == report.course_id),
+                None,
             )
             if not course_data:
                 course_data = {
-                    "card_type":"certificate",
+                    "card_type": "certificate",
                     "course_id": report.course_id,
                     "course_name": report.course.title,
                     "course_hours": report.course.course_hours,
@@ -1004,7 +1138,7 @@ class StudentDashboardUsecase:
                 }
                 data.append(course_data)
                 if settings.DEPLOYMENT_TYPE == "DEFAULT":
-                    data.append({"card_type":"form", "concent_form_link": form_link})
+                    data.append({"card_type": "form", "concent_form_link": form_link})
             else:
                 # If data for the course already exists, there's nothing extra to update
                 # as the original logic simply overwrites. Adjust if aggregation is needed.
@@ -1012,4 +1146,67 @@ class StudentDashboardUsecase:
         return data
 
 
+class StudentEnrollmentUsecase:
+    """Usecase class for managing student enrollments"""
 
+    class StudentNotFound(Exception):
+        pass
+
+    class CourseNotFound(Exception):
+        pass
+
+    class BatchNotFound(Exception):
+        pass
+
+    @staticmethod
+    def remove_student_enrollment(student_id: int, course_id: int) -> dict:
+        try:
+            # Get student and validate existence
+            student = StudentRepository.get_student_by_student_id(student_id)
+            if not student:
+                raise StudentEnrollmentUsecase.StudentNotFound("Student not found")
+
+            # Get course and validate existence
+            course = CourseRepository.get_course_by_id(course_id)
+            if not course:
+                raise StudentEnrollmentUsecase.CourseNotFound("Course not found")
+
+            # Get batch for this student and course
+            batch = BatchUseCase.get_batch_by_user_id_and_course_id(
+                student_id, course_id
+            )
+            if not batch:
+                raise StudentEnrollmentUsecase.BatchNotFound(
+                    "Student is not enrolled in this course"
+                )
+
+            # Remove student from batch
+            student.batches.remove(batch)
+
+            # Update user config mapping
+            config_mapping = UserConfigMappingRepository.get_config_by_email(
+                student.student.email
+            )
+            if config_mapping and config_mapping.config:
+                batch_ids = config_mapping.config.get("batch_id", "").split(",")
+                if str(batch.id) in batch_ids:
+                    batch_ids.remove(str(batch.id))
+                    config_mapping.config["batch_id"] = ",".join(batch_ids)
+                    config_mapping.save()
+
+            # Log the unenrollment
+            logger.info(
+                f"Student {student_id} unenrolled from course {course_id}, batch {batch.id}"
+            )
+
+            return {
+                "message": "Student unenrolled successfully",
+                "student_id": student_id,
+                "course_id": course_id,
+                "batch_id": batch.id,
+            }
+
+        except Student.DoesNotExist:
+            raise StudentEnrollmentUsecase.StudentNotFound("Student not found")
+        except Course.DoesNotExist:
+            raise StudentEnrollmentUsecase.CourseNotFound("Course not found")

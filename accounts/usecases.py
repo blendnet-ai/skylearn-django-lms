@@ -29,7 +29,6 @@ from evaluation.management.register.utils import Utils
 import firebase_admin
 import csv
 from pathlib import Path
-
 User = get_user_model()
 
 logger = logging.getLogger(__name__)
@@ -168,6 +167,7 @@ class RoleAssignmentUsecase:
                 user,
                 course_provider.teams_guid,
                 course_provider.teams_upn,
+                course_provider.zoom_gmail,
                 course_provider,
             )
 
@@ -260,9 +260,11 @@ class StudentProfileUsecase:
                 )  # Convert seconds to hours
                 courses_enrolled.append(
                     {
-                        "course_id": course.code,
+                        "course_id": course.id,
+                        "course_code": course.code,
                         "course_name": course.title,
-                        "batch_id": batch.title,
+                        "batch_id": batch.id,
+                        "batch_title": batch.title,
                         "attendance": attendance,
                         "videos_watched": videos_watched,
                         "total_videos": total_videos,
@@ -489,7 +491,6 @@ class StudentStatusUsecase:
         except (Student.DoesNotExist, ValueError, AttributeError) as e:
             logger.error(f"Error in update_student_status: {str(e)}")
             raise
-
 
 class UserSyncUsecase:
     @staticmethod

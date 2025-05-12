@@ -8,29 +8,37 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from course.utils import unique_slug_generator
-from meetings.models import MeetingSeries,Meeting
-
+from meetings.models import MeetingSeries, Meeting
+from storage_service.azure_storage import AzureStorageService
 
 
 class Module(models.Model):
     title = models.CharField(max_length=200)
-    course = models.ForeignKey('Course', related_name='modules_list', on_delete=models.CASCADE)
-    assignment_configs = models.ManyToManyField('evaluation.AssessmentGenerationConfig', related_name='modules', blank=True)
-    order_in_course = models.IntegerField(null=True) 
+    course = models.ForeignKey(
+        "Course", related_name="modules_list", on_delete=models.CASCADE
+    )
+    assignment_configs = models.ManyToManyField(
+        "evaluation.AssessmentGenerationConfig", related_name="modules", blank=True
+    )
+    order_in_course = models.IntegerField(null=True)
+
     class Meta:
-        unique_together = ('course', 'order_in_course')
+        unique_together = ("course", "order_in_course")
+
     def __str__(self):
         return self.title
-    
+
+
 class Course(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     title = models.CharField(max_length=200)
     code = models.CharField(max_length=200, unique=True)
     summary = models.TextField(max_length=200, blank=True)
-    course_provider= models.ForeignKey( 'accounts.courseprovider', on_delete=models.CASCADE)
+    course_provider = models.ForeignKey(
+        "accounts.courseprovider", on_delete=models.CASCADE
+    )
     drive_folder_link = models.CharField(max_length=255, blank=True)
-    course_hours=models.IntegerField(default=0)
-
+    course_hours = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.title} ({self.code})"
@@ -48,8 +56,9 @@ class Batch(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    form=models.ForeignKey('Feedback.FeedbackForm', on_delete=models.CASCADE, null=True, blank=True)
-    
+    form = models.ForeignKey(
+        "Feedback.FeedbackForm", on_delete=models.CASCADE, null=True, blank=True
+    )
 
     @property
     def students(self):
@@ -72,12 +81,13 @@ class LiveClassSeriesBatchAllocation(models.Model):
 
     def __str__(self):
         return f"{self.live_class_series} - {self.course.title}"
-    
+
 
 @receiver(post_save, sender=LiveClassSeriesBatchAllocation)
 def attendance_record_creater(sender, instance, created, **kwargs):
     if created:
         from .tasks import create_attendance_records_task
+
         for meeting in Meeting.objects.filter(series=instance.live_class_series):
             create_attendance_records_task.delay(meeting.id)
 
@@ -103,7 +113,9 @@ class CourseAllocation(models.Model):
 class Upload(models.Model):
     title = models.CharField(max_length=100)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='uploads', null=True, blank=True)  # New field
+    module = models.ForeignKey(
+        Module, on_delete=models.CASCADE, related_name="uploads", null=True, blank=True
+    )  # New field
     # file = models.FileField(
     #     upload_to="course_files/",
     #     help_text=_(
@@ -149,18 +161,21 @@ class Upload(models.Model):
         return "file"
 
     def delete(self, *args, **kwargs):
-        self.file.delete(save=False)
+        AzureStorageService().delete_blob(self.blob_url)
         super().delete(*args, **kwargs)
-
-
-
 
 
 class UploadVideo(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='video_uploads', null=True, blank=True)  # New field
+    module = models.ForeignKey(
+        Module,
+        on_delete=models.CASCADE,
+        related_name="video_uploads",
+        null=True,
+        blank=True,
+    )  # New field
     # video = models.FileField(
     #     upload_to="course_videos/",
     #     help_text=_("Valid video formats: mp4, mkv, wmv, 3gp, f4v, avi, mp3"),
@@ -183,7 +198,8 @@ class UploadVideo(models.Model):
         )
 
     def delete(self, *args, **kwargs):
-        self.video.delete(save=False)
+        # Delete from blob storage
+        AzureStorageService().delete_blob(self.blob_url)
         super().delete(*args, **kwargs)
 
 

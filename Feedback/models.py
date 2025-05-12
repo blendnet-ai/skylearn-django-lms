@@ -31,7 +31,7 @@ class FeedbackResponse(models.Model):
         CourseFormEntry,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
+        blank=True
     )
 
 

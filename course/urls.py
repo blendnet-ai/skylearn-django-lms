@@ -93,19 +93,87 @@ urlpatterns = [
         name="send_course_personal_message",
     ),
     path(
-        'course/<course_id>/batch/create-with-students/', 
-         views.create_batch_with_students, 
-         name='create_batch_with_students'
+        "course/<course_id>/batch/create-with-students/",
+        views.create_batch_with_students,
+        name="create_batch_with_students",
     ),
     path(
-        'course/<course_code>/get-unassigned-students/', 
-        views.get_unassigned_students, 
-        name='get_unassigned_students'
+        "course/<course_code>/get-unassigned-students/",
+        views.get_unassigned_students,
+        name="get_unassigned_students",
     ),
     path(
-        'student-dashboard/', 
-        views.get_student_dashboard_data, 
-        name='get_student_dashboard_data'
-    )   
-
+        "student-dashboard/",
+        views.get_student_dashboard_data,
+        name="get_student_dashboard_data",
+    ),
+    path("bulk-enroll/", views.BulkEnrollmentView.as_view(), name="bulk-enroll"),
+    path("bulk-enroll-lecturer/", views.LecturerBulkEnrollmentView.as_view(), name="bulk-enroll-lecturer"),
+    path(
+        "course/<int:course_id>/student/<int:student_id>/unenroll/",
+        views.remove_student_enrollment,
+        name="remove_student_enrollment",
+    ),
+    path("course/create/", views.create_course, name="create_course"),
+    path("course/<int:course_id>/update/", views.update_course, name="update_course"),
+    path("course/<int:course_id>/delete/", views.delete_course, name="delete_course"),
+    path(
+        "course/<int:course_id>/module/create/",
+        views.create_module,
+        name="create_module",
+    ),
+    path(
+        "course/<int:course_id>/module/<int:module_id>/update/",
+        views.update_module,
+        name="update_module",
+    ),
+    path(
+        "course/<int:course_id>/module/<int:module_id>/delete/",
+        views.delete_module,
+        name="delete_module",
+    ),
+    path(
+        "materials/upload/",
+        views.upload_material,
+        name="upload_material",
+    ),
+    path(
+        "materials/<str:type>/<int:upload_id>/delete/",
+        views.delete_material,
+        name="delete_material",
+    ),
+    path(
+        "get-course/<int:course_id>/",
+        views.get_course_by_id,
+        name="get_course_by_id",
+    ),
+    path(
+        "get-module/<int:module_id>/",
+        views.get_module_by_id,
+        name="get_module_by_id",
+    ),
+    path("create-assessment/", views.create_assessment, name="create_assessment"),
+    path(
+        "modules/<int:module_id>/delete-assessment/<int:assessment_generation_id>/",
+        views.delete_assessment,
+        name="delete_assessment",
+    ),
+    path("questions/upload/", views.question_upload, name="upload-questions"),
+    path(
+        "assessment/<int:assessment_generation_id>/update/",
+        views.update_assessment_config,
+        name="update_assessment_config",
+    ),
+    path(
+        "assessment/<int:assessment_generation_id>/details/",
+        views.get_assessment_config_details,
+        name="get_assessment_config_details",
+    ),
+    path("batch/<int:batch_id>/update/", views.update_batch, name="update_batch"),
+    path("batch/<int:batch_id>/delete/", views.delete_batch, name="delete_batch"),
+    path(
+        "batch/<int:batch_id>/",
+        views.get_batch_by_id_and_course,
+        name="get-batch-details",
+    ),
 ]

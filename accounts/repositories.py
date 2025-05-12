@@ -218,9 +218,9 @@ class LecturerRepository:
             return None
 
     @staticmethod
-    def create_lecturer(user, guid, upn, course_provider):
+    def create_lecturer(user, guid, upn, zoom_gmail, course_provider):
         return Lecturer.objects.get_or_create(
-            lecturer=user, guid=guid, upn=upn, course_provider=course_provider
+            lecturer=user, guid=guid, upn=upn,zoom_gmail=zoom_gmail, course_provider=course_provider
         )[
             0
         ]  # get_or_create returns (object, created) tuple, we return just the object

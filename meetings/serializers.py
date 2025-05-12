@@ -1,5 +1,7 @@
 from django.forms.models import model_to_dict
 from typing import Dict, Any
+from rest_framework import serializers
+
 
 class MeetingSerializer:
     @staticmethod
@@ -9,12 +11,7 @@ class MeetingSerializer:
         """
         return model_to_dict(
             meeting,
-            fields=[
-                'id',
-                'attendance_metadata',
-                'recording_metadata',
-                'blob_url'
-            ]
+            fields=["id", "attendance_metadata", "recording_metadata", "blob_url"],
         )
 
     @staticmethod
@@ -22,4 +19,8 @@ class MeetingSerializer:
         """
         Serialize a list of meetings to a list of dictionaries
         """
-        return [MeetingSerializer.to_dict(meeting) for meeting in meetings] 
+        return [MeetingSerializer.to_dict(meeting) for meeting in meetings]
+
+
+class AdditionalRecordingSerializer(serializers.Serializer):
+    filename = serializers.CharField(max_length=255)

@@ -118,16 +118,23 @@ class CourseProvider(models.Model):
     admins = models.ManyToManyField(CourseProviderAdmin)
     teams_guid = models.CharField(max_length=50, null=False)
     teams_upn = models.CharField(max_length=100, null=False)
+    zoom_gmail = models.CharField(max_length=100, null=False)
 
 
 class Lecturer(models.Model):
     lecturer = models.OneToOneField(User, on_delete=models.CASCADE)
     guid = models.CharField(max_length=50, null=False)
     upn = models.CharField(max_length=100, null=False)
+    zoom_gmail = models.CharField(max_length=100, null=False)
     course_provider = models.ForeignKey(CourseProvider, on_delete=models.CASCADE)
 
     def name(self):
         return f"{self.lecturer.first_name} {self.lecturer.last_name}"
 
     def presenter_details(self):
-        return {"guid": self.guid, "name": self.name(), "upn": self.upn}
+        return {
+            "guid": self.guid,
+            "name": self.name(),
+            "upn": self.upn,
+            "zoom_gmail": self.zoom_gmail,
+        }

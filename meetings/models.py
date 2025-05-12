@@ -1,9 +1,13 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from datetime import datetime, timedelta
-from django.db.models.signals import post_save,pre_delete
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
-from .tasks import create_teams_meeting_task, delete_teams_meeting_task, update_teams_meeting_task
+from .tasks import (
+    create_teams_meeting_task,
+    delete_teams_meeting_task,
+    update_teams_meeting_task,
+)
 import uuid
 from django.conf import settings
 import time
@@ -52,7 +56,21 @@ class MeetingSeries(models.Model):
 
 
 class Meeting(models.Model):
+    PROVIDER_TEAMS = "teams"
+    PROVIDER_ZOOM = "zoom"
+
+    PROVIDER_CHOICES = [
+        (PROVIDER_TEAMS, "Microsoft Teams"),
+        (PROVIDER_ZOOM, "Zoom"),
+    ]
+
     series = models.ForeignKey(MeetingSeries, on_delete=models.CASCADE)
+    provider = models.CharField(
+        max_length=10,
+        choices=PROVIDER_CHOICES,
+        default=PROVIDER_TEAMS,
+        help_text="Meeting platform provider",
+    )
     start_date = models.DateField()
     title_override = models.CharField(max_length=255, null=True, blank=True)
     start_time_override = models.TimeField(null=True, blank=True)
@@ -64,7 +82,8 @@ class Meeting(models.Model):
     second_notification_sent = models.BooleanField(default=False)
     recording_metadata = models.JSONField(null=True, blank=True)
     attendance_metadata = models.JSONField(null=True, blank=True)
-    blob_url=models.CharField(max_length=200,blank=True)
+    blob_url = models.CharField(max_length=200, blank=True)
+    additional_recordings = models.JSONField(null=True, blank=True, default=list)
 
     @property
     def course(self):
@@ -72,19 +91,27 @@ class Meeting(models.Model):
         Returns a list of unique courses associated with this meeting through batch allocations
         """
         from course.models import Course
-        return Course.objects.filter(
-            batch__enrolled_batches__live_class_series=self.series
-        ).distinct().first()
-        
+
+        return (
+            Course.objects.filter(
+                batch__enrolled_batches__live_class_series=self.series
+            )
+            .distinct()
+            .first()
+        )
+
     @property
     def batch(self):
         """
         Returns the first batch associated with this meeting through batch allocations
         """
         from course.models import Batch
-        return Batch.objects.filter(
-            enrolled_batches__live_class_series=self.series
-        ).distinct().first()
+
+        return (
+            Batch.objects.filter(enrolled_batches__live_class_series=self.series)
+            .distinct()
+            .first()
+        )
 
     def __str__(self):
         return f"{self.series} - {self.start_date}"
@@ -118,22 +145,22 @@ class Meeting(models.Model):
         Get the effective title, considering overrides
         """
         return self.title_override or self.series.title
-    
+
     @property
     def get_participants(self):
         """Get all participants (students and lecturer) for the meeting"""
         participants = set()
-        
+
         # Get all students from associated batches
         batch_allocations = self.series.course_enrollments.all()
         for allocation in batch_allocations:
             students = allocation.batch.students.all()
             participants.update([student.student for student in students])
-            
+
             # Add the lecturer
             if allocation.batch.lecturer:
                 participants.add(allocation.batch.lecturer)
-        
+
         return participants
 
     class Meta:
@@ -142,7 +169,9 @@ class Meeting(models.Model):
 
 
 class AttendanceRecord(models.Model):
-    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, to_field='id')
+    user_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, to_field="id"
+    )
     attendance_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE)
     attendance = models.BooleanField(default=False)
@@ -150,7 +179,7 @@ class AttendanceRecord(models.Model):
     class Meta:
         verbose_name = "Attendance Record"
         verbose_name_plural = "Attendance Records"
-        unique_together = (('user_id', 'meeting'))
+        unique_together = ("user_id", "meeting")
 
 
 @receiver(post_save, sender=Meeting)
@@ -163,12 +192,15 @@ def meeting_post_save(sender, instance, created, **kwargs):
     #    time.sleep(15)
     #    create_teams_meeting_task.delay(instance.id)
     elif not created:
-        #in case of update created is false
+        # in case of update created is false
         update_teams_meeting_task.delay(instance.id)
+
 
 @receiver(pre_delete, sender=Meeting)
 def meeting_pre_delete(sender, instance, **kwargs):
     """
     Signal handler to delete Teams meeting when a meeting is deleted
     """
-    delete_teams_meeting_task.delay(instance.id,instance.series.presenter_details,instance.conference_id)
+    delete_teams_meeting_task.delay(
+        instance.id, instance.series.presenter_details, instance.conference_id
+    )
