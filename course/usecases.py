@@ -1184,7 +1184,7 @@ class StudentEnrollmentUsecase:
             student.batches.remove(batch)
 
             # Update user config mapping
-            config_mapping = UserConfigMappingRepository.get_config_by_email(
+            config_mapping = UserConfigMappingRepository.get_user_config_mapping(
                 student.student.email
             )
             if config_mapping and config_mapping.config:
