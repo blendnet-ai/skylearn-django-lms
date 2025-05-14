@@ -304,6 +304,8 @@ def populate_lms_time_spent_reporting_data(data):
         user = report.user  # User object is accessible directly from the report
         final_data.append({
             'Student ID': user.id,
+            "Email": user.email,
+            "Phone Number": user_profile.phone if user_profile.phone else UserProfileRepository.fetch_value_from_form('Phone', user_profile.user_data),  # From UserProfile
             'Course ID': course_info.get("course_id"),
             "Course Provider ID":course_info.get("course_provider_id"),
             'Batch ID': course_info.get("batch_id"),  
