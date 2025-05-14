@@ -387,6 +387,18 @@ class BatchUseCase:
         # Convert to a list of dictionaries, including students
         batches_with_students = []
         for batch in batches:
+            # Get all students for this batch
+            students = []
+            for student in batch.students.all():
+                student_data = {
+                    "id": student.student.id,
+                    "name": f"{student.student.first_name} {student.student.last_name}",
+                    "email": student.student.email,
+                    "status": student.status_string,
+                    "enrollment_date": batch.created_at
+                }
+                students.append(student_data)
+
             batch_data = {
                 "id": batch.id,
                 "title": batch.title,
@@ -394,6 +406,7 @@ class BatchUseCase:
                 "lecturer_id": batch.lecturer_id,
                 "start_date": batch.created_at,
                 "students_count": len(batch.students.values()),  # Get student data
+                "students": students,
             }
             batches_with_students.append(batch_data)
         if user.is_lecturer:
