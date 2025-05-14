@@ -232,7 +232,7 @@ def populate_course_provider_reporting_data(data):
     for report in reports_data:
         user_profile = data['user_profiles_map'].get(report.user_id)
         course_info_list = data['user_course_batch_map'].get(report.user_id, [])
-        course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), None)
+        course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), {})
         user = report.user  # User object is accessible directly from the report
         final_data.append({
             'Student ID': user.id,
@@ -268,7 +268,7 @@ def populate_lms_time_spent_reporting_data(data):
     for report in reports_data:
         user_profile = data['user_profiles_map'].get(report.user_id)
         course_info_list = data['user_course_batch_map'].get(report.user_id, [])
-        course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), None)
+        course_info =  next((info for info in course_info_list if info['course_id'] == report.course_id), {})
         user = report.user  # User object is accessible directly from the report
         final_data.append({
             'Student ID': user.id,
