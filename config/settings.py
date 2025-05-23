@@ -610,3 +610,4 @@ ZOOM_API_KEY = os.environ.get("ZOOM_API_KEY", "")
 ZOOM_API_SECRET = os.environ.get("ZOOM_API_SECRET", "")
 ZOOM_ACCOUNT_ID = os.environ.get("ZOOM_ACCOUNT_ID", "")
 ZOOM_ACCESS_TOKEN_CACHE_KEY = "zoom_access_token"
+PASSWORD_CC_EMAIL = os.environ.get("PASSWORD_CC_EMAIL", None)
