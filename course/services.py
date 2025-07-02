@@ -329,30 +329,30 @@ class BulkEnrollmentService:
 
         return {
             "role": "student",
-            "course_id": course_id,
-            "batch_id": batch_id,
+            "course_id": str(course_id),
+            "batch_id": str(batch_id),
             "first_name": first_name,
             "last_name": last_name,
             "email_address": email,
-            "phone": phone,
-            "user_data": {
-                "college_name": BulkEnrollmentService.clean_value(row["College Name"]),
-                "enrollment_status": BulkEnrollmentService.clean_value(
+            "user_data": [{
+                "Phone": phone,
+                "College Name": BulkEnrollmentService.clean_value(row["College Name"]),
+                "Enrollment Status": BulkEnrollmentService.clean_value(
                     row["Enrollment Status"]
                 ),
-                "centre_name": BulkEnrollmentService.clean_value(row["Centre Name"]),
-                "training_location_district": BulkEnrollmentService.clean_value(
+                "Center Name": BulkEnrollmentService.clean_value(row["Centre Name"]),
+                "Training Location District Name": BulkEnrollmentService.clean_value(
                     row["Training Location District Name"]
                 ),
-                "training_location_city": BulkEnrollmentService.clean_value(
+                "Training Location City Name": BulkEnrollmentService.clean_value(
                     row["Training Location City Name"]
                 ),
-                "onboarding_source": BulkEnrollmentService.clean_value(
+                "Onboarding Source": BulkEnrollmentService.clean_value(
                     row["Onboarding Source"]
                 ),
-                "state": BulkEnrollmentService.clean_value(row["State"]),
-                "district": BulkEnrollmentService.clean_value(row["District"]),
-            },
+                "State": BulkEnrollmentService.clean_value(row["State"]),
+                "District": BulkEnrollmentService.clean_value(row["District"]),
+            }],
         }
 
     def _create_new_user(self, email: str, config: Dict) -> None:
