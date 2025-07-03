@@ -456,6 +456,11 @@ class BatchUseCase:
                     "course_id": batch.course.id,
                     "course_title": batch.course.title,
                     "enrollment_date": batch.created_at,
+                    "last_login": (
+                        student.student.last_login
+                        if student.student.last_login
+                        else None
+                    ),
                 }
                 students_data.append(student_data)
 
