@@ -390,9 +390,13 @@ class BulkEnrollmentService:
         """Update existing user mapping with new data"""
         existing_config = mapping.config
 
-        # Update user data
+         # Update user data
         if "user_data" in existing_config and existing_config["user_data"]:
-            existing_config["user_data"].update(new_config["user_data"])
+            if isinstance(existing_config["user_data"], dict):
+                existing_config["user_data"].update(new_config["user_data"])
+            else:
+                # If user_data is not a dict (e.g., a list), replace it with the new dict
+                existing_config["user_data"] = new_config["user_data"]
         else:
             existing_config["user_data"] = new_config["user_data"]
 
