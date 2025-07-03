@@ -27,7 +27,7 @@ class LecturerEnrollmentService:
         try:
             # Validate config data
             self._validate_config(config)
-
+            
             email = config["email_address"].lower().strip()
 
             # Check if user exists in UserConfigMapping
@@ -63,14 +63,10 @@ class LecturerEnrollmentService:
             return {"success": True, "message": message}
 
         except ValidationError as e:
-            logger.error(
-                f"Validation error for {config.get('email_address')}: {str(e)}"
-            )
+            logger.error(f"Validation error for {config.get('email_address')}: {str(e)}")
             return {"success": False, "error": str(e)}
         except Exception as e:
-            logger.error(
-                f"Error enrolling lecturer: {str(e)}\n{traceback.format_exc()}"
-            )
+            logger.error(f"Error enrolling lecturer: {str(e)}\n{traceback.format_exc()}")
             return {"success": False, "error": f"Internal error: {str(e)}"}
 
     def _validate_config(self, config: Dict) -> None:
@@ -80,7 +76,7 @@ class LecturerEnrollmentService:
             "course_code": str,
             "batch_id": str,
             "first_name": str,
-            "last_name": str,
+            "last_name":str
         }
 
         # Check required fields and types
@@ -112,9 +108,7 @@ class LecturerEnrollmentService:
             if not batch:
                 raise ValidationError(f"Invalid batch ID: {batch_id}")
             if str(batch.course.code) != str(config["course_code"]):
-                raise ValidationError(
-                    f"Batch {batch_id} does not belong to course {config['course_code']}"
-                )
+                raise ValidationError(f"Batch {batch_id} does not belong to course {config['course_code']}")
         except ValueError:
             raise ValidationError("Batch ID must be a valid integer")
 
@@ -124,7 +118,7 @@ class LecturerEnrollmentService:
 
         # Create Firebase user
         firebase_id = CustomAuth.create_user(email=email, password=password)
-
+        
         # Store credentials
         csv_path = Path("user_creds.csv")
         file_exists = csv_path.exists()
@@ -133,44 +127,38 @@ class LecturerEnrollmentService:
             writer = csv.DictWriter(f, fieldnames=["email", "password", "created_at"])
             if not file_exists:
                 writer.writeheader()
-            writer.writerow(
-                {
-                    "email": email,
-                    "password": password,
-                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
+            writer.writerow({
+                "email": email,
+                "password": password,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
 
         # Create config mapping
         UserConfigMapping.objects.create(
-            email=email, config=json.loads(json.dumps(config))
+            email=email,
+            config=json.loads(json.dumps(config))
         )
 
         # Send credentials email
         SendgridService.send_password_email(email, password)
 
-    def _update_existing_mapping(
-        self, mapping: UserConfigMapping, new_config: Dict
-    ) -> None:
+    def _update_existing_mapping(self, mapping: UserConfigMapping, new_config: Dict) -> None:
         """Update existing lecturer mapping with new config"""
         existing_config = mapping.config
-
+        
         # Update fields
-        existing_config.update(
-            {
-                "role": "lecturer",
-                "course_code": new_config["course_code"],
-                "batch_id": new_config["batch_id"],
-                "course_provider_id": new_config["course_provider_id"],
-                "first_name": new_config["first_name"],
-                "last_name": new_config.get("last_name", ""),
-            }
-        )
+        existing_config.update({
+            "role": "lecturer",
+            "course_code": new_config["course_code"],
+            "batch_id": new_config["batch_id"], 
+            "course_provider_id": new_config["course_provider_id"],
+            "first_name": new_config["first_name"],
+            "last_name": new_config.get("last_name", "")
+        })
 
         # Ensure proper JSON serialization
         mapping.config = json.loads(json.dumps(existing_config))
         mapping.save()
-
 
 class BulkEnrollmentService:
     def __init__(self, file):
@@ -346,31 +334,25 @@ class BulkEnrollmentService:
             "first_name": first_name,
             "last_name": last_name,
             "email_address": email,
-            "user_data": [
-                {
-                    "Phone": phone,
-                    "College Name": BulkEnrollmentService.clean_value(
-                        row["College Name"]
-                    ),
-                    "Enrollment Status": BulkEnrollmentService.clean_value(
-                        row["Enrollment Status"]
-                    ),
-                    "Center Name": BulkEnrollmentService.clean_value(
-                        row["Centre Name"]
-                    ),
-                    "Training Location District Name": BulkEnrollmentService.clean_value(
-                        row["Training Location District Name"]
-                    ),
-                    "Training Location City Name": BulkEnrollmentService.clean_value(
-                        row["Training Location City Name"]
-                    ),
-                    "Onboarding Source": BulkEnrollmentService.clean_value(
-                        row["Onboarding Source"]
-                    ),
-                    "State": BulkEnrollmentService.clean_value(row["State"]),
-                    "District": BulkEnrollmentService.clean_value(row["District"]),
-                }
-            ],
+            "user_data": [{
+                "Phone": phone,
+                "College Name": BulkEnrollmentService.clean_value(row["College Name"]),
+                "Enrollment Status": BulkEnrollmentService.clean_value(
+                    row["Enrollment Status"]
+                ),
+                "Center Name": BulkEnrollmentService.clean_value(row["Centre Name"]),
+                "Training Location District Name": BulkEnrollmentService.clean_value(
+                    row["Training Location District Name"]
+                ),
+                "Training Location City Name": BulkEnrollmentService.clean_value(
+                    row["Training Location City Name"]
+                ),
+                "Onboarding Source": BulkEnrollmentService.clean_value(
+                    row["Onboarding Source"]
+                ),
+                "State": BulkEnrollmentService.clean_value(row["State"]),
+                "District": BulkEnrollmentService.clean_value(row["District"]),
+            }],
         }
 
     def _create_new_user(self, email: str, config: Dict) -> None:
@@ -408,13 +390,16 @@ class BulkEnrollmentService:
         """Update existing user mapping with new data"""
         existing_config = mapping.config
 
-        # Update user data
+         # Update user data
         if "user_data" in existing_config and existing_config["user_data"]:
             if isinstance(existing_config["user_data"], dict):
                 existing_config["user_data"].update(new_config["user_data"])
             else:
                 # If user_data is not a dict (e.g., a list), replace it with the new dict
                 existing_config["user_data"] = new_config["user_data"]
+        else:
+            existing_config["user_data"] = new_config["user_data"]
+
         # Update batch ID if provided - convert all values to strings
         # Update batch ID if provided - handle both string and integer cases
         if new_config.get("batch_id"):
