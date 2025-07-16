@@ -180,19 +180,20 @@ class CourseProviderRepository:
     def get_course_provider_by_user_id(user_id):
         try:
             # Fetch the CourseProviderAdmin instance using the user_id
-            course_provider_admin = CourseProviderAdmin.objects.get(
-                course_provider_admin__id=user_id
-            )
+            #course_provider_admin = CourseProviderAdmin.objects.get(
+                #course_provider_admin__id=user_id
+            #)
 
             # Fetch the related CourseProvider instance
-            course_provider = CourseProvider.objects.filter(
-                admins=course_provider_admin
-            ).first()
+            #course_provider = CourseProvider.objects.filter(
+                #admins=course_provider_admin
+            #).first()
+            return CourseProvider.objects.filter(admins__id=user_id).first()
 
-            if course_provider is None:
-                return None
+            #if course_provider is None:
+                #return None
 
-            return course_provider
+            #return course_provider
 
         except CourseProviderAdmin.DoesNotExist:
             return None

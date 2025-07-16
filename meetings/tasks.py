@@ -13,7 +13,7 @@ from .exceptions import (
     SeriesNotFoundError,
     NoMeetingsFoundError
 )
-from .serializers import MeetingSerializer
+#from .serializers import MeetingSerializer
 from requests.exceptions import HTTPError
 
 logger = get_task_logger(__name__)
@@ -87,6 +87,7 @@ def update_teams_meeting_task(self, meeting_id: int) -> None:
 @shared_task(**COMMON_TASK_CONFIG)
 @handle_meeting_exceptions
 def process_completed_meetings_task(self) -> List[dict]:
+    from .serializers import MeetingSerializer    
     """
     Process meetings that completed within the last hour.
     

@@ -80,5 +80,6 @@ class MockInterviewBehaviouralEvaluator(AssessmentEvaluator):
 
     def generate_overall_summary_celery_task(self, eval_data,assessment_attempt_id):
             from evaluation.tasks import evaluate_behavioral_assessment
-            task = evaluate_behavioral_assessment.delay(eval_data,assessment_attempt_id)
+            # task = evaluate_behavioral_assessment.delay(eval_data,assessment_attempt_id)
+            pass
             

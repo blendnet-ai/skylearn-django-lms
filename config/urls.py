@@ -17,16 +17,18 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
 ]
 
-urlpatterns += i18n_patterns(
+urlpatterns += [
     path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
     path("accounts/", include("accounts.urls")),
-    path("programs/", include("course.urls")),
-    path("event-logger/", include("events_logger.urls")),
-    path("meeting/",include('meetings.urls')),
+    path("en/programs/", include("course.urls")),
+    path("en/event-logger/", include("events_logger.urls")),
+    path("en/meeting/",include('meetings.urls')),
     path("feedback/",include('Feedback.urls'))
+]
+
+urlpatterns += i18n_patterns(
+    path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
 )
-
-
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

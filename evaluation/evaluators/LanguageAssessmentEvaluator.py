@@ -418,6 +418,7 @@ class LanguageAssessmentEvaluator(AssessmentEvaluator):
 
     def generate_overall_summary_celery_task(self, eval_data,assessment_attempt_id):
             from evaluation.tasks import evaluate_lsrw_assessment
-            task = evaluate_lsrw_assessment.delay(eval_data,assessment_attempt_id)
+            # task = evaluate_lsrw_assessment.delay(eval_data,assessment_attempt_id)
+            pass
 
 

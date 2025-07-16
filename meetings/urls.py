@@ -1,4 +1,6 @@
+
 from django.urls import path
+from . import views
 from .views import (
     MarkAttendanceAndRedirect,
     GetJoiningUrl,
@@ -6,6 +8,9 @@ from .views import (
     MarkAttendanceCommonURLAndRedirect,
     UploadAdditionalRecording,
     DeleteRecording,
+    reference_materials_list,
+    reference_material_detail
+    
 )
 
 urlpatterns = [
@@ -33,4 +38,6 @@ urlpatterns = [
         name="upload-additional-recording",
     ),
     path("delete-recording/", DeleteRecording.as_view(), name="delete-recording"),
+    path('<int:meeting_id>/reference-materials/', views.reference_materials_list, name='reference_materials_list'),
+    path('reference-materials/<int:material_id>/', reference_material_detail, name='reference_material_detail'),
 ]
