@@ -34,11 +34,10 @@ class MeetingSeries(models.Model):
     recurrence_type = models.CharField(
         max_length=20, choices=RECURRENCE_CHOICES, default="not_repeating"
     )
-    weekday_schedule = ArrayField(
-        models.BooleanField(),
-        size=7,
+    weekday_schedule = models.JSONField(
         null=True,
         blank=True,
+        default=list,
         help_text="Array of 7 booleans representing each weekday",
     )
     monthly_day = models.IntegerField(
@@ -193,7 +192,8 @@ def meeting_post_save(sender, instance, created, **kwargs):
     #    create_teams_meeting_task.delay(instance.id)
     elif not created:
         # in case of update created is false
-        update_teams_meeting_task.delay(instance.id)
+        # update_teams_meeting_task.delay(instance.id)
+        pass
 
 
 @receiver(pre_delete, sender=Meeting)
@@ -201,6 +201,21 @@ def meeting_pre_delete(sender, instance, **kwargs):
     """
     Signal handler to delete Teams meeting when a meeting is deleted
     """
-    delete_teams_meeting_task.delay(
-        instance.id, instance.series.presenter_details, instance.conference_id
-    )
+    # delete_teams_meeting_task.delay(
+    #     instance.id, instance.series.presenter_details, instance.conference_id
+    # )
+    pass
+
+# In meetings/models.py
+class ReferenceMaterial(models.Model):
+    meeting = models.ForeignKey(Meeting, related_name='reference_materials', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    url = models.URLField(max_length=512, blank=True, null=True)
+    file = models.FileField(upload_to='reference_materials/', blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    material_type = models.CharField(max_length=10, choices=[('link', 'Link'), ('file', 'File')], default='link')
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

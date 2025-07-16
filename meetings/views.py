@@ -20,6 +20,15 @@ from accounts.permissions import (
 from accounts.authentication import FirebaseAuthentication
 from meetings.serializers import AdditionalRecordingSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Meeting, ReferenceMaterial
+from .serializers import ReferenceMaterialSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
+from rest_framework.decorators import api_view, permission_classes,authentication_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from accounts.permissions import IsLoggedIn, IsCourseProviderAdminOrLecturer
 
 
 logger = logging.getLogger(__name__)
@@ -152,3 +161,53 @@ class DeleteRecording(APIView):
                 {"error": f"Error deleting recording: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+@api_view(['GET', 'POST'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn])
+@parser_classes([MultiPartParser, FormParser])
+def reference_materials_list(request, meeting_id):
+    from .serializers import ReferenceMaterialSerializer
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({"error": "Meeting not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        materials = meeting.reference_materials.all()
+        serializer = ReferenceMaterialSerializer(materials, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        # Check if the user is a teacher or admin
+        if not (request.user.is_lecturer or request.user.is_course_provider_admin):
+            return Response({"error": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+        
+        data = request.data.copy()
+        file = request.FILES.get('file')
+        url = data.get('url')
+        if file:
+            data['material_type'] = 'file'
+            data['url'] = ''  # or set to None
+        elif url:
+            data['material_type'] = 'link'
+        else:
+            return Response({"error": "Either file or url must be provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ReferenceMaterialSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(meeting=meeting, uploaded_by=request.user, file=file if file else None)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@authentication_classes([FirebaseAuthentication])
+@permission_classes([IsLoggedIn, IsCourseProviderAdminOrLecturer])
+def reference_material_detail(request, material_id):
+    
+    try:
+        material = ReferenceMaterial.objects.get(id=material_id)
+    except ReferenceMaterial.DoesNotExist:
+        return Response({"error": "Material not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    material.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

@@ -430,6 +430,6 @@ class QuestionIssues(models.Model):
     description = models.TextField(blank=False, null=False)
 
 class DSASheetsConfig(models.Model):
-    name=models.CharField(blank=False, null=False,unique=True)
+    name=models.CharField(blank=False, null=False,unique=True,max_length=255)
     question_ids = models.JSONField(default=list)
 

@@ -25,6 +25,7 @@ import urllib
 from meetings.services.msteams import MSTeamsConferencePlatformService
 import logging
 from storage_service.azure_storage import AzureStorageService
+
 from meetings.models import AttendanceRecord, Meeting
 from .repositories import AttendaceRecordRepository
 from django.conf import settings
@@ -41,6 +42,7 @@ from evaluation.usecases import AssessmentUseCase
 import time
 
 storage_service = AzureStorageService()
+
 import pytz
 
 
@@ -268,6 +270,7 @@ class MeetingSeriesUsecase:
         time.sleep(10)
         for meeting in created_meetings:
             create_teams_meeting_task.delay(meeting.id)
+            pass
         return meeting_series
 
     @staticmethod

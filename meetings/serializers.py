@@ -1,6 +1,7 @@
 from django.forms.models import model_to_dict
 from typing import Dict, Any
 from rest_framework import serializers
+from .models import ReferenceMaterial
 
 
 class MeetingSerializer:
@@ -24,3 +25,8 @@ class MeetingSerializer:
 
 class AdditionalRecordingSerializer(serializers.Serializer):
     filename = serializers.CharField(max_length=255)
+
+class ReferenceMaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReferenceMaterial
+        fields = ['id', 'title', 'url','file', 'description', 'material_type']
